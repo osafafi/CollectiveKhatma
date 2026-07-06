@@ -20,6 +20,35 @@ export const strings = {
     emptyRoster: 'لا يوجد أعضاء بعد',
     connecting: 'جارٍ الاتصال بقاعدة البيانات…',
     connectionError: 'تعذّر الاتصال بقاعدة البيانات. تأكّد من تشغيل المحاكي (emulator).',
+    // Identity gate
+    choosePrompt: 'اختر اسمك للمتابعة',
+    switchPerson: 'لست أنت؟',
+    // Today view
+    todayHeading: 'صفحات اليوم',
+    pagesWord: 'صفحات',
+    pageWord: 'صفحة',
+    dayWord: 'اليوم',
+    ofWord: 'من',
+    daysLeft: 'أيام متبقية',
+    oneDayLeft: 'باقٍ يوم واحد',
+    doneToday: 'تم إنجاز صفحات اليوم، جزاك الله خيرًا',
+    notStarted: 'لم تبدأ هذه الختمة بعد',
+    ended: 'انتهت هذه الختمة',
+    noKhatmas: 'لست مشتركًا في أي ختمة حالية.',
+    saveError: 'تعذّر حفظ الإنجاز، حاول مرة أخرى.',
+    // Insights & progress
+    groupProgress: 'تقدّم المجموعة',
+    completedTodayCount: 'أتمّوا اليوم',
+    lifetimeLead: 'أتممت قراءة',
+    lifetimeTail: 'من ٦٠٤ صفحة من المصحف',
+    // Completion
+    khatmaComplete: 'اكتملت الختمة، تقبّل الله',
+    du3aHeading: 'دعاء ختم القرآن',
+  },
+  settings: {
+    title: 'الإعدادات',
+    fontSize: 'حجم خط القراءة',
+    sample: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
   },
   admin: {
     title: 'خَتْمة — لوحة التحكم',

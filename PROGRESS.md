@@ -7,15 +7,29 @@ Living status doc so a new session can start without scanning the whole project.
 - Design, layers, data model, security → [ARCHITECTURE.md](ARCHITECTURE.md)
 - Setup / run / deploy → [README.md](README.md)
 
-**Last updated:** 2026-07-06 — end of Stage 1 (scaffold + infra + docs) and the full Quran dataset.
+**Last updated:** 2026-07-06 — Stage 2 in progress: domain + data layers complete & tested; member app core built.
 
 ---
 
 ## Where we are
 
-Stage 1 is **done and verified**. The full Quran is bundled and rendering. **No product features are built yet** — the data/UI layers are typed shells.
+Stage 1 done. **Stage 2 (features) underway:** the pure **domain** and **data-access** layers are fully implemented and unit-tested (36 tests green), and the **member app's daily flow is built**. The **admin app** and the in-app **reading/browsing** views are the main remaining work. Data-driven flows are wired but need live Firestore to verify end-to-end (see gotcha below).
 
-## Done
+## Done (Stage 2 so far)
+
+- **Domain (pure, tested):**
+  - [assignment.ts](src/domain/assignment.ts) — `generateAssignments()` (even split, best-effort rotation away from each member's `completedPages`, contiguous when no history) + `resolvePageScope()` (full / page-range / whole-chapters via the surah→pages map).
+  - [schedule.ts](src/domain/schedule.ts) — UTC date math: `currentDayIndex`, `daysRemaining`, `isWithinKhatma`, `isFinalStretch` (admin urgency), `lastDay`.
+  - [progress.ts](src/domain/progress.ts) — `khatmaProgress` (group % + `complete`), `pendingForDay`/`pendingReaders` (admin §8), per-assignment helpers, `lifetimePercent`.
+  - Tests: [assignment](tests/domain/assignment.test.ts), [schedule](tests/domain/schedule.test.ts), [progress](tests/domain/progress.test.ts).
+- **Data-access (realtime + writes):**
+  - [khatmas.ts](src/data/khatmas.ts) — `subscribeKhatmas`, `getKhatma`, `createKhatma` (batch: khatma doc + one assignment doc per member), `updateKhatma`, `deleteKhatma` (cascades subcollection).
+  - [assignments.ts](src/data/assignments.ts) — `subscribeAssignments`, `getAssignment`, `markDayDone` (**transaction**: stamp day + `arrayUnion` pages into `completedPages`), `clearDayDone` (admin correction, inverse), `overrideAssignment`.
+  - [firestore.rules](firestore.rules) — now shape-validates khatma + assignment writes (lenient types; **not yet emulator-tested** — verify before next deploy).
+- **Member app** ([src/ui/member/render.ts](src/ui/member/render.ts), [settings.ts](src/ui/shared/settings.ts)): identity gate (tap your name, cached), today's pages per active khatma, one-tap "finished" (`markDayDone`), group progress (anonymous-aware), pending-today names, lifetime insight, **font-size slider** (5 levels, verified), du3a completion screen. Framework-free reactive-state loop over the realtime listeners.
+  - **Verified in preview (offline):** shell renders, no crashes, font slider drives `--reading-scale` end-to-end and persists. **Not yet verified:** today/mark-done/progress/du3a data flows (need live data).
+
+## Done (Stage 1)
 
 - **Toolchain:** Vite 8 multi-page app (member `index.html`, admin `admin-nano.html`), TypeScript 6 strict, Tailwind v4 (`@theme` tokens), Vitest, ESLint flat config **with layer guardrails**, Prettier.
 - **Layered `src/`:** `data/` (only Firebase importer) · pure `domain/` · `content/` (strings + quran) · `theme/` · `ui/`. Boundaries enforced by ESLint (`npm run lint` fails if crossed).
@@ -32,12 +46,18 @@ npm run typecheck && npm run lint && npm test && npm run build   # all green
 npm run dev                                                      # http://localhost:5173
 ```
 
-Emulator (needs Java; `firebase-tools` is installed): `npm run emulators` then `npm run seed`.
+**Local dev is fully emulator-based (works today):** `npm run emulators` (Firestore + UI) then `npm run seed`, then `npm run dev`. The seed creates a roster, the du3a, **and a sample active khatma with generated assignments**, so the member app shows real "today" data immediately.
+
+## Managing local data yourself (no admin UI needed)
+
+- **Emulator UI** — http://127.0.0.1:4000/firestore — point-and-click add/edit/delete of any doc.
+- **`npm run seed`** — reproducible dataset from [scripts/seed-emulator.ts](scripts/seed-emulator.ts) (idempotent; skips collections that already have data).
+- **Project-id alignment (important):** the emulator keys data by project id. [.firebaserc](.firebaserc) pins the CLI/emulator to `collectivekhatma`, which is also what the app (`.env`) and the seed use — so the UI, the app, and the seed all read/write the **same** store. If you change the app's project id, change all three.
 
 ## Environment / gotchas
 
-- **Firebase project:** `collectivekhatma` (in `.env`, gitignored — not committed). `.env.example` is the template.
-- **Emulator vs real:** set `VITE_USE_EMULATOR=false` in `.env` to point `npm run dev` at the real project; `true`/unset → emulator.
+- **Firebase project:** `collectivekhatma` (in `.env`, gitignored). `.env.example` is the template; [.firebaserc](.firebaserc) pins the CLI default.
+- **Emulator vs real:** `VITE_USE_EMULATOR=true` (current) → emulator; set `false` to point `npm run dev` at the real project (writes real data — later).
 - **Rules deploy separately:** `firebase deploy --only firestore:rules --project collectivekhatma` (GitHub Pages only hosts static files).
 - **Admin gate = obscure filename only, no auth.** Currently `admin-nano.html` — **change to a long random slug** in BOTH the filename and `ADMIN_ENTRY` in [vite.config.ts](vite.config.ts) before sharing publicly.
 - **Firestore rules validate shape only, not identity** (no auth by design) — see [ARCHITECTURE.md](ARCHITECTURE.md#security).
@@ -45,17 +65,18 @@ Emulator (needs Java; `firebase-tools` is installed): `npm run emulators` then `
 
 ## Data model (proposed — see ARCHITECTURE.md)
 
-`roster/{id}` Person · `khatmas/{id}` Khatma · `khatmas/{id}/assignments/{memberId}` Assignment · `content/global` GlobalContent. Types in [src/domain/types.ts](src/domain/types.ts). Data-access stubs ([khatmas.ts](src/data/khatmas.ts), [assignments.ts](src/data/assignments.ts)) and [assignment.ts](src/domain/assignment.ts) currently throw "Stage 2".
+`roster/{id}` Person · `khatmas/{id}` Khatma · `khatmas/{id}/assignments/{memberId}` Assignment · `content/global` GlobalContent. Types in [src/domain/types.ts](src/domain/types.ts). Data-access is **now implemented** (no longer stubs) in [khatmas.ts](src/data/khatmas.ts) + [assignments.ts](src/data/assignments.ts); the assignment algorithm lives in [assignment.ts](src/domain/assignment.ts).
 
 ---
 
-## Next steps (Stage 2 — features)
+## Next steps (Stage 2 — remaining)
 
-1. **Domain:** implement `generateAssignments()` in [src/domain/assignment.ts](src/domain/assignment.ts) — even per-day split, skip each member's `completedPages`, support assign-by-page-range and assign-by-chapter (resolve via `surahs.json` / `index.json`). Add unit tests (pure).
-2. **Data:** implement [khatmas.ts](src/data/khatmas.ts) + [assignments.ts](src/data/assignments.ts) (CRUD + realtime). `markDayDone` = batch write: set `doneByDay[day]` **and** append that day's pages to `Person.completedPages` (deduped).
-3. **Admin app:** roster management (enforce unique name via `domain/validation`), khatma creation, assignment view/override, per-khatma progress + anonymous toggle, pending-readers list with end-of-khatma urgency, du3a editor, mistaken-mark correction.
-4. **Member app:** today's pages per khatma, one-tap "finished", **paged reading view** (`loader.getPage`) with the **font-size slider control** (mechanism already in [src/theme/reading.ts](src/theme/reading.ts)), group progress (respect anonymous), du3a completion screen, insights (`domain/progress.ts`).
-5. **Full reading/browsing UI** over the bundled dataset — surah headers + Bismillah (`surahs.json.bismillahPre`).
+1. ✅ **Domain** — assignment + schedule + progress (done, tested).
+2. ✅ **Data** — khatmas + assignments + rules (done; rules need emulator test).
+3. **Admin app** ([src/ui/admin/render.ts](src/ui/admin/render.ts) is still the placeholder) — **top priority; also unblocks end-to-end testing by creating data.** Roster CRUD (unique name via [validation.ts](src/domain/validation.ts)); khatma-creation wizard (pick members/duration/start/scope → `resolvePageScope` → `generateAssignments` preview → `createKhatma`); per-khatma dashboard (progress %, days left, **pending-readers by name with `isFinalStretch` urgency**, anonymous toggle); assignment view + `overrideAssignment`; du3a editor (`setDu3aText`); mistaken-mark correction (`clearDayDone`). Admin always sees names (anonymous only hides them from members).
+4. **Member reading view** — the daily card currently lists page **numbers**; add the in-app **page text** for assigned pages via `loader.getPage`, sized by the reading slider (§6 "pages readable directly in-app").
+5. **Full Quran browsing** — continuous reading over the bundled dataset, surah headers + Bismillah (`surahs.json.bismillahPre`), independent of assignments.
+6. **End-to-end verification** — once Firestore is reachable (emulator+JDK or real project): seed roster → create a khatma in admin → walk the member flow (today → finished → progress → du3a).
 
 ## Deferred to backlog (REQUIREMENTS §9)
 

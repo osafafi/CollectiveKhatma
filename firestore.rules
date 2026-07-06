@@ -19,11 +19,14 @@ service cloud.firestore {
     }
 
     // Khatmas and their per-member assignments.
-    // Shape validation for these is added alongside the Stage 2 data model.
     match /khatmas/{khatmaId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isValidKhatma(request.resource.data);
+      allow delete: if true;
       match /assignments/{memberId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow create, update: if isValidAssignment(request.resource.data);
+        allow delete: if true;
       }
     }
 
@@ -43,6 +46,23 @@ service cloud.firestore {
         && d.name.size() > 0
         && d.completedPages is list
         && d.createdAt is number;
+    }
+
+    // Shape-only (types kept lenient to match the client writes; these rules can
+    // never enforce identity in this no-auth app — see ARCHITECTURE.md#security).
+    function isValidKhatma(d) {
+      return d.totalPages is number
+        && d.startDate is string
+        && d.durationDays is number
+        && d.memberIds is list
+        && d.anonymous is bool
+        && d.status is string
+        && d.createdAt is number;
+    }
+
+    function isValidAssignment(d) {
+      return d.memberId is string
+        && d.pagesByDay is list;
     }
   }
 }
