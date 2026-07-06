@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// -----------------------------------------------------------------------------
+// IMPORTANT: this app has NO authentication (REQUIREMENTS §3). These rules can
+// only validate document SHAPE and reject unknown paths — they are NOT an
+// identity boundary. Anyone with the public web config could write. That is the
+// explicitly accepted, trust-based model (unguessable admin URL + community
+// trust). See ARCHITECTURE.md#security before hardening.
+// -----------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global roster of people.
+    match /roster/{personId} {
+      allow read: if true;
+      allow create, update: if isValidPerson(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Khatmas and their per-member assignments.
+    // Shape validation for these is added alongside the Stage 2 data model.
+    match /khatmas/{khatmaId} {
+      allow read, write: if true;
+      match /assignments/{memberId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Global admin-editable content (du3a text).
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Deny any path not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidPerson(d) {
+      return d.name is string
+        && d.name.size() > 0
+        && d.completedPages is list
+        && d.createdAt is number;
+    }
+  }
+}

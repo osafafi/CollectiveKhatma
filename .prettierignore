@@ -1,0 +1,9 @@
+dist
+node_modules
+package-lock.json
+
+# Generated Quran dataset — keep compact, don't reflow (604 files).
+public/quran
+
+# The product spec is authored/owned by hand — don't reflow it.
+REQUIREMENTS.md

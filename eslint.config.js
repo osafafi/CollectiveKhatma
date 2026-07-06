@@ -1,0 +1,73 @@
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import prettier from 'eslint-config-prettier';
+
+export default tseslint.config(
+  { ignores: ['dist', 'node_modules'] },
+
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  // TypeScript handles undefined identifiers and unused-var analysis; let
+  // underscore-prefixed args/vars through (used by the Stage 2 stub signatures).
+  {
+    files: ['**/*.ts'],
+    rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+
+  // GUARDRAIL 1 — Firebase may only be imported inside src/data/**. Every other
+  // layer must go through the typed data-access functions (ARCHITECTURE.md).
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/data/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['firebase', 'firebase/*'],
+              message:
+                'Import Firebase only inside src/data/. Other layers must use the data-access functions.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // GUARDRAIL 2 — the domain layer must stay pure: no Firebase, data, or UI.
+  {
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['firebase', 'firebase/*'],
+              message: 'domain must stay pure — no Firebase.',
+            },
+            {
+              group: ['@/data', '@/data/*', '**/data/*'],
+              message: 'domain must stay pure — no data-access imports.',
+            },
+            {
+              group: ['@/ui', '@/ui/*', '**/ui/*'],
+              message: 'domain must stay pure — no UI imports.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  prettier,
+);
