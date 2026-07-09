@@ -31,7 +31,7 @@ jobs:
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).
           # Change to match your repo name, or delete for a user/custom-domain site.
-          BASE_PATH: /Ranqur/
+          BASE_PATH: /CollectiveKhatma/
           VITE_USE_EMULATOR: 'false'
           # Firebase web config (not secret, but kept in repo secrets for tidiness).
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
