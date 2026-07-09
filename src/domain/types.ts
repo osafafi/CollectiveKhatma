@@ -3,6 +3,12 @@
  * DOM. These mirror the Firestore collections documented in ARCHITECTURE.md.
  */
 
+/**
+ * Daily page capacity assumed for a person when the admin hasn't set one
+ * explicitly (legacy roster docs predate the field). See {@link Person.pagesPerDay}.
+ */
+export const DEFAULT_PAGES_PER_DAY = 2;
+
 /** A person in the global roster. Firestore: `roster/{id}` */
 export interface Person {
   id: string;
@@ -16,17 +22,42 @@ export interface Person {
    * (REQUIREMENTS §4, §5).
    */
   completedPages: number[];
+  /**
+   * How many pages this person can read per day — their capacity in the
+   * assignment algorithm. Admin-set when adding them, editable at any time
+   * (e.g. 1, 5, or ~20 for a juz). Defaults to {@link DEFAULT_PAGES_PER_DAY}.
+   */
+  pagesPerDay: number;
+  /**
+   * When `false`, the person is temporarily paused (e.g. menstruation) and is
+   * excluded from assignment across all their khatmas until re-enabled, without
+   * being removed from the roster. Defaults to `true`.
+   */
+  enabled: boolean;
   createdAt: number;
 }
 
 export type KhatmaStatus = 'active' | 'completed';
 
+/**
+ * What a khatma should cover. The admin picks one of these; the UI resolves it
+ * to a flat page pool with `resolvePageScope` (see `assignment.ts`) — the full
+ * mushaf, a page range, or whole chapters (REQUIREMENTS §5). Stored on the
+ * {@link Khatma} so the pool can be re-derived for leftover calc + re-planning.
+ */
+export type PageScope =
+  | { kind: 'full'; totalPages?: number }
+  | { kind: 'range'; fromPage: number; toPage: number }
+  | { kind: 'surahs'; surahIds: number[] };
+
 /** A group reading. Firestore: `khatmas/{id}` */
 export interface Khatma {
   id: string;
   name?: string;
-  /** Pages to split across members (default 604). */
+  /** Pages to split across members (default 604). Equals the resolved scope size. */
   totalPages: number;
+  /** What this khatma covers — re-resolved for leftover calc + re-planning. */
+  scope: PageScope;
   /** ISO date (YYYY-MM-DD) the khatma starts. */
   startDate: string;
   durationDays: number;
@@ -35,6 +66,14 @@ export interface Khatma {
   /** When true, member-facing progress is shown without names (per-khatma). */
   anonymous: boolean;
   status: KhatmaStatus;
+  /**
+   * The single member designated to recite du3a2 al-khatma for THIS khatma.
+   * Chosen by rotation at creation so the duty spreads across cycles
+   * (REQUIREMENTS §7, updated). Optional for legacy docs.
+   */
+  duaReciterId?: string;
+  /** Epoch ms when the admin marked the khatma completed (drives the log). */
+  completedAt?: number;
   createdAt: number;
 }
 

@@ -147,23 +147,41 @@ function renderApp(state: MemberState, memberId: string, ctx: AppContext): HTMLE
   const me = state.roster.find((p) => p.id === memberId);
   const khatmas = myActiveKhatmas(state, memberId);
 
-  // Completion: show the du3a for the first complete khatma not yet acknowledged.
-  const pendingDu3a = khatmas.find(
+  // Completion (REQUIREMENTS §7, updated): one designated reciter says the du3a.
+  // The reciter sees the du3a screen; everyone else sees a note naming them.
+  const pendingComplete = khatmas.find(
     (k) => khatmaProgress(state.assignments.get(k.id) ?? []).complete && !du3aAcked(k.id),
   );
-  if (pendingDu3a) {
-    return du3aScreen(state.content?.du3aText ?? DEFAULT_DU3A_TEXT, () => {
-      ackDu3a(pendingDu3a.id);
+  if (pendingComplete) {
+    const ack = (): void => {
+      ackDu3a(pendingComplete.id);
       ctx.rerender();
-    });
+    };
+    const reciterId = pendingComplete.duaReciterId;
+    // No designated reciter (legacy khatma) → everyone sees the du3a.
+    if (!reciterId || reciterId === memberId) {
+      return du3aScreen(state.content?.du3aText ?? DEFAULT_DU3A_TEXT, ack);
+    }
+    const reciterName = state.roster.find((p) => p.id === reciterId)?.name ?? '';
+    return completionNoticeScreen(reciterName, ack);
   }
 
   const sections: Node[] = [memberHeader(me?.name ?? '', ctx.onSwitch)];
+  if (me && !me.enabled) {
+    sections.push(
+      el('p', { class: 'rounded-button bg-primary/10 px-4 py-3 text-center text-primary' }, [
+        strings.member.pausedNote,
+      ]),
+    );
+  }
+  const paused = me ? !me.enabled : false;
   if (khatmas.length === 0) {
     sections.push(card(strings.member.todayHeading, [mutedText(strings.member.noKhatmas)]));
   } else {
     sections.push(
-      ...khatmas.map((k) => khatmaCard(k, state.assignments.get(k.id) ?? [], memberId, state.roster)),
+      ...khatmas.map((k) =>
+        khatmaCard(k, state.assignments.get(k.id) ?? [], memberId, state.roster, paused),
+      ),
     );
   }
   sections.push(insightsCard(me), ctx.settings);
@@ -175,6 +193,7 @@ function khatmaCard(
   assignments: Assignment[],
   memberId: string,
   roster: Person[],
+  paused: boolean,
 ): HTMLElement {
   const today = todayIso();
   const dayIndex = currentDayIndex(k.startDate, today);
@@ -183,7 +202,9 @@ function khatmaCard(
 
   const body: Node[] = [statusLine(k, today, within, dayIndex)];
 
-  if (within && mine) {
+  // A paused member isn't prompted to read (REQUIREMENTS §5+); they still see
+  // group progress below. The top-of-page note explains why.
+  if (within && mine && !paused) {
     const pages = mine.pagesByDay[dayIndex] ?? [];
     const done = isDayDone(mine, dayIndex);
     body.push(pagesRow(pages));
@@ -323,6 +344,24 @@ function du3aScreen(du3aText: string, onAck: () => void): HTMLElement {
       ]),
     ],
   );
+}
+
+/**
+ * Shown to every member who is NOT the designated reciter when a khatma
+ * completes: the khatma is done and names who will recite the du3a on the
+ * group's behalf (REQUIREMENTS §7, updated).
+ */
+function completionNoticeScreen(reciterName: string, onAck: () => void): HTMLElement {
+  return el('div', { class: 'flex min-h-screen items-center justify-center bg-bg p-4' }, [
+    el('div', { class: 'max-w-xl space-y-6 text-center' }, [
+      el('p', { class: 'text-2xl font-bold text-primary' }, [strings.member.khatmaComplete]),
+      el('p', { class: 'text-lg' }, [
+        `${strings.member.reciterLead}: `,
+        el('span', { class: 'font-semibold' }, [reciterName]),
+      ]),
+      bigButton(strings.common.done, onAck),
+    ]),
+  ]);
 }
 
 // -----------------------------------------------------------------------------

@@ -113,8 +113,20 @@ no passwords, no app-store installs for members.
   - Duration (e.g. 7 days), start date
   - Members (selected from the global roster)
 - **Automatic page assignment**, not manual entry:
-  - Pages are split across the selected members as evenly as possible per
-    day.
+  - Pages are split across the selected members **according to each person's
+    daily page capacity** (`pagesPerDay`), not purely evenly (Stage 2 update):
+    the admin sets how many pages a person can take per day when adding them and
+    can adjust it any time; heavier readers get proportionally more.
+  - A person can be **temporarily disabled** (e.g. menstruation) without being
+    removed; disabled people are skipped by the assignment algorithm until
+    re-enabled (Stage 2 update).
+  - When the group's total daily capacity can't cover the scope, the **leftover
+    unassigned pages are surfaced to the admin** to read herself or hand to a
+    volunteer (Stage 2 update; see §8).
+  - The admin can **regenerate the remaining days** at any time (after disabling
+    someone or changing capacities); past/done days are preserved (Stage 2
+    update — this is the client-side stand-in for a daily job, as there is no
+    server).
   - Assignment must avoid repeating pages a given person has already
     *completed* reading in any past khatma (see §4), so that over many
     khatmas a person progressively covers the whole Quran in a segmented
@@ -160,14 +172,18 @@ no passwords, no app-store installs for members.
 
 ## 7. Khatma completion — du3a2 al-khatma
 
+> **Stage 2 update:** the du3a is now recited by a **single designated person
+> per khatma**, not acknowledged by everyone. The reciter **rotates** each
+> khatma cycle (chosen at creation from that khatma's members, spreading the
+> duty; the admin can override). On completion the reciter sees the du3a screen;
+> everyone else sees a short note naming who will recite it.
+
 - When all pages in a khatma have been read by the group, the app surfaces
-  a "du3a2 al-khatma" screen (the completion supplication) to each member,
-  the next time they open the app.
-- This is an **individual acknowledgment**, not a gate: the khatma is
-  already considered complete regardless of who has or hasn't seen this
-  screen. Each person reads the du3a and taps a single "Done" button to
-  dismiss it for themselves — similar UX to a license-agreement
-  acknowledgment.
+  a "du3a2 al-khatma" screen to the **designated reciter**, the next time they
+  open the app; other members see a completion note naming the reciter.
+- This is an acknowledgment, not a gate: the khatma is already considered
+  complete regardless of who has or hasn't seen the screen. The reciter reads
+  the du3a and taps a single "Done" button to dismiss it.
 - **The du3a text itself is admin-editable content, not hardcoded**: a
   single global text field, editable by the admin at any time from the
   admin panel, used for every khatma's completion screen (not per-khatma
@@ -175,8 +191,15 @@ no passwords, no app-store installs for members.
 
 ## 8. Admin dashboard & capabilities
 
+> **Stage 2 additions:** set/adjust each person's daily page capacity
+> (`pagesPerDay`); temporarily disable/enable a person; per active khatma, see
+> the **leftover unassigned pages** (and hand them to a volunteer) and
+> **regenerate the remaining days**; change a khatma's du3a reciter; mark a
+> khatma complete; and **restart** a completed one.
+
 - Maintain the global roster (add/edit/remove people; enforce unique
-  names).
+  names; set each person's `pagesPerDay` capacity and their enabled/disabled
+  state).
 - Create/manage multiple concurrent khatmas, each with its own member
   subset, duration, and total pages.
 - View auto-generated page assignments per khatma per day; manually
@@ -204,7 +227,11 @@ no passwords, no app-store installs for members.
 
 - Per-person consistency/reliability stats (e.g. who tends to finish late
   or miss days).
-- A browsable historical archive/log of past completed khatmas.
+- ~~A browsable historical archive/log of past completed khatmas.~~ **Stage 2
+  update:** a **lightweight** completed-khatmas list is now in scope — completed
+  khatmas appear at the bottom of the admin page as simple lines (completion
+  date · duration · du3a reciter), and a completed khatma can be **restarted**
+  into a fresh cycle. Full browsable per-khatma history/detail is still deferred.
 - Any push notifications or automated reminders.
 - Translations, tafsir, or audio recitation of the Quran.
 - Real authentication/accounts (PINs, passwords, per-person login links).

@@ -20,7 +20,7 @@ import { db } from './firebase';
  * stored as an array of `{ pages }` maps and converted back on read. This quirk
  * is confined to the data layer — the rest of the app sees plain `number[][]`.
  */
-interface StoredAssignment {
+export interface StoredAssignment {
   memberId: string;
   pagesByDay: Array<{ pages: number[] }>;
   doneByDay?: Record<string, number>;
@@ -32,7 +32,7 @@ export function toStoredPages(pagesByDay: number[][]): Array<{ pages: number[] }
 }
 
 /** Map a stored assignment doc back to the domain `Assignment`. */
-function fromStored(data: StoredAssignment): Assignment {
+export function fromStored(data: StoredAssignment): Assignment {
   return {
     memberId: data.memberId,
     pagesByDay: (data.pagesByDay ?? []).map((day) => day.pages ?? []),

@@ -1,15 +1,6 @@
-import type { Person } from './types';
+import type { PageScope } from './types';
 
-/**
- * What a khatma should cover. The admin picks one of these; the UI resolves it
- * to a flat page pool with {@link resolvePageScope} before calling
- * {@link generateAssignments} (REQUIREMENTS §5 — assign the full mushaf, a page
- * range, or whole chapters).
- */
-export type PageScope =
-  | { kind: 'full'; totalPages?: number }
-  | { kind: 'range'; fromPage: number; toPage: number }
-  | { kind: 'surahs'; surahIds: number[] };
+export type { PageScope };
 
 /** Full Madinah (Hafs) mushaf length — the default khatma scope. */
 const DEFAULT_TOTAL_PAGES = 604;
@@ -64,26 +55,51 @@ export function resolvePageScope(
   }
 }
 
-export interface AssignmentInput {
+/** One member's inputs to the planner. */
+export interface PlanMemberInput {
+  id: string;
+  /** Pages this member has already completed in past khatmas (for rotation). */
+  completedPages: number[];
+  /** Daily page capacity — how many pages they can take per day (REQUIREMENTS §5+). */
+  pagesPerDay: number;
   /**
-   * The pool of page numbers to split across members. Build it with
-   * {@link resolvePageScope} (full mushaf, a range, or chapters). De-duplicated
-   * and sorted internally, so the input's order and uniqueness don't matter.
+   * When `false` the member is paused (REQUIREMENTS §5+): capacity 0, so they
+   * receive an all-empty assignment but still appear in the result (their doc is
+   * kept, ready to be re-planned once re-enabled).
+   */
+  enabled: boolean;
+}
+
+export interface PlanInput {
+  /**
+   * The pool of page numbers to split across members — the whole scope at
+   * creation, or the remaining-unread pool when re-planning. Build it with
+   * {@link resolvePageScope}. De-duplicated and sorted internally.
    */
   pages: number[];
   /** Days to spread each member's pages across (a positive integer). */
-  durationDays: number;
-  /** Members taking part, with their lifetime completed pages (for rotation). */
-  members: ReadonlyArray<Pick<Person, 'id' | 'completedPages'>>;
+  days: number;
+  /** Members taking part, with capacity + lifetime completed pages. */
+  members: readonly PlanMemberInput[];
 }
 
 /** memberId -> pagesByDay (`pagesByDay[dayIndex]` = page numbers for that day). */
 export type AssignmentResult = Record<string, number[][]>;
 
+export interface PlanResult {
+  /** Per-member day-split assignment; every input member gets an entry. */
+  assignments: AssignmentResult;
+  /**
+   * Pool pages that no enabled member had capacity for, ascending. Surfaced to
+   * the admin to read herself or hand to volunteers (REQUIREMENTS §8, added).
+   */
+  unassigned: number[];
+}
+
 /** Mutable per-member bookkeeping used while distributing the pool. */
 interface MemberSlot {
   id: string;
-  /** Pages this member may still be given (their even-split target, counting down). */
+  /** Pages this member may still be given (their capacity-based target, counting down). */
   remaining: number;
   /** Pages this member has already completed in past khatmas. */
   completed: Set<number>;
@@ -92,70 +108,109 @@ interface MemberSlot {
 }
 
 /**
- * Auto-assign a pool of pages across members, as evenly as possible, preferring
- * to give each member pages they have NOT already completed in past khatmas, so
- * that over many khatmas a person progressively covers the whole Quran
- * (REQUIREMENTS §5). Deterministic for a given input.
+ * How many pages each member should receive: bounded by their capacity and
+ * summing to `min(poolSize, totalCapacity)`.
+ * - When capacity can't cover the pool (`totalCapacity <= poolSize`), everyone
+ *   is maxed to their capacity and the rest of the pool is left unassigned.
+ * - When there's surplus capacity, the pool is shared out proportional to
+ *   capacity (largest-remainder), so heavier readers get proportionally more
+ *   without anyone exceeding their own capacity.
+ */
+function computeTargets(poolSize: number, capacity: number[], totalCapacity: number): number[] {
+  if (totalCapacity <= poolSize) return capacity.slice();
+
+  // Largest-remainder apportionment, values carried on objects (no bare array
+  // indexing) so it stays clean under noUncheckedIndexedAccess.
+  const parts = capacity.map((cap, index) => {
+    const exact = (poolSize * cap) / totalCapacity;
+    const target = Math.floor(exact);
+    return { index, cap, target, frac: exact - target };
+  });
+  let remainder = poolSize - parts.reduce((sum, p) => sum + p.target, 0);
+
+  // Hand the leftover units to the largest fractional parts first, never
+  // exceeding a member's own capacity (always possible: exact_i < capacity_i).
+  const byFrac = [...parts].sort((a, b) => b.frac - a.frac || a.index - b.index);
+  while (remainder > 0) {
+    let progressed = false;
+    for (const p of byFrac) {
+      if (remainder <= 0) break;
+      if (p.target < p.cap) {
+        p.target++;
+        remainder--;
+        progressed = true;
+      }
+    }
+    if (!progressed) break; // unreachable while totalCapacity > poolSize
+  }
+  return parts.map((p) => p.target);
+}
+
+/**
+ * Auto-assign a pool of pages across members, honoring each member's daily
+ * capacity (`pagesPerDay * days`) and preferring to give each member pages they
+ * have NOT already completed, so that over many khatmas a person progressively
+ * covers the whole Quran (REQUIREMENTS §5). Deterministic for a given input.
  *
  * Guarantees:
- * - Every pool page goes to exactly one member (the group covers it once).
- * - Members' page counts differ by at most one ("as evenly as possible").
- * - Each member's pages are split across `durationDays` days that differ by at
- *   most one page; days past the member's page count are empty arrays, so
- *   `pagesByDay.length === durationDays` always.
+ * - Every pool page is either assigned to exactly one member or returned in
+ *   `unassigned` (when total capacity is short of the pool).
+ * - No member is given more than `pagesPerDay * days` pages, and their per-day
+ *   counts differ by at most one — so no day exceeds `pagesPerDay`.
+ * - Disabled members (capacity 0) get an all-empty assignment of length `days`.
  * - Rotation is best-effort: a member is handed a page they've already
  *   completed only when no member who still needs pages finds it new. With no
- *   history the split is contiguous blocks (natural to read); history reshuffles
- *   only as much as needed. The admin can override any assignment afterward.
+ *   history the split is contiguous blocks; the admin can override afterward.
  */
-export function generateAssignments(input: AssignmentInput): AssignmentResult {
-  const { durationDays, members } = input;
-  if (!Number.isInteger(durationDays) || durationDays < 1) {
-    throw new Error(`generateAssignments: durationDays must be a positive integer (got ${durationDays})`);
+export function planAssignments(input: PlanInput): PlanResult {
+  const { days, members } = input;
+  if (!Number.isInteger(days) || days < 1) {
+    throw new Error(`planAssignments: days must be a positive integer (got ${days})`);
   }
-
-  const result: AssignmentResult = {};
-  if (members.length === 0) return result;
 
   // Unique, ascending pool — robust to however the caller built `pages`.
   const pool = [...new Set(input.pages)].sort((a, b) => a - b);
+  const assignments: AssignmentResult = {};
+  if (members.length === 0) return { assignments, unassigned: pool };
 
-  // Even count targets: the first `remainder` members each get one extra page.
-  const per = Math.floor(pool.length / members.length);
-  const remainder = pool.length % members.length;
+  const capacity = members.map((m) =>
+    m.enabled ? Math.max(0, Math.floor(m.pagesPerDay)) * days : 0,
+  );
+  const totalCapacity = capacity.reduce((sum, c) => sum + c, 0);
+  const targets = computeTargets(pool.length, capacity, totalCapacity);
+
   const slots: MemberSlot[] = members.map((m, i) => ({
     id: m.id,
-    remaining: per + (i < remainder ? 1 : 0),
+    remaining: targets[i] ?? 0,
     completed: new Set(m.completedPages),
     pages: [],
   }));
 
-  // Assign each page to a member, preferring one for whom it's new, and staying
-  // with the previous member while possible so each member's pages stay a
-  // contiguous run. Remaining capacities sum to `pool.length`, so every page is
-  // placed and there is always a candidate while pages remain.
+  // Assign each page to a member with remaining capacity, preferring one for
+  // whom it's new and staying with the previous member so runs stay contiguous.
+  // A page with no member left to take it becomes leftover (ascending order).
+  const unassigned: number[] = [];
   let last: MemberSlot | undefined;
   for (const page of pool) {
     const eligible = slots.filter((s) => s.remaining > 0);
+    if (eligible.length === 0) {
+      unassigned.push(page);
+      continue;
+    }
     const fresh = eligible.filter((s) => !s.completed.has(page));
     const candidates = fresh.length > 0 ? fresh : eligible;
 
-    let pick: MemberSlot | undefined;
-    if (last && candidates.includes(last)) {
-      pick = last; // extend the current member's contiguous run
-    } else {
-      // otherwise the most under-filled member, tie-broken by member order
-      for (const s of candidates) if (!pick || s.remaining > pick.remaining) pick = s;
-    }
-    if (!pick) throw new Error('generateAssignments: no eligible member for a page (unreachable)');
+    let pick: MemberSlot | undefined = last && candidates.includes(last) ? last : undefined;
+    if (!pick) for (const s of candidates) if (!pick || s.remaining > pick.remaining) pick = s;
+    if (!pick) throw new Error('planAssignments: no candidate for a page (unreachable)');
 
     pick.pages.push(page);
     pick.remaining--;
     last = pick;
   }
 
-  for (const s of slots) result[s.id] = splitAcrossDays(s.pages, durationDays);
-  return result;
+  for (const s of slots) assignments[s.id] = splitAcrossDays(s.pages, days);
+  return { assignments, unassigned };
 }
 
 /**

@@ -84,3 +84,50 @@ export function pendingForDay(assignments: readonly Assignment[], dayIndex: numb
 export function pendingReaders(assignments: readonly Assignment[]): string[] {
   return assignments.filter(hasUnreadPages).map((a) => a.memberId);
 }
+
+// -----------------------------------------------------------------------------
+// Coverage vs. the scope pool. When per-person daily capacity can't cover the
+// whole khatma, some pages end up assigned to no one — the admin must see these
+// to read them herself or hand them to volunteers (REQUIREMENTS §8, added).
+// `poolPages` is `resolvePageScope(khatma.scope)` (from the domain assignment
+// module), passed in so this stays pure.
+// -----------------------------------------------------------------------------
+
+/**
+ * Pool pages that no member is assigned on any day — the admin's "leftover /
+ * unread" list. Ascending, following `poolPages` order.
+ */
+export function unassignedPages(
+  poolPages: readonly number[],
+  assignments: readonly Assignment[],
+): number[] {
+  const taken = new Set<number>();
+  for (const a of assignments) for (const day of a.pagesByDay) for (const p of day) taken.add(p);
+  return poolPages.filter((p) => !taken.has(p));
+}
+
+/** Pages locked to days before `fromDay` — kept intact when re-planning from `fromDay`. */
+function pagesLockedBefore(assignments: readonly Assignment[], fromDay: number): Set<number> {
+  const locked = new Set<number>();
+  for (const a of assignments) {
+    for (let d = 0; d < fromDay && d < a.pagesByDay.length; d++) {
+      for (const p of a.pagesByDay[d] ?? []) locked.add(p);
+    }
+  }
+  return locked;
+}
+
+/**
+ * The pool still to distribute from `fromDay` onward when the admin regenerates
+ * the remaining days: the scope pool minus everything already committed to days
+ * before `fromDay` (done or not — history stays put). Includes pages currently
+ * on future days (they get reshuffled) and any previously-unassigned pages.
+ */
+export function remainingPool(
+  poolPages: readonly number[],
+  assignments: readonly Assignment[],
+  fromDay: number,
+): number[] {
+  const locked = pagesLockedBefore(assignments, fromDay);
+  return poolPages.filter((p) => !locked.has(p));
+}

@@ -7,13 +7,13 @@ Living status doc so a new session can start without scanning the whole project.
 - Design, layers, data model, security → [ARCHITECTURE.md](ARCHITECTURE.md)
 - Setup / run / deploy → [README.md](README.md)
 
-**Last updated:** 2026-07-06 — Stage 2 in progress: domain + data layers complete & tested; member app core built.
+**Last updated:** 2026-07-07 — Stage 2: capacity-aware assignment, disable, du3a-reciter rotation, restart/completed-log **built**; **admin app built out** (50 tests green).
 
 ---
 
 ## Where we are
 
-Stage 1 done. **Stage 2 (features) underway:** the pure **domain** and **data-access** layers are fully implemented and unit-tested (36 tests green), and the **member app's daily flow is built**. The **admin app** and the in-app **reading/browsing** views are the main remaining work. Data-driven flows are wired but need live Firestore to verify end-to-end (see gotcha below).
+Stage 1 done. **Stage 2 (features) mostly built:** the pure **domain** and **data-access** layers and the **admin app** are implemented; **member daily flow** works. Latest round (2026-07-07) added, per the admin's requirement updates: **per-person `pagesPerDay` capacity** + **capacity-weighted assignment** with **leftover-page tracking**, **temporarily disabling** a person, a **rotating single du3a reciter** per khatma, and **mark-complete → restart** with a bottom "previous khatmas" list. The in-app **reading/browsing** views are the main remaining work. Still needs a live-Firestore end-to-end pass (emulator works locally).
 
 ## Done (Stage 2 so far)
 
@@ -73,7 +73,7 @@ npm run dev                                                      # http://localh
 
 1. ✅ **Domain** — assignment + schedule + progress (done, tested).
 2. ✅ **Data** — khatmas + assignments + rules (done; rules need emulator test).
-3. **Admin app** ([src/ui/admin/render.ts](src/ui/admin/render.ts) is still the placeholder) — **top priority; also unblocks end-to-end testing by creating data.** Roster CRUD (unique name via [validation.ts](src/domain/validation.ts)); khatma-creation wizard (pick members/duration/start/scope → `resolvePageScope` → `generateAssignments` preview → `createKhatma`); per-khatma dashboard (progress %, days left, **pending-readers by name with `isFinalStretch` urgency**, anonymous toggle); assignment view + `overrideAssignment`; du3a editor (`setDu3aText`); mistaken-mark correction (`clearDayDone`). Admin always sees names (anonymous only hides them from members).
+3. ✅ **Admin app** ([src/ui/admin/render.ts](src/ui/admin/render.ts)) — **built.** Roster CRUD with `pagesPerDay` steppers + enable/disable; khatma-creation wizard (members/duration/start/scope → live coverage preview → reciter via `pickDuaReciter` → `planAssignments` → `createKhatma`); per-khatma dashboard (progress %, days left, **pending-readers with `isFinalStretch` urgency**, **leftover unassigned pages** + assign-to-volunteer, **Regenerate remaining days** via `replanRemainingDays`, anonymous toggle, reciter change, per-member day-chips for `markDayDone`/`clearDayDone`, **Mark complete**); du3a editor (`setDu3aText`); **previous-khatmas list** with **Restart**. Assignment engine now capacity/disabled-aware (`planAssignments` in [assignment.ts](src/domain/assignment.ts)) and reciter rotation in [rotation.ts](src/domain/rotation.ts).
 4. **Member reading view** — the daily card currently lists page **numbers**; add the in-app **page text** for assigned pages via `loader.getPage`, sized by the reading slider (§6 "pages readable directly in-app").
 5. **Full Quran browsing** — continuous reading over the bundled dataset, surah headers + Bismillah (`surahs.json.bismillahPre`), independent of assignments.
 6. **End-to-end verification** — once Firestore is reachable (emulator+JDK or real project): seed roster → create a khatma in admin → walk the member flow (today → finished → progress → du3a).

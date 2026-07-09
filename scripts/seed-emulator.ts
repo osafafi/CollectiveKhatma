@@ -1,7 +1,9 @@
 /**
- * Seed the Firestore EMULATOR with a working local dataset: a roster, the
- * default du3a, and one active sample khatma with generated per-member
- * assignments — so the member app shows real "today" data with no admin UI yet.
+ * Seed the Firestore EMULATOR with a working local dataset: a roster (with per
+ * person daily capacities and one temporarily-disabled member), the default
+ * du3a, and one active sample khatma with capacity-aware per-member assignments
+ * and a rotated du3a reciter — so the member app shows real "today" data and the
+ * admin app shows leftover/pending/reciter with no manual setup.
  *
  * Safe by design: firebase-admin talks to the emulator because
  * FIRESTORE_EMULATOR_HOST is set below, so this NEVER touches real Firestore.
@@ -14,7 +16,9 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { DEFAULT_DU3A_TEXT } from '../src/content/strings.ar';
-import { generateAssignments, resolvePageScope } from '../src/domain/assignment';
+import { planAssignments, resolvePageScope } from '../src/domain/assignment';
+import { pickDuaReciter } from '../src/domain/rotation';
+import type { PageScope } from '../src/domain/types';
 
 // firebase-admin routes to the emulator when this is set (keeps us off real DB).
 process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
@@ -23,7 +27,20 @@ const projectId = process.env.GCLOUD_PROJECT ?? 'collectivekhatma';
 initializeApp({ projectId });
 const db = getFirestore();
 
-const names = ['فاطمة', 'مريم', 'خديجة', 'زينب', 'آمنة'];
+/** Roster seed: varied daily capacities + one paused member (demoing §3–5). */
+const people = [
+  { name: 'فاطمة', pagesPerDay: 5, enabled: true },
+  { name: 'مريم', pagesPerDay: 1, enabled: true },
+  { name: 'خديجة', pagesPerDay: 20, enabled: true },
+  { name: 'زينب', pagesPerDay: 5, enabled: false }, // temporarily disabled
+  { name: 'آمنة', pagesPerDay: 5, enabled: true },
+];
+
+interface SeededPerson {
+  id: string;
+  pagesPerDay: number;
+  enabled: boolean;
+}
 
 /** Today's local calendar date as YYYY-MM-DD (matches the member app's clock). */
 function todayIso(): string {
@@ -32,52 +49,72 @@ function todayIso(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** Ensure the roster exists; return every member's id (existing or created). */
-async function seedRoster(): Promise<string[]> {
+/** Ensure the roster exists; return every member (existing or created). */
+async function seedRoster(): Promise<SeededPerson[]> {
   const snap = await db.collection('roster').get();
   if (!snap.empty) {
     console.log('Roster already has data — skipping roster seed.');
-    return snap.docs.map((d) => d.id);
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        pagesPerDay: (data.pagesPerDay as number) ?? 2,
+        enabled: (data.enabled as boolean) ?? true,
+      };
+    });
   }
-  const ids: string[] = [];
-  for (const name of names) {
+  const seeded: SeededPerson[] = [];
+  for (const person of people) {
     const ref = await db.collection('roster').add({
-      name,
+      name: person.name,
       completedPages: [],
+      pagesPerDay: person.pagesPerDay,
+      enabled: person.enabled,
       createdAt: Date.now(),
     });
-    ids.push(ref.id);
+    seeded.push({ id: ref.id, pagesPerDay: person.pagesPerDay, enabled: person.enabled });
   }
-  console.log(`Seeded ${names.length} roster members.`);
-  return ids;
+  console.log(`Seeded ${people.length} roster members (1 disabled).`);
+  return seeded;
 }
 
 /** Create one active sample khatma (full mushaf, 7 days from today) if none exist. */
-async function seedKhatma(memberIds: string[]): Promise<void> {
+async function seedKhatma(members: SeededPerson[]): Promise<void> {
   const existing = await db.collection('khatmas').limit(1).get();
   if (!existing.empty) {
     console.log('Khatma already exists — skipping khatma seed.');
     return;
   }
 
-  const totalPages = 604;
+  const scope: PageScope = { kind: 'full', totalPages: 604 };
+  const pool = resolvePageScope(scope);
   const durationDays = 7;
   const startDate = todayIso();
-  const assignments = generateAssignments({
-    pages: resolvePageScope({ kind: 'full', totalPages }),
-    durationDays,
-    members: memberIds.map((id) => ({ id, completedPages: [] })),
+  const memberIds = members.map((m) => m.id);
+
+  const { assignments, unassigned } = planAssignments({
+    pages: pool,
+    days: durationDays,
+    members: members.map((m) => ({
+      id: m.id,
+      completedPages: [],
+      pagesPerDay: m.pagesPerDay,
+      enabled: m.enabled,
+    })),
   });
+  const duaReciterId = pickDuaReciter(memberIds, []);
 
   const khatmaRef = db.collection('khatmas').doc();
   const batch = db.batch();
   batch.set(khatmaRef, {
     name: 'ختمة تجريبية',
-    totalPages,
+    totalPages: pool.length,
+    scope,
     startDate,
     durationDays,
     memberIds,
     anonymous: false,
+    ...(duaReciterId ? { duaReciterId } : {}),
     status: 'active',
     createdAt: Date.now(),
   });
@@ -90,14 +127,17 @@ async function seedKhatma(memberIds: string[]): Promise<void> {
     });
   }
   await batch.commit();
-  console.log(`Seeded sample khatma "${khatmaRef.id}" — ${startDate}, ${durationDays} days, ${memberIds.length} members.`);
+  console.log(
+    `Seeded sample khatma "${khatmaRef.id}" — ${startDate}, ${durationDays} days, ` +
+      `${memberIds.length} members, ${unassigned.length} pages left unassigned (capacity-limited).`,
+  );
 }
 
 async function seed(): Promise<void> {
-  const memberIds = await seedRoster();
+  const members = await seedRoster();
   await db.doc('content/global').set({ du3aText: DEFAULT_DU3A_TEXT }, { merge: true });
   console.log('Seeded default du3a text.');
-  await seedKhatma(memberIds);
+  await seedKhatma(members);
   console.log('\nDone. Open the app (npm run dev) and pick a name to see today’s pages.');
 }
 
