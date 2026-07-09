@@ -91,3 +91,16 @@ html[data-reading-scale='5'] {
     text-align-last: center;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Bottom tab bar — respect the iOS home-indicator safe area on phones. On large
+   screens the bar becomes a full-height side rail, so the bottom inset is moot.
+   --------------------------------------------------------------------------- */
+.tab-bar {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 1024px) {
+  .tab-bar {
+    padding-bottom: 0;
+  }
+}

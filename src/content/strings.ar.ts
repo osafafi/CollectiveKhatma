@@ -11,6 +11,13 @@ export const strings = {
     done: 'تم',
     loading: 'جارٍ التحميل…',
   },
+  // Bottom tab bar / side rail (member app). Kept short to fit a tab label.
+  nav: {
+    khatmas: 'الختمات',
+    quran: 'المصحف',
+    personal: 'صفحتي',
+    settings: 'الإعدادات',
+  },
   member: {
     title: 'خَتْمة',
     greeting: 'السلام عليكم ورحمة الله',
@@ -23,6 +30,10 @@ export const strings = {
     // Identity gate
     choosePrompt: 'اختر اسمك للمتابعة',
     switchPerson: 'لست أنت؟',
+    // Navigation / headings
+    khatmasHeading: 'ختماتي',
+    back: 'رجوع',
+    openKhatma: 'فتح الختمة',
     // Today view
     todayHeading: 'صفحات اليوم',
     pagesWord: 'صفحات',
@@ -46,6 +57,26 @@ export const strings = {
     du3aHeading: 'دعاء ختم القرآن',
     reciterLead: 'يقرأ دعاء ختم القرآن',
     pausedNote: 'أنت في استراحة من الختمة حاليًا، لا توجد صفحات مطلوبة منك',
+  },
+  personal: {
+    heading: 'صفحتي الشخصية',
+    myKhatmas: 'ختماتي',
+  },
+  // In-app mushaf reader — both the free-browse tab and the assigned-pages flow.
+  reader: {
+    browseTitle: 'المصحف الشريف',
+    surah: 'السورة',
+    juz: 'الجزء',
+    page: 'صفحة',
+    of: 'من',
+    next: 'التالية',
+    prev: 'السابقة',
+    goToPage: 'انتقال إلى صفحة',
+    bismillah: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+    readMyPages: 'اقرأ صفحاتي اليوم',
+    noPagesToday: 'لا توجد صفحات مطلوبة منك اليوم',
+    finishedReading: 'أتممت قراءة صفحات اليوم',
+    sajda: '۩ سجدة',
   },
   settings: {
     title: 'الإعدادات',

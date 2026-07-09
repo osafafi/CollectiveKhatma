@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "emulators": "firebase emulators:start --only firestore",
+    "emulators:kill": "node scripts/kill-emulators.mjs",
+    "emulators:restart": "npm run emulators:kill && npm run emulators",
     "seed": "tsx scripts/seed-emulator.ts",
     "build:quran": "tsx scripts/build-quran-data.ts"
   },

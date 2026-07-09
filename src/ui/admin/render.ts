@@ -812,7 +812,9 @@ function todayIso(): string {
 // -----------------------------------------------------------------------------
 
 function shell(children: Node[]): HTMLElement {
-  return el('main', { class: 'mx-auto max-w-2xl space-y-6 p-4' }, children);
+  // Responsive width: comfortable on a phone, wider on a tablet for the
+  // dashboards. The admin ("mom") also works on phone/tablet devices.
+  return el('main', { class: 'mx-auto w-full max-w-2xl space-y-6 p-4 lg:max-w-4xl' }, children);
 }
 
 function header(): HTMLElement {

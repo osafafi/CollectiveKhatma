@@ -2,24 +2,29 @@ import { subscribeRoster } from '@/data/roster';
 import { subscribeKhatmas } from '@/data/khatmas';
 import { markDayDone, subscribeAssignments } from '@/data/assignments';
 import { subscribeGlobalContent } from '@/data/content';
-import { currentDayIndex, daysRemaining, isWithinKhatma } from '@/domain/schedule';
-import { isDayDone, khatmaProgress, lifetimePercent, pendingForDay } from '@/domain/progress';
+import { currentDayIndex, isWithinKhatma } from '@/domain/schedule';
+import { isDayDone, khatmaProgress } from '@/domain/progress';
 import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
-import { strings, DEFAULT_DU3A_TEXT } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { DEFAULT_DU3A_TEXT, strings } from '@/content/strings.ar';
 import { forgetMember, getRememberedMemberId, rememberMemberId } from '@/ui/shared/identity';
 import { settingsControl } from '@/ui/shared/settings';
 import { el, mount } from '@/ui/shared/dom';
+import { currentRoute, hash, navigate, onRouteChange, type Route } from '@/ui/shared/router';
+import { renderNav } from '@/ui/member/nav';
+import { createReader, getLastReadPage, type ReaderHandle } from '@/ui/member/reader';
+import { khatmaLandingView, khatmasListView } from '@/ui/member/pages/khatmas';
+import { personalView } from '@/ui/member/pages/personal';
+import { backLink, card, mutedText, primaryButton, todayIso } from '@/ui/member/components';
 
 /**
- * Member app (REQUIREMENTS §6). Trust-based identity gate, then the daily flow:
- * today's pages per active khatma, one-tap "finished", group progress, personal
- * insight, the font-size control, and the du3a completion screen.
+ * Member app (REQUIREMENTS §6). A mobile-web-app shell: a persistent bottom tab
+ * bar (right-side rail on large screens) over a hash-routed content area, with
+ * the daily khatma flow, the in-app reader, personal insight, and settings.
  *
- * Framework-free reactivity: Firestore realtime listeners write into `state` and
- * call `rerender()`, which rebuilds the app from `state`. Stateful controls (the
- * settings popout) are created once and reused so their DOM state survives a
- * rebuild.
+ * Framework-free reactivity: Firestore realtime listeners + `hashchange` both
+ * call `render()`, which rebuilds the nav and the content for the current route.
+ * The reader is the exception — its instance is cached and reused across renders
+ * so background data updates never tear it down or reset the reader's scroll.
  */
 export function renderMember(root: HTMLElement): void {
   const memberId = getRememberedMemberId();
@@ -33,7 +38,7 @@ export function renderMember(root: HTMLElement): void {
 
 function renderIdentityGate(root: HTMLElement): void {
   const list = el('ul', { class: 'space-y-2' }, [mutedItem(strings.member.connecting)]);
-  mount(root, shell([header(), card(strings.member.choosePrompt, [list])]));
+  mount(root, gateShell([gateHeader(), card(strings.member.choosePrompt, [list])]));
 
   const unsubscribe = subscribeRoster(
     (people) => {
@@ -45,7 +50,7 @@ function renderIdentityGate(root: HTMLElement): void {
         list,
         ...people.map((person) =>
           el('li', {}, [
-            bigButton(person.name, () => {
+            primaryButton(person.name, () => {
               rememberMemberId(person.id);
               unsubscribe();
               startApp(root, person.id);
@@ -54,12 +59,12 @@ function renderIdentityGate(root: HTMLElement): void {
         ),
       );
     },
-    () => mount(list, dangerItem(strings.member.connectionError)),
+    () => mount(list, el('li', { class: 'text-danger' }, [strings.member.connectionError])),
   );
 }
 
 // -----------------------------------------------------------------------------
-// App shell — live state + rerender loop.
+// App shell — persistent chrome + routed content + live state.
 // -----------------------------------------------------------------------------
 
 interface MemberState {
@@ -69,46 +74,198 @@ interface MemberState {
   content?: GlobalContent;
 }
 
-interface AppContext {
-  settings: HTMLElement;
-  rerender: () => void;
-  onSwitch: () => void;
-}
-
 function startApp(root: HTMLElement, memberId: string): void {
   const state: MemberState = { roster: [], khatmas: [], assignments: new Map() };
   const assignmentSubs = new Map<string, () => void>();
   const topSubs: Array<() => void> = [];
-  // Created once so the popout's open/slider state persists across rerenders.
+  // Created once so the settings popout's open/slider state persists across renders.
   const settings = settingsControl();
+
+  // Persistent layout: a centered content column, and a nav host. The rail
+  // reserves space on large screens via `lg:pr-24` (RTL: physical right).
+  const content = el('main', {
+    class: 'mx-auto w-full max-w-xl space-y-6 p-4 pb-28 md:max-w-2xl lg:max-w-3xl lg:pb-8',
+  });
+  const navHost = el('div', {});
+  mount(root, el('div', { class: 'lg:pr-24' }, [content]), navHost);
+
+  // Reader instance, kept alive while the route stays on the same reader.
+  let reader: ReaderHandle | null = null;
+  let readerKey: string | null = null;
+  let mountedKey: string | null = null;
 
   const cleanup = (): void => {
     topSubs.forEach((u) => u());
     assignmentSubs.forEach((u) => u());
     assignmentSubs.clear();
   };
+
+  let routeUnsub = (): void => undefined;
   const onSwitch = (): void => {
     cleanup();
+    routeUnsub();
     forgetMember();
     renderMember(root);
   };
-  const ctx: AppContext = { settings, rerender: () => rerender(), onSwitch };
-  const rerender = (): void => mount(root, renderApp(state, memberId, ctx));
 
-  rerender();
+  const render = (): void => {
+    const route = currentRoute();
+
+    // Completion takes over the whole view (REQUIREMENTS §7): the designated
+    // reciter sees the du3a; everyone else sees a note naming them. Nav hidden.
+    const overlay = completionOverlay();
+    if (overlay) {
+      reader = null;
+      readerKey = null;
+      mountedKey = 'overlay';
+      mount(navHost);
+      mount(content, overlay);
+      return;
+    }
+
+    mount(navHost, renderNav(route));
+    renderRoute(route);
+  };
+
+  const renderRoute = (route: Route): void => {
+    if (route.name === 'quran') return showBrowseReader(route.page);
+    if (route.name === 'khatmaRead') return showAssignedReader(route.id);
+    // Non-reader routes rebuild from live state each tick (cheap, data-driven).
+    reader = null;
+    readerKey = null;
+    mountedKey = route.name;
+    mount(content, viewForRoute(route));
+  };
+
+  const showBrowseReader = (page?: number): void => {
+    const key = 'quran';
+    if (readerKey !== key) {
+      reader = createReader({
+        mode: 'browse',
+        startPage: page ?? getLastReadPage(),
+        onPageChange: (p) => navigate(hash.quran(p)),
+      });
+      readerKey = key;
+    }
+    if (mountedKey !== key) {
+      mount(content, reader!.el);
+      mountedKey = key;
+    }
+    if (page) reader!.goToPage(page); // deep-link/back sync; no-op if already there
+  };
+
+  const showAssignedReader = (id: string): void => {
+    const k = state.khatmas.find(
+      (x) => x.id === id && x.status === 'active' && x.memberIds.includes(memberId),
+    );
+    const assignments = state.assignments.get(id);
+    // Still loading, or not a khatma of mine → don't build a reader.
+    if (!k || !assignments) {
+      dropReader('await:' + id, loadingOrBack(id));
+      return;
+    }
+    const me = state.roster.find((p) => p.id === memberId);
+    const paused = me ? !me.enabled : false;
+    const today = todayIso();
+    const within = isWithinKhatma(k.startDate, k.durationDays, today);
+    const dayIndex = currentDayIndex(k.startDate, today);
+    const mine = assignments.find((a) => a.memberId === memberId);
+    const pages = within && mine && !paused ? (mine.pagesByDay[dayIndex] ?? []) : [];
+    if (pages.length === 0) {
+      dropReader('noread:' + id, noPagesView(id));
+      return;
+    }
+
+    const key = 'khatmaRead:' + id;
+    if (readerKey !== key) {
+      reader = createReader({
+        mode: 'assigned',
+        pages,
+        done: mine ? isDayDone(mine, dayIndex) : false,
+        onFinish: () => markDayDone(id, memberId, dayIndex),
+      });
+      readerKey = key;
+    }
+    if (mountedKey !== key) {
+      mount(content, reader!.el);
+      mountedKey = key;
+    }
+  };
+
+  /** Tear down any reader and show a plain (rebuildable) view. */
+  const dropReader = (key: string, view: Node): void => {
+    reader = null;
+    readerKey = null;
+    mountedKey = key;
+    mount(content, view);
+  };
+
+  const viewForRoute = (route: Route): HTMLElement => {
+    switch (route.name) {
+      case 'personal':
+        return personalView({ me: state.roster.find((p) => p.id === memberId), onSwitch });
+      case 'settings':
+        return el('div', { class: 'space-y-4' }, [
+          el('h1', { class: 'text-2xl font-bold text-primary' }, [strings.nav.settings]),
+          settings,
+        ]);
+      case 'khatma': {
+        const k = state.khatmas.find((x) => x.id === route.id && x.memberIds.includes(memberId));
+        if (!k) return state.khatmas.length === 0 ? loadingCard() : notFoundView();
+        const me = state.roster.find((p) => p.id === memberId);
+        return khatmaLandingView({
+          khatma: k,
+          assignments: state.assignments.get(k.id) ?? [],
+          roster: state.roster,
+          memberId,
+          paused: me ? !me.enabled : false,
+        });
+      }
+      case 'khatmas':
+      default:
+        return khatmasListView({
+          khatmas: myActiveKhatmas(state, memberId),
+          assignmentsByKhatma: state.assignments,
+          memberId,
+        });
+    }
+  };
+
+  const completionOverlay = (): HTMLElement | null => {
+    const pending = myActiveKhatmas(state, memberId).find(
+      (k) => khatmaProgress(state.assignments.get(k.id) ?? []).complete && !du3aAcked(k.id),
+    );
+    if (!pending) return null;
+    const ack = (): void => {
+      ackDu3a(pending.id);
+      render();
+    };
+    const reciterId = pending.duaReciterId;
+    if (!reciterId || reciterId === memberId) {
+      return du3aScreen(state.content?.du3aText ?? DEFAULT_DU3A_TEXT, ack);
+    }
+    const reciterName = state.roster.find((p) => p.id === reciterId)?.name ?? '';
+    return completionNoticeScreen(reciterName, ack);
+  };
+
+  const loadingOrBack = (id: string): HTMLElement =>
+    state.khatmas.length === 0 ? loadingCard() : noPagesView(id);
+
+  render();
+  routeUnsub = onRouteChange(render);
   topSubs.push(
     subscribeRoster((people) => {
       state.roster = people;
-      rerender();
+      render();
     }),
-    subscribeGlobalContent((content) => {
-      state.content = content;
-      rerender();
+    subscribeGlobalContent((c) => {
+      state.content = c;
+      render();
     }),
     subscribeKhatmas((khatmas) => {
       state.khatmas = khatmas;
-      reconcileAssignmentSubs(state, memberId, assignmentSubs, rerender);
-      rerender();
+      reconcileAssignmentSubs(state, memberId, assignmentSubs, render);
+      render();
     }),
   );
 }
@@ -118,7 +275,7 @@ function reconcileAssignmentSubs(
   state: MemberState,
   memberId: string,
   subs: Map<string, () => void>,
-  rerender: () => void,
+  render: () => void,
 ): void {
   const activeIds = new Set(myActiveKhatmas(state, memberId).map((k) => k.id));
   for (const id of activeIds) {
@@ -127,7 +284,7 @@ function reconcileAssignmentSubs(
       id,
       subscribeAssignments(id, (assignments) => {
         state.assignments.set(id, assignments);
-        rerender();
+        render();
       }),
     );
   }
@@ -140,227 +297,26 @@ function reconcileAssignmentSubs(
 }
 
 // -----------------------------------------------------------------------------
-// Render.
+// Completion screens (REQUIREMENTS §7).
 // -----------------------------------------------------------------------------
 
-function renderApp(state: MemberState, memberId: string, ctx: AppContext): HTMLElement {
-  const me = state.roster.find((p) => p.id === memberId);
-  const khatmas = myActiveKhatmas(state, memberId);
-
-  // Completion (REQUIREMENTS §7, updated): one designated reciter says the du3a.
-  // The reciter sees the du3a screen; everyone else sees a note naming them.
-  const pendingComplete = khatmas.find(
-    (k) => khatmaProgress(state.assignments.get(k.id) ?? []).complete && !du3aAcked(k.id),
-  );
-  if (pendingComplete) {
-    const ack = (): void => {
-      ackDu3a(pendingComplete.id);
-      ctx.rerender();
-    };
-    const reciterId = pendingComplete.duaReciterId;
-    // No designated reciter (legacy khatma) → everyone sees the du3a.
-    if (!reciterId || reciterId === memberId) {
-      return du3aScreen(state.content?.du3aText ?? DEFAULT_DU3A_TEXT, ack);
-    }
-    const reciterName = state.roster.find((p) => p.id === reciterId)?.name ?? '';
-    return completionNoticeScreen(reciterName, ack);
-  }
-
-  const sections: Node[] = [memberHeader(me?.name ?? '', ctx.onSwitch)];
-  if (me && !me.enabled) {
-    sections.push(
-      el('p', { class: 'rounded-button bg-primary/10 px-4 py-3 text-center text-primary' }, [
-        strings.member.pausedNote,
-      ]),
-    );
-  }
-  const paused = me ? !me.enabled : false;
-  if (khatmas.length === 0) {
-    sections.push(card(strings.member.todayHeading, [mutedText(strings.member.noKhatmas)]));
-  } else {
-    sections.push(
-      ...khatmas.map((k) =>
-        khatmaCard(k, state.assignments.get(k.id) ?? [], memberId, state.roster, paused),
-      ),
-    );
-  }
-  sections.push(insightsCard(me), ctx.settings);
-  return shell(sections);
-}
-
-function khatmaCard(
-  k: Khatma,
-  assignments: Assignment[],
-  memberId: string,
-  roster: Person[],
-  paused: boolean,
-): HTMLElement {
-  const today = todayIso();
-  const dayIndex = currentDayIndex(k.startDate, today);
-  const within = isWithinKhatma(k.startDate, k.durationDays, today);
-  const mine = assignments.find((a) => a.memberId === memberId);
-
-  const body: Node[] = [statusLine(k, today, within, dayIndex)];
-
-  // A paused member isn't prompted to read (REQUIREMENTS §5+); they still see
-  // group progress below. The top-of-page note explains why.
-  if (within && mine && !paused) {
-    const pages = mine.pagesByDay[dayIndex] ?? [];
-    const done = isDayDone(mine, dayIndex);
-    body.push(pagesRow(pages));
-    body.push(done ? doneBanner() : finishedButton(k.id, memberId, dayIndex, pages.length > 0));
-  }
-
-  body.push(groupProgress(k, assignments, dayIndex, within, roster));
-  return card(k.name ?? strings.common.appName, body);
-}
-
-function statusLine(k: Khatma, today: string, within: boolean, dayIndex: number): HTMLElement {
-  if (!within) {
-    const msg = dayIndex < 0 ? strings.member.notStarted : strings.member.ended;
-    return el('p', { class: 'text-muted' }, [msg]);
-  }
-  const left = daysRemaining(k.startDate, k.durationDays, today);
-  const leftText =
-    left === 1 ? strings.member.oneDayLeft : `${toArabicDigits(left)} ${strings.member.daysLeft}`;
-  const dayText = `${strings.member.dayWord} ${toArabicDigits(dayIndex + 1)} ${strings.member.ofWord} ${toArabicDigits(k.durationDays)}`;
-  return el('p', { class: 'flex justify-between text-muted' }, [
-    el('span', {}, [dayText]),
-    el('span', {}, [leftText]),
-  ]);
-}
-
-function pagesRow(pages: number[]): HTMLElement {
-  if (pages.length === 0) {
-    return el('p', { class: 'text-muted' }, ['—']);
-  }
-  const word = pages.length === 1 ? strings.member.pageWord : strings.member.pagesWord;
-  const label = `${toArabicDigits(pages.length)} ${word}`;
-  return el('div', { class: 'my-3 space-y-2' }, [
-    el('p', { class: 'font-semibold' }, [label]),
-    el(
-      'div',
-      { class: 'flex flex-wrap gap-2' },
-      pages.map((p) =>
-        el('span', { class: 'rounded-button bg-bg px-3 py-1 text-lg tabular-nums' }, [
-          toArabicDigits(p),
-        ]),
-      ),
-    ),
-  ]);
-}
-
-function finishedButton(
-  khatmaId: string,
-  memberId: string,
-  dayIndex: number,
-  enabled: boolean,
-): HTMLElement {
-  const button = bigButton(strings.member.finishedToday, () => {
-    button.disabled = true;
-    error.textContent = '';
-    void markDayDone(khatmaId, memberId, dayIndex).catch(() => {
-      button.disabled = false;
-      error.textContent = strings.member.saveError;
-    });
-  });
-  button.className = primaryButtonClass(enabled);
-  button.disabled = !enabled;
-
-  const error = el('p', { class: 'mt-2 text-center text-danger' }, []);
-  return el('div', {}, [button, error]);
-}
-
-function doneBanner(): HTMLElement {
-  return el(
-    'p',
-    { class: 'rounded-button bg-success/10 px-4 py-4 text-center text-lg font-semibold text-success' },
-    [`✓ ${strings.member.doneToday}`],
-  );
-}
-
-function groupProgress(
-  k: Khatma,
-  assignments: Assignment[],
-  dayIndex: number,
-  within: boolean,
-  roster: Person[],
-): HTMLElement {
-  const progress = khatmaProgress(assignments);
-  const children: Node[] = [
-    el('div', { class: 'flex justify-between text-sm text-muted' }, [
-      el('span', {}, [strings.member.groupProgress]),
-      el('span', { class: 'tabular-nums' }, [`${toArabicDigits(progress.percent)}٪`]),
-    ]),
-    progressBar(progress.percent),
-  ];
-
-  if (within) {
-    const withPagesToday = assignments.filter((a) => (a.pagesByDay[dayIndex]?.length ?? 0) > 0);
-    const doneCount = withPagesToday.filter((a) => isDayDone(a, dayIndex)).length;
-    children.push(
-      el('p', { class: 'text-sm text-muted' }, [
-        `${strings.member.completedTodayCount}: ${toArabicDigits(doneCount)} ${strings.member.ofWord} ${toArabicDigits(withPagesToday.length)}`,
-      ]),
-    );
-    // Names of who's still pending today — only when the khatma isn't anonymous
-    // (REQUIREMENTS §6: anonymous mode shows counts only, never names).
-    if (!k.anonymous) {
-      const pendingNames = pendingForDay(assignments, dayIndex)
-        .map((id) => roster.find((p) => p.id === id)?.name)
-        .filter((name): name is string => Boolean(name));
-      if (pendingNames.length > 0) {
-        children.push(
-          el('p', { class: 'text-sm text-muted' }, [`⏳ ${pendingNames.join('، ')}`]),
-        );
-      }
-    }
-  }
-
-  return el('div', { class: 'mt-4 space-y-1 border-t border-border pt-3' }, children);
-}
-
-function insightsCard(me: Person | undefined): HTMLElement {
-  const count = me?.completedPages.length ?? 0;
-  const percent = lifetimePercent(count);
-  return card(strings.member.lifetimeLead, [
-    el('p', { class: 'text-lg' }, [
-      `${strings.member.lifetimeLead} ${toArabicDigits(count)} ${strings.member.lifetimeTail} (${toArabicDigits(percent)}٪)`,
-    ]),
-    progressBar(percent),
-  ]);
-}
-
 function du3aScreen(du3aText: string, onAck: () => void): HTMLElement {
-  return el(
-    'div',
-    { class: 'flex min-h-screen items-center justify-center bg-bg p-4' },
-    [
-      el('div', { class: 'max-w-xl space-y-6 text-center' }, [
-        el('p', { class: 'text-2xl font-bold text-primary' }, [strings.member.khatmaComplete]),
-        el('h2', { class: 'text-xl font-semibold' }, [strings.member.du3aHeading]),
-        el('p', { class: 'quran-text' }, [du3aText]),
-        bigButton(strings.common.done, onAck),
-      ]),
-    ],
-  );
+  return centered([
+    el('p', { class: 'text-2xl font-bold text-primary' }, [strings.member.khatmaComplete]),
+    el('h2', { class: 'text-xl font-semibold' }, [strings.member.du3aHeading]),
+    el('p', { class: 'quran-text' }, [du3aText]),
+    primaryButton(strings.common.done, onAck),
+  ]);
 }
 
-/**
- * Shown to every member who is NOT the designated reciter when a khatma
- * completes: the khatma is done and names who will recite the du3a on the
- * group's behalf (REQUIREMENTS §7, updated).
- */
 function completionNoticeScreen(reciterName: string, onAck: () => void): HTMLElement {
-  return el('div', { class: 'flex min-h-screen items-center justify-center bg-bg p-4' }, [
-    el('div', { class: 'max-w-xl space-y-6 text-center' }, [
-      el('p', { class: 'text-2xl font-bold text-primary' }, [strings.member.khatmaComplete]),
-      el('p', { class: 'text-lg' }, [
-        `${strings.member.reciterLead}: `,
-        el('span', { class: 'font-semibold' }, [reciterName]),
-      ]),
-      bigButton(strings.common.done, onAck),
+  return centered([
+    el('p', { class: 'text-2xl font-bold text-primary' }, [strings.member.khatmaComplete]),
+    el('p', { class: 'text-lg' }, [
+      `${strings.member.reciterLead}: `,
+      el('span', { class: 'font-semibold' }, [reciterName]),
     ]),
+    primaryButton(strings.common.done, onAck),
   ]);
 }
 
@@ -368,68 +324,43 @@ function completionNoticeScreen(reciterName: string, onAck: () => void): HTMLEle
 // Small shared building blocks.
 // -----------------------------------------------------------------------------
 
-function shell(children: Node[]): HTMLElement {
+function centered(children: Node[]): HTMLElement {
+  return el('div', { class: 'flex min-h-[70vh] items-center justify-center p-4' }, [
+    el('div', { class: 'mx-auto max-w-xl space-y-6 text-center' }, children),
+  ]);
+}
+
+function gateShell(children: Node[]): HTMLElement {
   return el('main', { class: 'mx-auto max-w-xl space-y-6 p-4' }, children);
 }
 
-function header(): HTMLElement {
+function gateHeader(): HTMLElement {
   return el('header', { class: 'space-y-1 text-center' }, [
     el('h1', { class: 'text-3xl font-bold text-primary' }, [strings.member.title]),
     el('p', { class: 'text-muted' }, [strings.member.tagline]),
   ]);
 }
 
-function memberHeader(name: string, onSwitch: () => void): HTMLElement {
-  return el('header', { class: 'flex items-center justify-between' }, [
-    el('div', {}, [
-      el('p', { class: 'text-muted' }, [strings.member.greeting]),
-      el('h1', { class: 'text-2xl font-bold text-primary' }, [name]),
-    ]),
-    linkButton(strings.member.switchPerson, onSwitch),
+function loadingCard(): HTMLElement {
+  return card('', [mutedText(strings.common.loading)]);
+}
+
+function notFoundView(): HTMLElement {
+  return el('div', { class: 'space-y-4' }, [
+    backLink(strings.member.khatmasHeading, hash.khatmas()),
+    card('', [mutedText(strings.member.noKhatmas)]),
   ]);
 }
 
-function card(title: string, children: Node[]): HTMLElement {
-  return el('section', { class: 'rounded-card border border-border bg-surface p-4 shadow-sm' }, [
-    el('h2', { class: 'mb-3 text-xl font-semibold' }, [title]),
-    ...children,
+function noPagesView(id: string): HTMLElement {
+  return el('div', { class: 'space-y-4' }, [
+    backLink(strings.member.back, hash.khatma(id)),
+    card('', [mutedText(strings.reader.noPagesToday)]),
   ]);
-}
-
-function progressBar(percent: number): HTMLElement {
-  const fill = el('div', { class: 'h-2 rounded-button bg-primary' });
-  fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-  return el('div', { class: 'h-2 w-full overflow-hidden rounded-button bg-border' }, [fill]);
-}
-
-function bigButton(label: string, onClick: () => void): HTMLButtonElement {
-  const button = el('button', { type: 'button', class: primaryButtonClass(true) }, [label]);
-  button.addEventListener('click', onClick);
-  return button;
-}
-
-function linkButton(label: string, onClick: () => void): HTMLElement {
-  const button = el('button', { type: 'button', class: 'text-sm text-muted underline' }, [label]);
-  button.addEventListener('click', onClick);
-  return button;
-}
-
-function primaryButtonClass(enabled: boolean): string {
-  return `w-full rounded-button bg-primary px-4 py-4 text-lg font-semibold text-white${
-    enabled ? '' : ' opacity-50'
-  }`;
 }
 
 function mutedItem(text: string): HTMLElement {
   return el('li', { class: 'text-muted' }, [text]);
-}
-
-function mutedText(text: string): HTMLElement {
-  return el('p', { class: 'text-muted' }, [text]);
-}
-
-function dangerItem(text: string): HTMLElement {
-  return el('li', { class: 'text-danger' }, [text]);
 }
 
 // -----------------------------------------------------------------------------
@@ -438,13 +369,6 @@ function dangerItem(text: string): HTMLElement {
 
 function myActiveKhatmas(state: MemberState, memberId: string): Khatma[] {
   return state.khatmas.filter((k) => k.status === 'active' && k.memberIds.includes(memberId));
-}
-
-/** Today's local calendar date as YYYY-MM-DD (what the reader thinks of as "today"). */
-function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 function du3aAcked(khatmaId: string): boolean {

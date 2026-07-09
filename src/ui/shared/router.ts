@@ -1,0 +1,75 @@
+/**
+ * Tiny hash-based router (member app). Hash routing — not the History API — is a
+ * deliberate choice: the app is a static site (GitHub Pages) with no server to
+ * rewrite unknown paths, and it composes with Vite's `base` without extra config.
+ *
+ * `parseRoute` is a pure string→Route function (unit-tested); everything that
+ * touches `window` is a thin wrapper around it.
+ */
+
+export type Route =
+  | { name: 'khatmas' }
+  | { name: 'khatma'; id: string }
+  | { name: 'khatmaRead'; id: string }
+  | { name: 'quran'; page?: number }
+  | { name: 'personal' }
+  | { name: 'settings' };
+
+/** The default route when the hash is empty or unrecognized. */
+export const DEFAULT_ROUTE: Route = { name: 'khatmas' };
+
+/**
+ * Parse a location hash (e.g. `#/khatma/abc/read`) into a typed Route. Pure and
+ * total: anything unrecognized falls back to {@link DEFAULT_ROUTE}.
+ */
+export function parseRoute(hash: string): Route {
+  const path = hash.replace(/^#/, '').replace(/^\/+/, '').replace(/\/+$/, '');
+  const parts = path === '' ? [] : path.split('/');
+  const [head, second, third] = parts;
+
+  switch (head) {
+    case undefined:
+    case 'khatmas':
+      return { name: 'khatmas' };
+    case 'quran': {
+      const page = second !== undefined ? Number(second) : NaN;
+      return Number.isInteger(page) ? { name: 'quran', page } : { name: 'quran' };
+    }
+    case 'khatma':
+      if (!second) return DEFAULT_ROUTE;
+      return third === 'read' ? { name: 'khatmaRead', id: second } : { name: 'khatma', id: second };
+    case 'personal':
+      return { name: 'personal' };
+    case 'settings':
+      return { name: 'settings' };
+    default:
+      return DEFAULT_ROUTE;
+  }
+}
+
+/** Typed hash builders — components link/navigate through these, never raw strings. */
+export const hash = {
+  khatmas: (): string => '#/khatmas',
+  khatma: (id: string): string => `#/khatma/${id}`,
+  khatmaRead: (id: string): string => `#/khatma/${id}/read`,
+  quran: (page?: number): string => (page ? `#/quran/${page}` : '#/quran'),
+  personal: (): string => '#/personal',
+  settings: (): string => '#/settings',
+} as const;
+
+/** The current route parsed from `window.location.hash`. */
+export function currentRoute(): Route {
+  return parseRoute(window.location.hash);
+}
+
+/** Navigate by setting the hash (fires `hashchange`, which drives a re-render). */
+export function navigate(target: string): void {
+  window.location.hash = target;
+}
+
+/** Subscribe to route changes. Returns an unsubscribe function. */
+export function onRouteChange(callback: (route: Route) => void): () => void {
+  const handler = (): void => callback(currentRoute());
+  window.addEventListener('hashchange', handler);
+  return () => window.removeEventListener('hashchange', handler);
+}
