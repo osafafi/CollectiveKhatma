@@ -1,6 +1,6 @@
 /** Pure progress / insight calculations (REQUIREMENTS §6, §8). */
 
-import type { Assignment } from './types';
+import type { Assignment, Khatma, RoundChunk } from './types';
 
 export const QURAN_TOTAL_PAGES = 604;
 
@@ -23,111 +23,84 @@ export function khatmaPercent(donePages: number, totalPages: number): number {
 }
 
 // -----------------------------------------------------------------------------
-// Assignment-derived progress. Pure over `Assignment` docs (day-keyed pages +
+// Assignment-derived progress. Pure over `Assignment` docs (round chunks +
 // done marks), so both apps share one source of truth for "who's done".
 // -----------------------------------------------------------------------------
 
-/** True if the member has marked day `dayIndex` done. */
-export function isDayDone(a: Assignment, dayIndex: number): boolean {
-  return a.doneByDay?.[dayIndex] !== undefined;
+/** True if the member has marked round `round` done. */
+export function isRoundDone(a: Assignment, round: number): boolean {
+  return a.doneByRound?.[round] !== undefined;
 }
 
-/** Total pages assigned to a member across all days. */
-export function assignedPageCount(a: Assignment): number {
-  return a.pagesByDay.reduce((sum, day) => sum + day.length, 0);
+/**
+ * The member's pending chunk — their current pages to read. By invariant only
+ * the last non-empty chunk can be pending; released or done means nothing is
+ * pending until the next distribution.
+ */
+export function currentChunk(a: Assignment): RoundChunk | undefined {
+  for (let i = a.rounds.length - 1; i >= 0; i--) {
+    const chunk = a.rounds[i];
+    if (!chunk || chunk.pages.length === 0) continue;
+    return chunk.released !== true && !isRoundDone(a, chunk.round) ? chunk : undefined;
+  }
+  return undefined;
 }
 
-/** Pages the member has actually completed (the pages on their done days). */
+/** True while the member has a chunk they haven't read yet. */
+export function hasPendingChunk(a: Assignment): boolean {
+  return currentChunk(a) !== undefined;
+}
+
+/**
+ * The member's last readable chunk — pending OR already done (skipping released
+ * ones). What the assigned reader opens on, so a member can revisit the pages
+ * they just finished.
+ */
+export function latestReadableChunk(a: Assignment): RoundChunk | undefined {
+  for (let i = a.rounds.length - 1; i >= 0; i--) {
+    const chunk = a.rounds[i];
+    if (chunk && chunk.pages.length > 0 && chunk.released !== true) return chunk;
+  }
+  return undefined;
+}
+
+/** Pages the member actually completed (chunks whose round is marked done). */
 export function donePageCount(a: Assignment): number {
-  return Object.keys(a.doneByDay ?? {}).reduce(
-    (sum, key) => sum + (a.pagesByDay[Number(key)]?.length ?? 0),
+  return a.rounds.reduce(
+    (sum, chunk) =>
+      chunk.released !== true && isRoundDone(a, chunk.round) ? sum + chunk.pages.length : sum,
     0,
   );
-}
-
-/** True while the member still has assigned-but-unread pages. */
-export function hasUnreadPages(a: Assignment): boolean {
-  return a.pagesByDay.some((day, i) => day.length > 0 && !isDayDone(a, i));
 }
 
 export interface KhatmaProgress {
   donePages: number;
   totalPages: number;
   percent: number;
-  /** All assigned pages have been read — surfaces the du3a screen (REQUIREMENTS §7). */
+  /** Every page read: pool drained and no chunk pending — surfaces the du3a screen (REQUIREMENTS §7). */
   complete: boolean;
 }
 
 /** Group progress across every member's assignment in a khatma (REQUIREMENTS §6). */
-export function khatmaProgress(assignments: readonly Assignment[]): KhatmaProgress {
+export function khatmaProgress(
+  khatma: Pick<Khatma, 'totalPages' | 'remainingPages'>,
+  assignments: readonly Assignment[],
+): KhatmaProgress {
   const donePages = assignments.reduce((sum, a) => sum + donePageCount(a), 0);
-  const totalPages = assignments.reduce((sum, a) => sum + assignedPageCount(a), 0);
+  const { totalPages } = khatma;
   return {
     donePages,
     totalPages,
     percent: khatmaPercent(donePages, totalPages),
-    complete: totalPages > 0 && donePages >= totalPages,
+    complete:
+      totalPages > 0 && khatma.remainingPages.length === 0 && !assignments.some(hasPendingChunk),
   };
 }
 
-/** Member ids with assigned pages on `dayIndex` who haven't marked it done. */
-export function pendingForDay(assignments: readonly Assignment[], dayIndex: number): string[] {
-  return assignments
-    .filter((a) => (a.pagesByDay[dayIndex]?.length ?? 0) > 0 && !isDayDone(a, dayIndex))
-    .map((a) => a.memberId);
-}
-
 /**
- * Member ids who still have any unread pages in the khatma — the admin's
+ * Member ids who still have a pending chunk this round — the admin's
  * always-visible pending-readers list (REQUIREMENTS §8).
  */
 export function pendingReaders(assignments: readonly Assignment[]): string[] {
-  return assignments.filter(hasUnreadPages).map((a) => a.memberId);
-}
-
-// -----------------------------------------------------------------------------
-// Coverage vs. the scope pool. When per-person daily capacity can't cover the
-// whole khatma, some pages end up assigned to no one — the admin must see these
-// to read them herself or hand them to volunteers (REQUIREMENTS §8, added).
-// `poolPages` is `resolvePageScope(khatma.scope)` (from the domain assignment
-// module), passed in so this stays pure.
-// -----------------------------------------------------------------------------
-
-/**
- * Pool pages that no member is assigned on any day — the admin's "leftover /
- * unread" list. Ascending, following `poolPages` order.
- */
-export function unassignedPages(
-  poolPages: readonly number[],
-  assignments: readonly Assignment[],
-): number[] {
-  const taken = new Set<number>();
-  for (const a of assignments) for (const day of a.pagesByDay) for (const p of day) taken.add(p);
-  return poolPages.filter((p) => !taken.has(p));
-}
-
-/** Pages locked to days before `fromDay` — kept intact when re-planning from `fromDay`. */
-function pagesLockedBefore(assignments: readonly Assignment[], fromDay: number): Set<number> {
-  const locked = new Set<number>();
-  for (const a of assignments) {
-    for (let d = 0; d < fromDay && d < a.pagesByDay.length; d++) {
-      for (const p of a.pagesByDay[d] ?? []) locked.add(p);
-    }
-  }
-  return locked;
-}
-
-/**
- * The pool still to distribute from `fromDay` onward when the admin regenerates
- * the remaining days: the scope pool minus everything already committed to days
- * before `fromDay` (done or not — history stays put). Includes pages currently
- * on future days (they get reshuffled) and any previously-unassigned pages.
- */
-export function remainingPool(
-  poolPages: readonly number[],
-  assignments: readonly Assignment[],
-  fromDay: number,
-): number[] {
-  const locked = pagesLockedBefore(assignments, fromDay);
-  return poolPages.filter((p) => !locked.has(p));
+  return assignments.filter(hasPendingChunk).map((a) => a.memberId);
 }

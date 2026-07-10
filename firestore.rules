@@ -53,23 +53,29 @@ service cloud.firestore {
 
     // Shape-only (types kept lenient to match the client writes; these rules can
     // never enforce identity in this no-auth app — see ARCHITECTURE.md#security).
+    // Khatmas are open-ended series (Stage 3): no start date or duration —
+    // `remainingPages` + `roundCount` drive admin-triggered distribution rounds.
     function isValidKhatma(d) {
-      return d.totalPages is number
-        && d.startDate is string
-        && d.durationDays is number
+      return d.seriesId is string
+        && d.seriesName is string
+        && d.seriesNumber is number
+        && d.totalPages is number
         && d.memberIds is list
         && d.anonymous is bool
         && d.status is string
+        && d.remainingPages is list
+        && d.roundCount is number
         && d.createdAt is number
-        // Added in Stage 2 — optional to keep the rule lenient.
         && (!('scope' in d) || d.scope is map)
+        && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
         && (!('duaReciterId' in d) || d.duaReciterId is string)
         && (!('completedAt' in d) || d.completedAt is number);
     }
 
     function isValidAssignment(d) {
       return d.memberId is string
-        && d.pagesByDay is list;
+        && d.rounds is list
+        && d.missedStreak is number;
     }
   }
 }

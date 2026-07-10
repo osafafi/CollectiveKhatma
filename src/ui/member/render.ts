@@ -1,9 +1,8 @@
 import { subscribeRoster } from '@/data/roster';
 import { subscribeKhatmas } from '@/data/khatmas';
-import { markDayDone, subscribeAssignments } from '@/data/assignments';
+import { markRoundDone, subscribeAssignments } from '@/data/assignments';
 import { subscribeGlobalContent } from '@/data/content';
-import { currentDayIndex, isWithinKhatma } from '@/domain/schedule';
-import { isDayDone, khatmaProgress } from '@/domain/progress';
+import { isRoundDone, khatmaProgress, latestReadableChunk } from '@/domain/progress';
 import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
 import { DEFAULT_DU3A_TEXT, strings } from '@/content/strings.ar';
 import { forgetMember, getRememberedMemberId, rememberMemberId } from '@/ui/shared/identity';
@@ -14,7 +13,7 @@ import { renderNav } from '@/ui/member/nav';
 import { createReader, getLastReadPage, type ReaderHandle } from '@/ui/member/reader';
 import { khatmaLandingView, khatmasListView } from '@/ui/member/pages/khatmas';
 import { personalView } from '@/ui/member/pages/personal';
-import { backLink, card, mutedText, primaryButton, todayIso } from '@/ui/member/components';
+import { backLink, card, mutedText, primaryButton } from '@/ui/member/components';
 
 /**
  * Member app (REQUIREMENTS §6). A mobile-web-app shell: a persistent bottom tab
@@ -166,23 +165,21 @@ function startApp(root: HTMLElement, memberId: string): void {
     }
     const me = state.roster.find((p) => p.id === memberId);
     const paused = me ? !me.enabled : false;
-    const today = todayIso();
-    const within = isWithinKhatma(k.startDate, k.durationDays, today);
-    const dayIndex = currentDayIndex(k.startDate, today);
     const mine = assignments.find((a) => a.memberId === memberId);
-    const pages = within && mine && !paused ? (mine.pagesByDay[dayIndex] ?? []) : [];
-    if (pages.length === 0) {
+    // The member reads their current round's chunk (revisiting it when done).
+    const chunk = mine && !paused ? latestReadableChunk(mine) : undefined;
+    if (!chunk || chunk.pages.length === 0) {
       dropReader('noread:' + id, noPagesView(id));
       return;
     }
 
-    const key = 'khatmaRead:' + id;
+    const key = `khatmaRead:${id}:${chunk.round}`;
     if (readerKey !== key) {
       reader = createReader({
         mode: 'assigned',
-        pages,
-        done: mine ? isDayDone(mine, dayIndex) : false,
-        onFinish: () => markDayDone(id, memberId, dayIndex),
+        pages: chunk.pages,
+        done: mine ? isRoundDone(mine, chunk.round) : false,
+        onFinish: () => markRoundDone(id, memberId, chunk.round),
       });
       readerKey = key;
     }
@@ -215,6 +212,7 @@ function startApp(root: HTMLElement, memberId: string): void {
         const me = state.roster.find((p) => p.id === memberId);
         return khatmaLandingView({
           khatma: k,
+          allKhatmas: state.khatmas,
           assignments: state.assignments.get(k.id) ?? [],
           roster: state.roster,
           memberId,
@@ -233,7 +231,7 @@ function startApp(root: HTMLElement, memberId: string): void {
 
   const completionOverlay = (): HTMLElement | null => {
     const pending = myActiveKhatmas(state, memberId).find(
-      (k) => khatmaProgress(state.assignments.get(k.id) ?? []).complete && !du3aAcked(k.id),
+      (k) => khatmaProgress(k, state.assignments.get(k.id) ?? []).complete && !du3aAcked(k.id),
     );
     if (!pending) return null;
     const ack = (): void => {

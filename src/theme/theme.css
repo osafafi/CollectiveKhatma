@@ -93,6 +93,23 @@ html[data-reading-scale='5'] {
 }
 
 /* ---------------------------------------------------------------------------
+   Icon masks — icons live as image files in public/icons/ (swappable by the
+   admin) and are painted with currentColor through a CSS mask, so monochrome
+   SVGs and PNGs-with-alpha both tint to the active tab color automatically.
+   The mask-image itself is set inline by src/ui/shared/icons.ts.
+   --------------------------------------------------------------------------- */
+.icon-mask {
+  display: inline-block;
+  background-color: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
+/* ---------------------------------------------------------------------------
    Bottom tab bar — respect the iOS home-indicator safe area on phones. On large
    screens the bar becomes a full-height side rail, so the bottom inset is moot.
    --------------------------------------------------------------------------- */

@@ -1,11 +1,28 @@
 /**
- * Tiny hash-based router (member app). Hash routing — not the History API — is a
- * deliberate choice: the app is a static site (GitHub Pages) with no server to
- * rewrite unknown paths, and it composes with Vite's `base` without extra config.
+ * Tiny hash-based router. Hash routing — not the History API — is a deliberate
+ * choice: the app is a static site (GitHub Pages) with no server to rewrite
+ * unknown paths, and it composes with Vite's `base` without extra config.
  *
- * `parseRoute` is a pure string→Route function (unit-tested); everything that
- * touches `window` is a thin wrapper around it.
+ * `createRouter` is generic so each app defines its own route union + pure
+ * parser (member: this file's `parseRoute`; admin: `src/ui/admin/routes.ts`).
+ * Parsers are pure string→Route functions (unit-tested); everything that
+ * touches `window` is a thin wrapper around them.
  */
+
+/** Wrap a pure hash parser with the window plumbing (current route + changes). */
+export function createRouter<R>(parse: (hash: string) => R): {
+  current: () => R;
+  onChange: (callback: (route: R) => void) => () => void;
+} {
+  return {
+    current: () => parse(window.location.hash),
+    onChange: (callback) => {
+      const handler = (): void => callback(parse(window.location.hash));
+      window.addEventListener('hashchange', handler);
+      return () => window.removeEventListener('hashchange', handler);
+    },
+  };
+}
 
 export type Route =
   | { name: 'khatmas' }
@@ -57,19 +74,15 @@ export const hash = {
   settings: (): string => '#/settings',
 } as const;
 
-/** The current route parsed from `window.location.hash`. */
-export function currentRoute(): Route {
-  return parseRoute(window.location.hash);
-}
+const memberRouter = createRouter(parseRoute);
+
+/** The current member route parsed from `window.location.hash`. */
+export const currentRoute = memberRouter.current;
+
+/** Subscribe to member route changes. Returns an unsubscribe function. */
+export const onRouteChange = memberRouter.onChange;
 
 /** Navigate by setting the hash (fires `hashchange`, which drives a re-render). */
 export function navigate(target: string): void {
   window.location.hash = target;
-}
-
-/** Subscribe to route changes. Returns an unsubscribe function. */
-export function onRouteChange(callback: (route: Route) => void): () => void {
-  const handler = (): void => callback(currentRoute());
-  window.addEventListener('hashchange', handler);
-  return () => window.removeEventListener('hashchange', handler);
 }

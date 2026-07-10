@@ -105,7 +105,7 @@ export function createReader(config: ReaderConfig): ReaderHandle {
 
   const chrome = el(
     'div',
-    { class: 'sticky top-0 z-10 -mx-4 space-y-3 border-b border-border bg-bg/95 px-4 py-3 backdrop-blur' },
+    { class: 'sticky top-0 z-10 -mx-4 space-y-2 border-b border-border bg-bg/95 px-4 py-2 backdrop-blur' },
     chromeChildren,
   );
 
@@ -280,11 +280,14 @@ function surahHeader(surah: Surah | undefined): HTMLElement {
     ]),
   ];
   if (surah?.bismillahPre) {
-    children.push(el('p', { class: 'quran-text mt-2 text-center' }, [strings.reader.bismillah]));
+    // leading-normal: don't inherit the mushaf body's tall 2.5 line-height here.
+    children.push(
+      el('p', { class: 'quran-text mt-1 text-center leading-normal' }, [strings.reader.bismillah]),
+    );
   }
   return el(
     'div',
-    { class: 'my-4 rounded-card border border-border bg-surface px-4 py-3 text-center shadow-sm' },
+    { class: 'my-2 rounded-card border border-border bg-surface px-4 py-1.5 text-center shadow-sm' },
     children,
   );
 }
@@ -296,7 +299,7 @@ function surahHeader(surah: Surah | undefined): HTMLElement {
 function navButton(label: string): HTMLButtonElement {
   return el('button', {
     type: 'button',
-    class: 'rounded-button border border-primary px-5 py-3 text-lg font-semibold text-primary',
+    class: 'rounded-button border border-primary px-3 py-1.5 text-base font-semibold text-primary',
   }, [label]) as HTMLButtonElement;
 }
 

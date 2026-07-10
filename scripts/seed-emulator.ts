@@ -1,9 +1,9 @@
 /**
  * Seed the Firestore EMULATOR with a working local dataset: a roster (with per
- * person daily capacities and one temporarily-disabled member), the default
- * du3a, and one active sample khatma with capacity-aware per-member assignments
- * and a rotated du3a reciter — so the member app shows real "today" data and the
- * admin app shows leftover/pending/reciter with no manual setup.
+ * person chunk sizes and one temporarily-disabled member), the default du3a,
+ * and one active khatma ("أهل القرآن 1") with TWO simulated distribution rounds
+ * already applied — so out of the box the admin app shows a pending round, done
+ * members, and one yellow-flagged member (مريم) whose next miss goes red.
  *
  * Safe by design: firebase-admin talks to the emulator because
  * FIRESTORE_EMULATOR_HOST is set below, so this NEVER touches real Firestore.
@@ -16,9 +16,10 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { DEFAULT_DU3A_TEXT } from '../src/content/strings.ar';
-import { planAssignments, resolvePageScope } from '../src/domain/assignment';
+import { resolvePageScope } from '../src/domain/assignment';
+import { planDistribution, type DistributionKhatmaState } from '../src/domain/distribution';
 import { pickDuaReciter } from '../src/domain/rotation';
-import type { PageScope } from '../src/domain/types';
+import type { Assignment, PageScope, RoundChunk } from '../src/domain/types';
 
 // firebase-admin routes to the emulator when this is set (keeps us off real DB).
 process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
@@ -27,7 +28,7 @@ const projectId = process.env.GCLOUD_PROJECT ?? 'collectivekhatma';
 initializeApp({ projectId });
 const db = getFirestore();
 
-/** Roster seed: varied daily capacities + one paused member (demoing §3–5). */
+/** Roster seed: varied chunk sizes + one paused member (demoing §3–5). */
 const people = [
   { name: 'فاطمة', pagesPerDay: 5, enabled: true },
   { name: 'مريم', pagesPerDay: 1, enabled: true },
@@ -38,15 +39,17 @@ const people = [
 
 interface SeededPerson {
   id: string;
+  name: string;
   pagesPerDay: number;
   enabled: boolean;
 }
 
-/** Today's local calendar date as YYYY-MM-DD (matches the member app's clock). */
-function todayIso(): string {
-  const now = new Date();
+/** A local calendar date `offset` days from today as YYYY-MM-DD. */
+function isoDate(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
   const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /** Ensure the roster exists; return every member (existing or created). */
@@ -58,6 +61,7 @@ async function seedRoster(): Promise<SeededPerson[]> {
       const data = d.data();
       return {
         id: d.id,
+        name: (data.name as string) ?? d.id,
         pagesPerDay: (data.pagesPerDay as number) ?? 2,
         enabled: (data.enabled as boolean) ?? true,
       };
@@ -72,13 +76,20 @@ async function seedRoster(): Promise<SeededPerson[]> {
       enabled: person.enabled,
       createdAt: Date.now(),
     });
-    seeded.push({ id: ref.id, pagesPerDay: person.pagesPerDay, enabled: person.enabled });
+    seeded.push({ id: ref.id, ...person });
   }
   console.log(`Seeded ${people.length} roster members (1 disabled).`);
   return seeded;
 }
 
-/** Create one active sample khatma (full mushaf, 7 days from today) if none exist. */
+/**
+ * Create "أهل القرآن 1" and replay two distribution rounds through the real
+ * `planDistribution` engine, exactly as the admin app would apply them:
+ *  - Round 1 (two days ago): everyone served; مريم doesn't read hers.
+ *  - Round 2 (yesterday): مريم's page is released (yellow flag) and re-served
+ *    to the group; everyone but مريم finishes their new chunk.
+ * Leaves `lastDistributionDate` = yesterday, so "Distribute" works today.
+ */
 async function seedKhatma(members: SeededPerson[]): Promise<void> {
   const existing = await db.collection('khatmas').limit(1).get();
   if (!existing.empty) {
@@ -88,48 +99,98 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
 
   const scope: PageScope = { kind: 'full', totalPages: 604 };
   const pool = resolvePageScope(scope);
-  const durationDays = 7;
-  const startDate = todayIso();
   const memberIds = members.map((m) => m.id);
-
-  const { assignments, unassigned } = planAssignments({
-    pages: pool,
-    days: durationDays,
-    members: members.map((m) => ({
-      id: m.id,
-      completedPages: [],
-      pagesPerDay: m.pagesPerDay,
-      enabled: m.enabled,
-    })),
-  });
   const duaReciterId = pickDuaReciter(memberIds, []);
+  const miss = members.find((m) => m.name === 'مريم');
 
-  const khatmaRef = db.collection('khatmas').doc();
+  // In-memory khatma + assignment state the two rounds are replayed against.
+  let remainingPages = pool;
+  let roundCount = 0;
+  const assignments = new Map<string, Assignment>(
+    memberIds.map((id) => [id, { memberId: id, rounds: [], doneByRound: {}, missedStreak: 0 }]),
+  );
+  const khatmaId = db.collection('khatmas').doc().id;
+
+  const runRound = (date: string): void => {
+    const state: DistributionKhatmaState = {
+      id: khatmaId,
+      remainingPages,
+      roundCount,
+      assignments: [...assignments.values()],
+    };
+    const plan = planDistribution({
+      khatmas: [state],
+      members: members.map((m) => ({ id: m.id, pagesPerDay: m.pagesPerDay, enabled: m.enabled })),
+      newKhatmaPool: pool,
+    });
+    for (const release of plan.releases) {
+      const a = assignments.get(release.memberId);
+      const chunk = a?.rounds.find((c) => c.round === release.round);
+      if (chunk) chunk.released = true;
+    }
+    for (const [memberId, streak] of Object.entries(plan.streaks)) {
+      const a = assignments.get(memberId);
+      if (a) a.missedStreak = streak;
+    }
+    for (const planned of plan.chunks) {
+      const chunk: RoundChunk = { round: planned.round, date, pages: planned.pages };
+      assignments.get(planned.memberId)?.rounds.push(chunk);
+    }
+    const update = plan.khatmaUpdates[0];
+    if (update) {
+      remainingPages = update.remainingPages;
+      roundCount = update.roundCount;
+    }
+  };
+
+  const markDone = (memberId: string, round: number): void => {
+    const a = assignments.get(memberId);
+    if (a) a.doneByRound[round] = Date.now();
+  };
+
+  // Round 1 (two days ago): everyone but مريم reads their chunk.
+  runRound(isoDate(-2));
+  for (const m of members) {
+    if (m.enabled && m.id !== miss?.id) markDone(m.id, 1);
+  }
+  // Round 2 (yesterday): مريم released + yellow; others finish again, she doesn't.
+  runRound(isoDate(-1));
+  for (const m of members) {
+    if (m.enabled && m.id !== miss?.id) markDone(m.id, 2);
+  }
+
+  // Persist the final state in one batch.
+  const khatmaRef = db.collection('khatmas').doc(khatmaId);
   const batch = db.batch();
   batch.set(khatmaRef, {
-    name: 'ختمة تجريبية',
+    seriesId: crypto.randomUUID(),
+    seriesName: 'أهل القرآن',
+    seriesNumber: 1,
     totalPages: pool.length,
     scope,
-    startDate,
-    durationDays,
     memberIds,
     anonymous: false,
+    remainingPages,
+    roundCount,
+    lastDistributionDate: isoDate(-1),
     ...(duaReciterId ? { duaReciterId } : {}),
     status: 'active',
-    createdAt: Date.now(),
+    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
   });
-  for (const [memberId, pagesByDay] of Object.entries(assignments)) {
-    batch.set(khatmaRef.collection('assignments').doc(memberId), {
-      memberId,
-      // Firestore forbids nested arrays — wrap each day (mirrors data/assignments.ts).
-      pagesByDay: pagesByDay.map((pages) => ({ pages })),
-      doneByDay: {},
-    });
+  for (const a of assignments.values()) {
+    batch.set(khatmaRef.collection('assignments').doc(a.memberId), a);
+    // Lifetime insight: union of the pages on this member's done rounds.
+    const donePages = a.rounds
+      .filter((c) => c.released !== true && a.doneByRound[c.round] !== undefined)
+      .flatMap((c) => c.pages);
+    if (donePages.length > 0) {
+      batch.update(db.collection('roster').doc(a.memberId), { completedPages: donePages });
+    }
   }
   await batch.commit();
   console.log(
-    `Seeded sample khatma "${khatmaRef.id}" — ${startDate}, ${durationDays} days, ` +
-      `${memberIds.length} members, ${unassigned.length} pages left unassigned (capacity-limited).`,
+    `Seeded khatma "أهل القرآن 1" (${khatmaId}) — ${roundCount} rounds replayed, ` +
+      `${remainingPages.length}/${pool.length} pages left, مريم flagged yellow.`,
   );
 }
 
@@ -138,7 +199,7 @@ async function seed(): Promise<void> {
   await db.doc('content/global').set({ du3aText: DEFAULT_DU3A_TEXT }, { merge: true });
   console.log('Seeded default du3a text.');
   await seedKhatma(members);
-  console.log('\nDone. Open the app (npm run dev) and pick a name to see today’s pages.');
+  console.log('\nDone. Open the app (npm run dev) and pick a name to see your pages.');
 }
 
 seed()

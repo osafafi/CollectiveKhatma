@@ -106,147 +106,72 @@ no passwords, no app-store installs for members.
   correct/undo/clear a mistaken "read" mark for any person on any day, to
   fix accidental wrong-name taps.
 
-## 5. Khatma lifecycle
+## 5. Open-Ended, Round-Based Khatma Series
 
-- Admin creates a khatma by specifying:
-  - Total pages (default 604, editable in case of custom scope)
-  - Duration (e.g. 7 days), start date
-  - Members (selected from the global roster)
-- **Automatic page assignment**, not manual entry:
-  - Pages are split across the selected members **according to each person's
-    daily page capacity** (`pagesPerDay`), not purely evenly (Stage 2 update):
-    the admin sets how many pages a person can take per day when adding them and
-    can adjust it any time; heavier readers get proportionally more.
-  - A person can be **temporarily disabled** (e.g. menstruation) without being
-    removed; disabled people are skipped by the assignment algorithm until
-    re-enabled (Stage 2 update).
-  - When the group's total daily capacity can't cover the scope, the **leftover
-    unassigned pages are surfaced to the admin** to read herself or hand to a
-    volunteer (Stage 2 update; see §8).
-  - The admin can **regenerate the remaining days** at any time (after disabling
-    someone or changing capacities); past/done days are preserved (Stage 2
-    update — this is the client-side stand-in for a daily job, as there is no
-    server).
-  - Assignment must avoid repeating pages a given person has already
-    *completed* reading in any past khatma (see §4), so that over many
-    khatmas a person progressively covers the whole Quran in a segmented
-    way (a personal "long-run full khatma").
-  - Only pages explicitly marked "done" count as read for this
-    rotation history. Pages assigned but never confirmed done remain
-    eligible to be reassigned to that same person in a future khatma.
-  - Admin can manually override any auto-generated assignment for
-    exceptional cases.
-- Khatmas do **not** auto-renew. When one ends, the admin explicitly starts
-  the next one (choosing members/duration/pages fresh, allowing membership
-  changes between cycles).
-- Admin can run **multiple khatmas concurrently**, across different groups,
-  with overlapping membership.
+Khatmas belong to named series and operate without fixed schedules, durations, or start dates:
 
-## 6. Daily reading flow (member view)
+- **Open-Ended Lifecycle**: A khatma has no `startDate` or `durationDays`. It is completed only when all pages in its page scope are successfully read.
+- **Named Series & Numbering**: Khatmas are organized into series with stable `seriesId` identifiers. As one khatma finishes, the next one continues the sequence (e.g., "أهل القرآن 1" → "أهل القرآن 2").
+- **Admin-Triggered Daily Rounds**: Instead of split schedules, the admin manually triggers a daily distribution round by clicking a button. 
+- **Auto-Flagging & Returned Pages**: 
+  - Members who fail to finish their assigned pages before the next distribution round are flagged.
+  - The first miss flags the member as **Yellow** (warning). A second consecutive miss flags them as **Red**.
+  - Their unread pages are automatically returned to the remaining page pool. This ensures that low page numbers never lag and the pool remains sequential.
+- **Rollover & Coexistence**:
+  - When the oldest khatma's remaining page pool drains mid-distribution round, the system seals that khatma (N) and automatically spawns the next numbered khatma (N+1) under the same series.
+  - Chunks never span two different khatmas; the member at the boundary receives a short chunk from N, and subsequent members draw from N+1.
+  - Both khatmas N and N+1 coexist actively until N's pending chunks are fully read or released.
+- **Warnings Carry Over**: Flagged warning states carry over to the new khatma during rollover, though the admin can clear streaks/warnings manually from the roster or active khatma page.
 
-- On opening the app, a member (once identified) sees:
-  - Their pages assigned **today**, for each khatma they're part of (if in
-    more than one).
-  - A single, large button: **"انتهيت من قراءة صفحاتي اليوم" ("I finished my
-    pages today")** — one tap marks the whole day's assignment done. No
-    per-page checkboxes.
-  - The pages themselves are readable directly in-app (bundled Arabic text),
-    not just referenced by number.
-- Group progress view: shows which members have/haven't completed today's
-  (or the khatma's overall) reading.
-  - **Anonymous mode toggle**, set **per khatma** by the admin: when on,
-    that khatma's progress is shown as counts/percentages only, never tied
-    to member names.
-- Full Quran browsing view: classic continuous reading, independent of any
-  khatma assignment, for anyone who wants to read beyond their pages.
-- **Insights shown to members** (kept intentionally simple for v1):
-  - Per-khatma completion percentage (how much of the current khatma's
-    total pages the group has completed so far).
-  - Personal lifetime completion percentage (pages the member has
-    personally completed across all khatmas ever, out of 604 — e.g. "You've
-    personally read 210 of 604 pages — 35% of a full Quran, read in
-    segments over time").
-- **Settings popout**: a font-size slider with 5 discrete levels, applied
-  across all reading views. This is a priority feature given the senior
-  audience.
+### Removed Features & Accepted Trade-offs
+* **No Rotation-Avoidance History**: Pages are served sequentially from the front of the active pool. Past personal reading history does not affect page assignment order.
+* **No Credit for Post-Release Reading**: If a member reads their pages after they have been released back to the pool, their work goes uncredited (their page assignment is marked as released).
+* **Missed the Day is Missed the Round**: If the admin does not trigger a distribution on a given day, no warnings are generated. Missing a round is determined strictly at the moment of the admin's manual distribution action.
+* **Removed**: Durations, leftover/volunteer logic, manual page regenerations, manual overrides of specific pages, and restart overlays.
 
-## 7. Khatma completion — du3a2 al-khatma
+## 6. Member Reading Flow (Member View)
 
-> **Stage 2 update:** the du3a is now recited by a **single designated person
-> per khatma**, not acknowledged by everyone. The reciter **rotates** each
-> khatma cycle (chosen at creation from that khatma's members, spreading the
-> duty; the admin can override). On completion the reciter sees the du3a screen;
-> everyone else sees a short note naming who will recite it.
+On opening the app, an identified member sees:
+- **Today's Pages**: Their assigned pages for the current round, grouped by series. A status line displays "الجولة N · بدأت {date}" instead of duration days.
+- **Easy Confirm**: A single tap button to mark the round chunk done (`markRoundDone`). If their pages were already released, they see a gentle note: "تمت إعادة صفحاتك للمجموعة" ("Your pages were returned to the group").
+- **Reading Mushaf**: Assigned pages are readable directly in-app.
+- **Warning Banner**: A personalized banner appears at the top of their page if their streak is flagged (Yellow/Red warning background with gentle reminders).
+- **Group Progress**: Shows which members have completed their readings in the current round. If anonymous mode is toggled, names are hidden, showing counts/percentages only. Warning levels of other members are never visible to readers.
+- **Series History**: Shows completed khatmas of this series with completion dates and reciter names.
+- **Quran Browsing & Settings**: Access to the full 604-page mushaf and the font-size slider.
 
-- When all pages in a khatma have been read by the group, the app surfaces
-  a "du3a2 al-khatma" screen to the **designated reciter**, the next time they
-  open the app; other members see a completion note naming the reciter.
-- This is an acknowledgment, not a gate: the khatma is already considered
-  complete regardless of who has or hasn't seen the screen. The reciter reads
-  the du3a and taps a single "Done" button to dismiss it.
-- **The du3a text itself is admin-editable content, not hardcoded**: a
-  single global text field, editable by the admin at any time from the
-  admin panel, used for every khatma's completion screen (not per-khatma
-  text).
+## 7. Khatma Completion — du3a2 al-khatma
 
-## 8. Admin dashboard & capabilities
+- A single designated reciter rotates per khatma cycle to read the du3a.
+- When a khatma completes, the reciter sees the du3a screen upon opening the app. Other members see a completion card naming the reciter.
+- The global du3a text is admin-editable.
 
-> **Stage 2 additions:** set/adjust each person's daily page capacity
-> (`pagesPerDay`); temporarily disable/enable a person; per active khatma, see
-> the **leftover unassigned pages** (and hand them to a volunteer) and
-> **regenerate the remaining days**; change a khatma's du3a reciter; mark a
-> khatma complete; and **restart** a completed one.
+## 8. Routed Admin App
 
-- Maintain the global roster (add/edit/remove people; enforce unique
-  names; set each person's `pagesPerDay` capacity and their enabled/disabled
-  state).
-- Create/manage multiple concurrent khatmas, each with its own member
-  subset, duration, and total pages.
-- View auto-generated page assignments per khatma per day; manually
-  override any assignment.
-- View group progress per khatma (who's read/not read), with a per-khatma
-  anonymous-mode toggle.
-- Correct/undo/clear a mistaken "read" mark for any person, any day (to fix
-  wrong-name taps).
-- Edit the global du3a2 al-khatma text at any time.
-- **Per-khatma status dashboard**: for every active khatma, the admin sees
-  its overall state (days remaining, completion %) and an explicit list of
-  members who still have unread pages, identified **by name** (anonymous
-  mode does not apply to the admin's own view — it only hides names from
-  other members). This list is always visible, not just near the deadline.
-  - Visual urgency escalates as a khatma nears its end (e.g. the
-    pending-readers list becomes more prominently flagged/highlighted on
-    the khatma's last day or two), but pending readers are always shown
-    from day one so the admin can nudge early if she wants.
-  - This is purely informational — the admin manually messages people on
-    WhatsApp herself; the app sends no notifications.
-- No password — admin panel is reachable only via a separate, unguessable
-  URL.
+The admin app is a routed SPA with five main views:
 
-## 9. Out of scope for v1 (explicit backlog, not to be built now)
+1. **Home**:
+   - Lists active series with overall completion metrics (donut charts and segmented bar charts showing done, pending, and remaining pages).
+   - Shows active warning chips (names flagged as yellow/red) and pending readers.
+   - The **Distribute** button: Triggers `runDistribution` for active khatmas. Disabled with a success indicator once run for the day.
+2. **Roster**:
+   - Roster CRUD (add/edit/delete members).
+   - Set each person's daily capacity (`pagesPerDay`) and enabled status.
+   - Search filter to query members by name client-side.
+3. **Khatmas**:
+   - Creation form (name, scope, members, anonymous toggle, reciter selection). If the name matches an existing series, it automatically increments the sequence number.
+   - Lists all active and completed khatmas.
+4. **Khatma Detail (`#/khatmas/{id}`)**:
+   - Detailed status, anonymous status toggle, and reciter selection.
+   - Member management (add/remove members, force mark-complete, delete).
+   - Member assignment table: Lists member names, warning status, current round chunk status (done/pending/released), and admin buttons to manually force mark-done, clear-done, or clear warnings.
+   - Series History: Complete list of prior completed khatmas in this series.
+5. **Settings**:
+   - Edit the global du3a text.
+   - Shared font size control slider.
 
-- Per-person consistency/reliability stats (e.g. who tends to finish late
-  or miss days).
-- ~~A browsable historical archive/log of past completed khatmas.~~ **Stage 2
-  update:** a **lightweight** completed-khatmas list is now in scope — completed
-  khatmas appear at the bottom of the admin page as simple lines (completion
-  date · duration · du3a reciter), and a completed khatma can be **restarted**
-  into a fresh cycle. Full browsable per-khatma history/detail is still deferred.
-- Any push notifications or automated reminders.
-- Translations, tafsir, or audio recitation of the Quran.
-- Real authentication/accounts (PINs, passwords, per-person login links).
-
-## 10. Open items to resolve during planning/build
-
-Minor implementation details intentionally left for the build session:
-
-- Exact Firestore data model (collections/documents) for roster, khatmas,
-  daily assignments, and read-status — to be designed during planning.
-- Exact wording/copy for all Arabic UI strings (beyond the two examples
-  given here) — to be drafted during planning and centralized per §3's
-  "no hardcoded strings" rule.
-- Default/starter du3a2 al-khatma text to pre-fill for the admin (she can
-  edit it immediately after).
-- Exact visual treatment for "urgency escalation" on the admin dashboard
-  (color, iconography) — a styling detail governed by the centralized
-  theme in §3.
+## 9. Out of Scope for v1 (Explicit Backlog)
+- Consistency/reliability statistics.
+- Push notifications or automated messaging (nudging remains manual via WhatsApp).
+- Authentication (uses unguessable admin entry filename).
+- Translations, tafsir, or audio.

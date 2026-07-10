@@ -1,85 +1,75 @@
 # Progress & Next Steps
 
-Living status doc so a new session can start without scanning the whole project.
-**Update the "Last updated" line and the relevant sections at the end of each session.**
+Living status doc tracking the development of the collective Quran khatma tracker.
 
 - Product spec → [REQUIREMENTS.md](REQUIREMENTS.md)
 - Design, layers, data model, security → [ARCHITECTURE.md](ARCHITECTURE.md)
 - Setup / run / deploy → [README.md](README.md)
 
-**Last updated:** 2026-07-09 — Member app restructured into a **mobile-web-app shell**: bottom tab bar (Quran · Khatmas · Personal · Settings) that becomes a right-side rail on tablets, **per-khatma landing pages**, and the **in-app mushaf reader** (assigned-pages flow + full-mushaf browse). Adaptive phone/tablet layout throughout. 57 tests green; **verified end-to-end against the Firestore emulator** (identity → read → finish → insight, all four tabs, responsive 375/1024).
+**Last updated:** 2026-07-10 — Completed the **Open-Ended, Round-Based Khatma Series Redesign**. Fully migrated from the duration/days schedule model to the admin-triggered daily distribution rounds, series numbering/rollovers, yellow/red warning flags, and returned-page pools. Built a tabbed admin panel SPA. All 48 tests pass green; verified compilation, typechecking, and static production builds.
 
 ---
 
-## Where we are
+## Where We Are
 
-Stage 1 done. **Stage 2 (features) mostly built:** the pure **domain** and **data-access** layers and the **admin app** are implemented; **member daily flow** works. Latest round (2026-07-09) restructured the **member app** into a mobile-web-app shell (bottom tab bar → side rail on tablets), added **per-khatma landing pages**, and built the **in-app mushaf reader** (both assigned-pages reading and full-mushaf browsing) — closing the last major member-facing gap. Everything is now **adaptive across phone and tablet**. The prior round (2026-07-07) added capacity-weighted assignment, leftover-page tracking, temporary disable, rotating du3a reciter, and mark-complete → restart. Remaining: real-project (non-emulator) Firestore pass and the backlog in §9.
+The open-ended round-based redesign plan is **fully implemented** across all layers (Domain, Data, and UI).
 
-## Done (Stage 2 so far)
+### Completed Features
 
-- **Domain (pure, tested):**
-  - [assignment.ts](src/domain/assignment.ts) — `generateAssignments()` (even split, best-effort rotation away from each member's `completedPages`, contiguous when no history) + `resolvePageScope()` (full / page-range / whole-chapters via the surah→pages map).
-  - [schedule.ts](src/domain/schedule.ts) — UTC date math: `currentDayIndex`, `daysRemaining`, `isWithinKhatma`, `isFinalStretch` (admin urgency), `lastDay`.
-  - [progress.ts](src/domain/progress.ts) — `khatmaProgress` (group % + `complete`), `pendingForDay`/`pendingReaders` (admin §8), per-assignment helpers, `lifetimePercent`.
-  - Tests: [assignment](tests/domain/assignment.test.ts), [schedule](tests/domain/schedule.test.ts), [progress](tests/domain/progress.test.ts).
-- **Data-access (realtime + writes):**
-  - [khatmas.ts](src/data/khatmas.ts) — `subscribeKhatmas`, `getKhatma`, `createKhatma` (batch: khatma doc + one assignment doc per member), `updateKhatma`, `deleteKhatma` (cascades subcollection).
-  - [assignments.ts](src/data/assignments.ts) — `subscribeAssignments`, `getAssignment`, `markDayDone` (**transaction**: stamp day + `arrayUnion` pages into `completedPages`), `clearDayDone` (admin correction, inverse), `overrideAssignment`.
-  - [firestore.rules](firestore.rules) — now shape-validates khatma + assignment writes (lenient types; **not yet emulator-tested** — verify before next deploy).
-- **Member app** — a **hash-routed, tabbed mobile-web-app shell** ([render.ts](src/ui/member/render.ts)): identity gate, then a persistent **bottom tab bar** ([nav.ts](src/ui/member/nav.ts)) that promotes to a **right-side rail on tablets** (`lg:`). Tabs: **Khatmas** (list → [per-khatma landing page](src/ui/member/pages/khatmas.ts): today's pages, one-tap `markDayDone`, group progress, pending names) · **Quran** (full-mushaf browse) · **Personal** ([insight + switch-person](src/ui/member/pages/personal.ts)) · **Settings** (font slider). Framework-free reactive loop; the reader instance is cached so background Firestore ticks never rebuild it.
-  - **In-app mushaf reader** ([reader.ts](src/ui/member/reader.ts)) — one component, two modes: **assigned** (a khatma's pages for today + inline "finished") and **browse** (all 604 pages, surah/juz/page jump, last-read resume). Renders surah headers + Bismillah, ayah medallions (`ayahEndMarker`), and sajda marks over the bundled dataset via `loader.getPage`; sizes with the reading slider. Tiny hash [router.ts](src/ui/shared/router.ts) (unit-tested) + SVG [icons.ts](src/ui/shared/icons.ts) + shared [components.ts](src/ui/member/components.ts).
-  - **Verified end-to-end against the emulator:** identity → khatma landing → read assigned pages → finish (`markDayDone` writes; reader survives the live update) → lifetime insight updates; browse jump + resume; all four tabs; responsive at 375 (bottom bar) and 1024 (side rail), no horizontal scroll; zero console/server errors.
+1. **Domain Layer (Pure & Tested)**:
+   * [types.ts](src/domain/types.ts): Defined shapes for `Khatma`, `Assignment`, `RoundChunk`, and `WarningLevel`.
+   * [distribution.ts](src/domain/distribution.ts): Core round planner settles pending chunks (re-pooling missed pages), orders members, handles mid-round rollovers to N+1, and identifies completed khatmas.
+   * [series.ts](src/domain/series.ts): Utilities for series grouping, titles, and next number calculations.
+   * [progress.ts](src/domain/progress.ts): Progress calculations based on round counts and done/released pages.
+   * [assignment.ts](src/domain/assignment.ts) / [schedule.ts](src/domain/schedule.ts): Pruned obsolete duration math, schedule checks, and legacy generators.
+   * Tests: 48 passing tests including comprehensive planner logic in [distribution.test.ts](tests/domain/distribution.test.ts).
 
-## Done (Stage 1)
+2. **Data-access Layer**:
+   * [distribution.ts](src/data/distribution.ts): Implemented transactional `runDistribution` with same-day distribution blocks, atomic writes, and rollover setup.
+   * [assignments.ts](src/data/assignments.ts) / [khatmas.ts](src/data/khatmas.ts): Adapted queries and setters for round-based schemas.
+   * [firestore.rules](firestore.rules): Upgraded shape validation matching the new structures.
 
-- **Toolchain:** Vite 8 multi-page app (member `index.html`, admin `admin-nano.html`), TypeScript 6 strict, Tailwind v4 (`@theme` tokens), Vitest, ESLint flat config **with layer guardrails**, Prettier.
-- **Layered `src/`:** `data/` (only Firebase importer) · pure `domain/` · `content/` (strings + quran) · `theme/` · `ui/`. Boundaries enforced by ESLint (`npm run lint` fails if crossed).
-- **Firebase:** client init + emulator wiring ([src/data/firebase.ts](src/data/firebase.ts)), [firestore.rules](firestore.rules), [firebase.json](firebase.json), emulator seed ([scripts/seed-emulator.ts](scripts/seed-emulator.ts)).
-- **CI/CD:** [.github/workflows/ci.yml](.github/workflows/ci.yml) (typecheck+lint+test+build) and [deploy.yml](.github/workflows/deploy.yml) (GitHub Pages).
-- **Quran data:** full Madinah / KFGQPC Hafs mushaf — 604 page JSON + `surahs.json` + `index.json` under [public/quran/](public/quran/), generated by `npm run build:quran` ([scripts/build-quran-data.ts](scripts/build-quran-data.ts)). Amiri Quran font bundled; ayah medallions + waqf/sajda symbols render; text reflows. No runtime Quran-API dependency.
-- **Walking skeleton:** member page renders theme + strings + live roster + Quran page 1; admin placeholder renders. Verified via build + browser preview.
+3. **Shared UI**:
+   * General-purpose hash router in [router.ts](src/ui/shared/router.ts).
+   * Custom theme-aware SVG [charts.ts](src/ui/shared/charts.ts) (`donutChart`, `segmentBar`).
+   * Dynamic PNG icon overrides in [icons.ts](src/ui/shared/icons.ts) using runtime probes.
 
-## Verify quickly
+4. **Admin Dashboard (SPA Shell + Pages)**:
+   * Home Tab: Display metrics per series, warning chips, and the Distribute button.
+   * Roster Tab: CRUD members, adjust capacities, and toggle statuses. Include client-side search.
+   * Khatmas Tab: Creation wizard for starting/continuing series.
+   * Khatma Detail: Tabulated member overview with force controls, warning clearing, and series history.
+   * Settings Tab: Edit global du3a content.
+
+5. **Member Dashboard**:
+   * Show current round details, warning banners, and completed series history cards.
+   * Tighter layout styling for the mushaf reader.
+
+---
+
+## Verification & Testing
+
+Verify that everything compiles and tests pass:
 
 ```bash
-npm install
-npm run typecheck && npm run lint && npm test && npm run build   # all green
-npm run dev                                                      # http://localhost:5173
+npm run typecheck && npm run lint && npm test && npm run build
 ```
 
-**Local dev is fully emulator-based (works today):** `npm run emulators` (Firestore + UI) then `npm run seed`, then `npm run dev`. The seed creates a roster, the du3a, **and a sample active khatma with generated assignments**, so the member app shows real "today" data immediately.
-
-## Managing local data yourself (no admin UI needed)
-
-- **Emulator UI** — http://127.0.0.1:4000/firestore — point-and-click add/edit/delete of any doc.
-- **`npm run seed`** — reproducible dataset from [scripts/seed-emulator.ts](scripts/seed-emulator.ts) (idempotent; skips collections that already have data).
-- **Project-id alignment (important):** the emulator keys data by project id. [.firebaserc](.firebaserc) pins the CLI/emulator to `collectivekhatma`, which is also what the app (`.env`) and the seed use — so the UI, the app, and the seed all read/write the **same** store. If you change the app's project id, change all three.
-
-## Environment / gotchas
-
-- **Firebase project:** `collectivekhatma` (in `.env`, gitignored). `.env.example` is the template; [.firebaserc](.firebaserc) pins the CLI default.
-- **Emulator vs real:** `VITE_USE_EMULATOR=true` (current) → emulator; set `false` to point `npm run dev` at the real project (writes real data — later).
-- **Rules deploy separately:** `firebase deploy --only firestore:rules --project collectivekhatma` (GitHub Pages only hosts static files).
-- **Admin gate = obscure filename only, no auth.** Currently `admin-nano.html` — **change to a long random slug** in BOTH the filename and `ADMIN_ENTRY` in [vite.config.ts](vite.config.ts) before sharing publicly.
-- **Firestore rules validate shape only, not identity** (no auth by design) — see [ARCHITECTURE.md](ARCHITECTURE.md#security).
-- **Seed** targets the emulator only; for the real project add a `roster` doc via the Firebase Console.
-
-## Data model (proposed — see ARCHITECTURE.md)
-
-`roster/{id}` Person · `khatmas/{id}` Khatma · `khatmas/{id}/assignments/{memberId}` Assignment · `content/global` GlobalContent. Types in [src/domain/types.ts](src/domain/types.ts). Data-access is **now implemented** (no longer stubs) in [khatmas.ts](src/data/khatmas.ts) + [assignments.ts](src/data/assignments.ts); the assignment algorithm lives in [assignment.ts](src/domain/assignment.ts).
+### Local Emulator Validation (Manual Check)
+1. Run emulators: `npm run emulators`
+2. Seed initial data: `npm run seed`
+3. Launch dev environment: `npm run dev`
+4. Access Member app: `http://localhost:5173/`
+5. Access Admin app: `http://localhost:5173/admin-nano.html`
 
 ---
 
-## Next steps (Stage 2 — remaining)
+## Next Steps
 
-1. ✅ **Domain** — assignment + schedule + progress (done, tested).
-2. ✅ **Data** — khatmas + assignments + rules (done; rules need emulator test).
-3. ✅ **Admin app** ([src/ui/admin/render.ts](src/ui/admin/render.ts)) — **built.** Roster CRUD with `pagesPerDay` steppers + enable/disable; khatma-creation wizard (members/duration/start/scope → live coverage preview → reciter via `pickDuaReciter` → `planAssignments` → `createKhatma`); per-khatma dashboard (progress %, days left, **pending-readers with `isFinalStretch` urgency**, **leftover unassigned pages** + assign-to-volunteer, **Regenerate remaining days** via `replanRemainingDays`, anonymous toggle, reciter change, per-member day-chips for `markDayDone`/`clearDayDone`, **Mark complete**); du3a editor (`setDu3aText`); **previous-khatmas list** with **Restart**. Assignment engine now capacity/disabled-aware (`planAssignments` in [assignment.ts](src/domain/assignment.ts)) and reciter rotation in [rotation.ts](src/domain/rotation.ts).
-4. ✅ **Member reading view** — in-app page text for assigned pages via `loader.getPage`, sized by the reading slider (§6). Built in [reader.ts](src/ui/member/reader.ts) (assigned mode).
-5. ✅ **Full Quran browsing** — continuous reading over the bundled dataset, surah headers + Bismillah, independent of assignments. Built in [reader.ts](src/ui/member/reader.ts) (browse mode, Quran tab).
-6. ✅ **Navigation** — bottom tab bar / side rail + per-khatma landing pages + hash router (this round).
-7. **End-to-end verification** — ✅ emulator pass done (identity → read → finish → insight). **Remaining:** a pass against the **real** Firestore project (currently `VITE_USE_EMULATOR=true`), and rules emulator-testing before deploy.
-
-## Deferred to backlog (REQUIREMENTS §9)
-
-Consistency/reliability stats · khatma archive/history · notifications · translations/tafsir/audio · real authentication.
+1. **Staging / Production Testing**:
+   * Run a thorough pass against a live Firestore project rather than the local emulator (`VITE_USE_EMULATOR=false`).
+   * Deploy rules: `firebase deploy --only firestore:rules --project collectivekhatma`.
+2. **Icons Customization**:
+   * Verify that dropping custom PNG files into `public/icons/` correctly replaces the default SVG graphics.
+3. **Security Slug Setup**:
+   * Change `admin-nano.html` and its mapping in `vite.config.ts` to a random secret slug prior to final release.
