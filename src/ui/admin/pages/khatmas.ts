@@ -132,6 +132,17 @@ function reciterSelect(ctx: AdminCtx): HTMLElement {
   });
 }
 
+function safeUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 async function onCreate(ctx: AdminCtx): Promise<void> {
   const { state, draft } = ctx;
   draft.createError = '';
@@ -152,7 +163,8 @@ async function onCreate(ctx: AdminCtx): Promise<void> {
   try {
     if (!scope) throw new Error('invalid');
     pool = resolvePageScope(scope, state.surahToPages);
-  } catch {
+  } catch (err) {
+    console.error('onCreate: scope resolution failed', err);
     draft.createError = strings.admin.createError;
     ctx.rerender();
     return;
@@ -160,7 +172,7 @@ async function onCreate(ctx: AdminCtx): Promise<void> {
 
   // Same name = same series, next number; otherwise a brand-new series.
   const existing = findSeriesByName(state.khatmas, name);
-  const seriesId = existing?.seriesId ?? crypto.randomUUID();
+  const seriesId = existing?.seriesId ?? safeUUID();
   const seriesNumber = existing ? nextSeriesNumber(state.khatmas, seriesId) : 1;
   const reciter = draft.memberIds.has(draft.reciterId)
     ? draft.reciterId
@@ -183,7 +195,8 @@ async function onCreate(ctx: AdminCtx): Promise<void> {
     draft.reciterId = '';
     draft.createError = '';
     ctx.rerender();
-  } catch {
+  } catch (err) {
+    console.error('onCreate: createKhatma failed', err);
     draft.createError = strings.admin.createError;
     ctx.rerender();
   }
