@@ -4,7 +4,7 @@
  * "Distribute today's pages" action that drives the whole round model.
  */
 import { AlreadyDistributedError, runDistribution } from '@/data/distribution';
-import { resolvePageScope } from '@/domain/assignment';
+import { defaultCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { currentChunk, khatmaProgress, pendingReaders } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
@@ -157,7 +157,11 @@ async function onDistribute(ctx: AdminCtx, group: SeriesGroup): Promise<void> {
   const members: DistributionMember[] = latest.memberIds
     .map((id) => state.roster.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => p !== undefined)
-    .map((p) => ({ id: p.id, pagesPerDay: p.pagesPerDay, enabled: p.enabled }));
+    .map((p) => ({
+      id: p.id,
+      capacity: latest.capacities?.[p.id] ?? defaultCapacity(p),
+      enabled: p.enabled,
+    }));
 
   draft.busy.add(group.seriesId);
   delete draft.status[group.seriesId];
@@ -167,6 +171,7 @@ async function onDistribute(ctx: AdminCtx, group: SeriesGroup): Promise<void> {
       khatmaIds: group.active.map((k) => k.id),
       members,
       today: todayIso(),
+      unitOfPage: state.pageUnitMaps,
       rolloverSeed: {
         seriesId: group.seriesId,
         seriesName: group.seriesName,
@@ -176,6 +181,7 @@ async function onDistribute(ctx: AdminCtx, group: SeriesGroup): Promise<void> {
         memberIds: latest.memberIds,
         anonymous: latest.anonymous,
         duaReciterId: pickDuaReciter(latest.memberIds, state.khatmas),
+        ...(latest.capacities ? { capacities: latest.capacities } : {}),
         pool,
       },
     });

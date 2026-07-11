@@ -11,7 +11,8 @@ import { subscribeKhatmas } from '@/data/khatmas';
 import { subscribeAssignments } from '@/data/assignments';
 import { subscribeGlobalContent } from '@/data/content';
 import type { Khatma } from '@/domain/types';
-import { getQuranIndex } from '@/content/quran/loader';
+import { getQuranIndex, getSurahs } from '@/content/quran/loader';
+import { buildPageUnitMaps } from '@/domain/assignment';
 import { strings } from '@/content/strings.ar';
 import { settingsControl } from '@/ui/shared/settings';
 import { el, mount } from '@/ui/shared/dom';
@@ -52,10 +53,13 @@ export function renderAdmin(root: HTMLElement): void {
   rerender();
   router.onChange(rerender);
 
-  // Surah page-spans, for resolving a "specific surahs" scope.
-  void getQuranIndex()
-    .then((index) => {
+  // Surah/juz data: page-spans for scope resolution, names for the picker, and
+  // page→unit maps for whole-surah / whole-juz capacities.
+  void Promise.all([getQuranIndex(), getSurahs()])
+    .then(([index, surahs]) => {
       state.surahToPages = index.surahToPages;
+      state.surahs = surahs;
+      state.pageUnitMaps = buildPageUnitMaps(index.surahToPages, index.juzToPages);
       rerender();
     })
     .catch(() => undefined);

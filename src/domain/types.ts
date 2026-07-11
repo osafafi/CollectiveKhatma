@@ -37,6 +37,23 @@ export interface Person {
   createdAt: number;
 }
 
+/**
+ * A member's per-round reading capacity within a khatma (REQUIREMENTS §4). The
+ * three fields are ADDITIVE: the member receives `pages` loose pages PLUS
+ * `surahs` whole surahs PLUS `juz` whole ajzā' each round, all drawn from the
+ * front of the khatma's page pool. Stored per-khatma in {@link Khatma.capacities};
+ * an absent entry falls back to `{ pages: Person.pagesPerDay, surahs: 0, juz: 0 }`.
+ * A solo full-Quran reader is typically `{ pages: 0, surahs: 0, juz: 1 }`.
+ */
+export interface MemberCapacity {
+  /** Loose pages served from the front of the pool. */
+  pages: number;
+  /** A specific surah to assign, by id (1..114); read once from the pool. 0 = none. */
+  surahs: number;
+  /** Whole ajzā' (juz') served, never split. */
+  juz: number;
+}
+
 export type KhatmaStatus = 'active' | 'completed';
 
 /**
@@ -81,6 +98,12 @@ export interface Khatma {
   scope: PageScope;
   /** Roster member ids taking part. */
   memberIds: string[];
+  /**
+   * Per-member reading capacity for THIS khatma (memberId -> capacity). Absent
+   * entries fall back to the member's roster default (`Person.pagesPerDay`
+   * pages). Copied forward at rollover so the next khatma keeps the same pace.
+   */
+  capacities?: Record<string, MemberCapacity>;
   /** When true, member-facing progress is shown without names (per-khatma). */
   anonymous: boolean;
   status: KhatmaStatus;

@@ -1,4 +1,4 @@
-import type { PageScope } from './types';
+import type { MemberCapacity, PageScope, Person } from './types';
 
 export type { PageScope };
 
@@ -55,4 +55,44 @@ export function resolvePageScope(
       return [...pages].sort((a, b) => a - b);
     }
   }
+}
+
+/** Page-number → unit-id lookups for whole-surah / whole-juz distribution. */
+export interface PageUnitMaps {
+  /** page -> surah id (1..114). */
+  surah: Record<number, number>;
+  /** page -> juz (1..30). */
+  juz: Record<number, number>;
+}
+
+/**
+ * Build page → unit lookups from the bundled Quran index maps. Stays pure — the
+ * caller passes `surahToPages` / `juzToPages` (from `getQuranIndex()`), so the
+ * domain never imports the content loader. Distribution uses these to serve
+ * complete surahs/ajzā' without splitting them ({@link MemberCapacity}).
+ *
+ * A page shared by two adjacent surahs (one ends where the next begins) is
+ * attributed to the surah that STARTS on it: ids are applied in ascending order
+ * so the later (higher) id overwrites the boundary page.
+ */
+export function buildPageUnitMaps(
+  surahToPages: Record<number, [number, number]>,
+  juzToPages: Record<number, [number, number]>,
+): PageUnitMaps {
+  const surah: Record<number, number> = {};
+  const juz: Record<number, number> = {};
+  const fill = (target: Record<number, number>, ranges: Record<number, [number, number]>): void => {
+    for (const id of Object.keys(ranges).map(Number).sort((a, b) => a - b)) {
+      const [start, end] = ranges[id]!;
+      for (let p = start; p <= end; p++) target[p] = id;
+    }
+  };
+  fill(surah, surahToPages);
+  fill(juz, juzToPages);
+  return { surah, juz };
+}
+
+/** A member's fallback capacity when a khatma has no explicit entry for them. */
+export function defaultCapacity(person: Pick<Person, 'pagesPerDay'>): MemberCapacity {
+  return { pages: person.pagesPerDay, surahs: 0, juz: 0 };
 }

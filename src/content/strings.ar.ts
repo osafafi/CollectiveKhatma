@@ -180,6 +180,24 @@ export const strings = {
     startNext: 'بدء الختمة التالية',
     confirmStartNext: 'بدء الختمة التالية في هذه السلسلة بنفس الأعضاء والنطاق؟',
 
+    // Create flow, per-member capacity, member management, editing
+    createNewButton: 'إنشاء ختمة جديدة',
+    cancel: 'إلغاء',
+    capacityLabel: 'سعة القراءة لكل عضو (صفحات + سور + أجزاء)',
+    capacityPages: 'صفحة',
+    capacitySurahs: 'سورة',
+    capacityJuz: 'جزء',
+    noSurah: '—',
+    saveCapacity: 'حفظ السعة',
+    returnToPool: 'إرجاع الصفحات للمجموعة',
+    confirmReturnToPool: 'إرجاع صفحات هذه العضوة غير المقروءة إلى المجموعة؟',
+    removeFromKhatma: 'إزالة من الختمة',
+    confirmRemoveFromKhatma: 'إزالة هذه العضوة من الختمة؟ ستعود صفحاتها إلى المجموعة.',
+    editKhatmaHeading: 'تعديل بيانات الختمة',
+    saveKhatma: 'حفظ التعديلات',
+    khatmaNumberLabel: 'رقم الختمة',
+    createdDateLabel: 'تاريخ الإنشاء',
+
     // Completed / previous khatmas
     completedHeading: 'الختمات السابقة',
     historyHeading: 'ختمات هذه السلسلة المكتملة',

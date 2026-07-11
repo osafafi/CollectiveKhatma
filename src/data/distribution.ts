@@ -4,7 +4,8 @@ import {
   type DistributionKhatmaState,
   type DistributionMember,
 } from '@/domain/distribution';
-import type { Assignment, Khatma, PageScope, RoundChunk } from '@/domain/types';
+import type { PageUnitMaps } from '@/domain/assignment';
+import type { Assignment, Khatma, MemberCapacity, PageScope, RoundChunk } from '@/domain/types';
 import { assignmentDoc, fromStored, type StoredAssignment } from './assignments';
 import { db } from './firebase';
 import { khatmasCol } from './khatmas';
@@ -32,6 +33,8 @@ export interface RolloverSeed {
   anonymous: boolean;
   /** Chosen by `pickDuaReciter` over all prior khatmas — computed by the caller. */
   duaReciterId?: string;
+  /** Per-member capacities carried into the new khatma (memberId -> capacity). */
+  capacities?: Record<string, MemberCapacity>;
   /** The full resolved scope pool (`resolvePageScope(scope)`). */
   pool: number[];
 }
@@ -44,6 +47,8 @@ export interface RunDistributionParams {
   /** ISO date (YYYY-MM-DD) — the idempotency key and the chunks' date stamp. */
   today: string;
   rolloverSeed: RolloverSeed;
+  /** page -> surah/juz lookups for whole-surah / whole-juz capacities. */
+  unitOfPage?: PageUnitMaps;
 }
 
 export interface DistributionOutcome {
@@ -55,17 +60,13 @@ export interface DistributionOutcome {
   chunkCount: number;
 }
 
-/** Apply the plan's released marks and appended chunk to one assignment doc. */
+/** Apply the plan's appended chunk + settled streak to one assignment doc. */
 function nextAssignment(
   existing: Assignment,
-  releasedRounds: ReadonlySet<number>,
   appended: RoundChunk | undefined,
   missedStreak: number,
 ): Assignment {
-  const rounds = existing.rounds.map((chunk) =>
-    releasedRounds.has(chunk.round) ? { ...chunk, released: true as const } : chunk,
-  );
-  if (appended) rounds.push(appended);
+  const rounds = appended ? [...existing.rounds, appended] : existing.rounds;
   return { memberId: existing.memberId, rounds, doneByRound: existing.doneByRound, missedStreak };
 }
 
@@ -73,13 +74,14 @@ function nextAssignment(
  * Run one distribution round for a series (REQUIREMENTS §5) as a single
  * Firestore transaction: re-reads every active khatma + assignment doc,
  * re-checks the same-day guard, re-plans on the transactional snapshot, and
- * applies everything atomically — releases, warnings, new chunks, pool
- * updates, completions, and (at rollover) the creation of khatma N+1 with its
- * assignment docs. Retried automatically by Firestore on contention; a
+ * applies everything atomically — new chunks, escalated warnings, pool updates,
+ * completions, and (at rollover) the creation of khatma N+1 with its assignment
+ * docs. Unread chunks are NOT reclaimed here — that is a separate admin action
+ * (`releaseMemberChunk`). Retried automatically by Firestore on contention; a
  * concurrent same-day run loses and surfaces {@link AlreadyDistributedError}.
  */
 export function runDistribution(params: RunDistributionParams): Promise<DistributionOutcome> {
-  const { khatmaIds, members, today, rolloverSeed } = params;
+  const { khatmaIds, members, today, rolloverSeed, unitOfPage } = params;
 
   return runTransaction(db, async (tx) => {
     // --- Reads (Firestore requires all reads before any write) -------------
@@ -116,6 +118,7 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
       khatmas: states,
       members,
       newKhatmaPool: rolloverSeed.pool,
+      unitOfPage,
     });
 
     const finalStreak = (memberId: string): number => {
@@ -142,11 +145,6 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
     let chunkCount = 0;
     for (const khatma of khatmas) {
       for (const assignment of khatma.assignments) {
-        const releasedRounds = new Set(
-          plan.releases
-            .filter((r) => r.khatmaId === khatma.id && r.memberId === assignment.memberId)
-            .map((r) => r.round),
-        );
         const planned = plan.chunks.find(
           (c) => c.khatmaId === khatma.id && c.memberId === assignment.memberId,
         );
@@ -156,12 +154,12 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
         if (planned) chunkCount++;
 
         const streak = finalStreak(assignment.memberId);
-        if (releasedRounds.size === 0 && !appended && streak === assignment.missedStreak) {
+        if (!appended && streak === assignment.missedStreak) {
           continue; // untouched — skip the write
         }
         tx.set(
           assignmentDoc(khatma.id, assignment.memberId),
-          nextAssignment(assignment, releasedRounds, appended, streak),
+          nextAssignment(assignment, appended, streak),
         );
       }
     }
@@ -183,6 +181,7 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
         roundCount: 1,
         lastDistributionDate: today,
         ...(rolloverSeed.duaReciterId ? { duaReciterId: rolloverSeed.duaReciterId } : {}),
+        ...(rolloverSeed.capacities ? { capacities: rolloverSeed.capacities } : {}),
         status: 'active',
         createdAt: Date.now(),
       });

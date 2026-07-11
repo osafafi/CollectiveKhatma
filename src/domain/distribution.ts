@@ -1,18 +1,25 @@
 /**
  * The distribution round engine (REQUIREMENTS §5). Pure and deterministic:
  * given the current state of a series' active khatmas, `planDistribution`
- * decides who gets flagged, which pages return to the pool, what chunk every
- * member receives next, and whether the series rolls over to a new khatma.
+ * decides what chunk every *ready* member receives next and whether the series
+ * rolls over to a new khatma.
+ *
+ * Unread pages are NOT auto-reclaimed: a member still holding a pending chunk is
+ * skipped (served nothing new) and their warning escalates by one — the pages
+ * return to the pool only when the admin explicitly calls it in (see
+ * `releaseChunk`). Each member's chunk is their additive {@link MemberCapacity}
+ * (pages + whole surahs + whole juz) taken off the front of the oldest pool.
  * The data layer applies the resulting plan in one Firestore transaction.
  */
 
-import type { Assignment, WarningLevel } from './types';
+import type { PageUnitMaps } from './assignment';
+import type { Assignment, MemberCapacity, WarningLevel } from './types';
 
 /** Roster info the planner needs about one participating member. */
 export interface DistributionMember {
   id: string;
-  /** Chunk size — pages handed to this member per round. */
-  pagesPerDay: number;
+  /** Additive per-round reading capacity (pages + whole surahs + whole juz). */
+  capacity: MemberCapacity;
   /** Disabled members are skipped entirely (no chunk, streak frozen). */
   enabled: boolean;
 }
@@ -35,6 +42,8 @@ export interface DistributionInput {
   members: DistributionMember[];
   /** Resolved scope pool used to seed khatma N+1 if this round rolls over. */
   newKhatmaPool: number[];
+  /** page -> surah/juz lookups; required only when a member uses surah/juz units. */
+  unitOfPage?: PageUnitMaps;
 }
 
 /** A chunk to append to `khatmas/{khatmaId}/assignments/{memberId}`. */
@@ -47,9 +56,7 @@ export interface PlannedChunk {
 }
 
 export interface DistributionPlan {
-  /** Chunks whose member missed the round — flag `released: true` on each. */
-  releases: Array<{ khatmaId: string; memberId: string; round: number }>;
-  /** Post-settle `missedStreak` per member (only members with a settled chunk). */
+  /** Post-settle `missedStreak` per member (only members whose streak changed). */
   streaks: Record<string, number>;
   /** New chunk per served member. Empty-page chunks are never emitted. */
   chunks: PlannedChunk[];
@@ -71,6 +78,52 @@ export function warningLevel(missedStreak: number): WarningLevel {
 /** Merge `pages` into ascending `pool` keeping it sorted (both duplicate-free). */
 function mergeSorted(pool: number[], pages: number[]): number[] {
   return [...pool, ...pages].sort((a, b) => a - b);
+}
+
+/**
+ * Serve one member's additive capacity off the front of `pool` (mutating it):
+ * `cap.pages` loose pages from the front, PLUS the specific surah `cap.surahs`
+ * ajzā', concatenated into one contiguous chunk. Whole units are taken by
+ * shifting every consecutive front page that shares the front page's unit id, so
+ * a unit is never split; a short chunk results when the pool drains mid-way.
+ * Surah/juz portions need `unitOfPage` — without it they are skipped.
+ */
+export function takeChunk(pool: number[], cap: MemberCapacity, unitOfPage?: PageUnitMaps): number[] {
+  const taken: number[] = [];
+  const pages = Math.max(0, Math.floor(cap.pages));
+  for (let i = 0; i < pages && pool.length > 0; i++) taken.push(pool.shift()!);
+  takeSpecificSurah(pool, taken, Math.max(0, Math.floor(cap.surahs)), unitOfPage?.surah);
+  takeWholeUnits(pool, taken, Math.max(0, Math.floor(cap.juz)), unitOfPage?.juz);
+  return taken.sort((a, b) => a - b);
+}
+
+/** Pull every in-pool page of the specific surah `surahId` (0 = none) into `taken`. */
+function takeSpecificSurah(
+  pool: number[],
+  taken: number[],
+  surahId: number,
+  ofPage?: Record<number, number>,
+): void {
+  if (surahId <= 0 || !ofPage) return;
+  for (let i = 0; i < pool.length; ) {
+    if (ofPage[pool[i]!] === surahId) taken.push(pool.splice(i, 1)[0]!);
+    else i++;
+  }
+}
+
+/** Shift `count` whole units (by `ofPage` id) off the front of `pool` into `taken`. */
+function takeWholeUnits(
+  pool: number[],
+  taken: number[],
+  count: number,
+  ofPage?: Record<number, number>,
+): void {
+  if (count <= 0 || !ofPage) return;
+  for (let u = 0; u < count && pool.length > 0; u++) {
+    const unit = ofPage[pool[0]!];
+    if (unit === undefined) break; // page outside the known map — stop rather than loop
+    while (pool.length > 0 && ofPage[pool[0]!] === unit) taken.push(pool.shift()!);
+  }
 }
 
 /** A member's chunk located across the series' khatmas. */
@@ -126,26 +179,25 @@ function currentStreak(khatmas: readonly DistributionKhatmaState[], memberId: st
 /**
  * Plan one distribution round. Algorithm (REQUIREMENTS §5):
  *
- * 1. SETTLE the previous round: per member, look at their most recent chunk.
- *    Pending (not done, not released) → release it (pages merge back into that
- *    khatma's pool, in sorted position) and increment the member's
- *    `missedStreak`. Done → streak resets to 0. No chunk yet (new member) or
- *    already released (member was paused) → streak untouched.
- * 2. ORDER members: clean members (streak 0 after settling) first, in the
- *    given roster order, then flagged members — so released low page numbers
- *    are re-served to the group before the flagged member gets new pages.
- *    Disabled members are skipped.
- * 3. SERVE: each member takes `pagesPerDay` pages off the front of the oldest
- *    khatma's pool. A chunk never spans two khatmas: when a pool can only
- *    partially fill a chunk, that member gets the short chunk and the next
- *    member draws from the next pool. When every existing pool is empty, the
- *    round ROLLS OVER: khatma N+1 is minted from `newKhatmaPool` and serving
- *    continues from it.
+ * 1. SETTLE the previous round (no auto-release). Per member, look at their most
+ *    recent chunk. Done → streak resets to 0. Still pending (not done, not
+ *    released) → the member KEEPS the pages and is skipped this round, and their
+ *    `missedStreak` climbs by one (the warning escalates by rounds waited). No
+ *    prior chunk (new member) or already released → nothing to settle.
+ * 2. ORDER the *ready* members (enabled and not holding a pending chunk): clean
+ *    members (streak 0) first in roster order, then flagged.
+ * 3. SERVE each ready member their additive {@link MemberCapacity} off the front
+ *    of the oldest khatma's pool (via `takeChunk`). A chunk never spans two
+ *    khatmas: when a pool can only partially fill it, that member gets the short
+ *    chunk and the next member draws from the next pool. When every existing
+ *    pool is empty, the round ROLLS OVER: khatma N+1 is minted from
+ *    `newKhatmaPool` and serving continues from it.
  * 4. COMPLETE: any khatma whose pool is empty and whose chunks are all done or
- *    released (and that served nothing this round) is fully read.
+ *    released (and that served nothing this round) is fully read. A pending
+ *    chunk therefore blocks completion until it is done or the admin releases it.
  */
 export function planDistribution(input: DistributionInput): DistributionPlan {
-  const { khatmas, members, newKhatmaPool } = input;
+  const { khatmas, members, newKhatmaPool, unitOfPage } = input;
 
   // Working pool state per khatma, in series order.
   const pools = khatmas.map((k) => ({
@@ -154,59 +206,50 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
     served: false,
   }));
 
-  const releases: DistributionPlan['releases'] = [];
   const streaks: Record<string, number> = {};
-  const releasedNow = new Set<string>(); // "khatmaId/memberId/round"
+  const blocked = new Set<string>(); // members still holding an unread chunk
 
-  // 1. Settle the previous round.
+  // 1. Settle the previous round — done resets, pending blocks + escalates.
   for (const member of members) {
     const latest = latestChunk(khatmas, member.id);
-    if (!latest || latest.released) continue;
+    if (!latest || latest.released) continue; // new member or already released → ready
     if (latest.done) {
-      if (member.enabled && currentStreak(khatmas, member.id) !== 0) streaks[member.id] = 0;
+      if (currentStreak(khatmas, member.id) !== 0) streaks[member.id] = 0;
       continue;
     }
-    // Pending → release the pages so they never lag behind the group. A miss
-    // escalates the streak; a paused (disabled) member is excused — their pages
-    // return to the pool but their streak is frozen.
-    releases.push({ khatmaId: latest.khatmaId, memberId: member.id, round: latest.round });
-    releasedNow.add(`${latest.khatmaId}/${member.id}/${latest.round}`);
-    const pool = pools.find((p) => p.id === latest.khatmaId);
-    if (pool) pool.pages = mergeSorted(pool.pages, latest.pages);
+    // Pending → keep the pages with the member (no release); escalate the flag.
+    blocked.add(member.id);
     if (member.enabled) streaks[member.id] = currentStreak(khatmas, member.id) + 1;
   }
 
   const streakOf = (id: string): number => streaks[id] ?? currentStreak(khatmas, id);
 
-  // 2. Clean members first (roster order), then flagged; disabled skipped.
-  const enabled = members.filter((m) => m.enabled);
+  // 2. Ready members only (enabled, not blocked): clean first, then flagged.
+  const ready = members.filter((m) => m.enabled && !blocked.has(m.id));
   const serveOrder = [
-    ...enabled.filter((m) => streakOf(m.id) === 0),
-    ...enabled.filter((m) => streakOf(m.id) > 0),
+    ...ready.filter((m) => streakOf(m.id) === 0),
+    ...ready.filter((m) => streakOf(m.id) > 0),
   ];
 
-  // 3. Serve chunks from the front of the oldest non-empty pool.
+  // 3. Serve additive chunks from the front of the oldest non-empty pool.
   const chunks: PlannedChunk[] = [];
   let rolloverPool: number[] | undefined;
   let rolloverServed = false;
   for (const member of serveOrder) {
-    const size = Math.max(0, Math.floor(member.pagesPerDay));
-    if (size === 0) continue;
-
     const source = pools.find((p) => p.pages.length > 0);
     let khatmaId: string | null;
     let round: number;
     let pages: number[];
     if (source) {
       const khatma = khatmas.find((k) => k.id === source.id);
-      pages = source.pages.splice(0, size); // short chunk when the pool drains
-      source.served = true;
+      pages = takeChunk(source.pages, member.capacity, unitOfPage);
+      if (pages.length > 0) source.served = true;
       khatmaId = source.id;
       round = (khatma?.roundCount ?? 0) + 1;
     } else {
       // Rollover: every existing pool is empty — mint khatma N+1.
       rolloverPool ??= [...newKhatmaPool];
-      pages = rolloverPool.splice(0, size);
+      pages = takeChunk(rolloverPool, member.capacity, unitOfPage);
       khatmaId = null;
       round = 1;
       if (pages.length > 0) rolloverServed = true;
@@ -224,15 +267,13 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
         (chunk) =>
           chunk.pages.length === 0 ||
           chunk.released === true ||
-          a.doneByRound[chunk.round] !== undefined ||
-          releasedNow.has(`${k.id}/${a.memberId}/${chunk.round}`),
+          a.doneByRound[chunk.round] !== undefined,
       ),
     );
     if (allSettled) completions.push(k.id);
   }
 
   return {
-    releases,
     streaks,
     chunks,
     khatmaUpdates: pools.map((p) => {
@@ -246,4 +287,39 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
     ...(rolloverServed && rolloverPool ? { rollover: { remainingPages: rolloverPool } } : {}),
     completions,
   };
+}
+
+/** The effect of manually returning a member's pending chunk to the pool. */
+export interface ChunkRelease {
+  /** The khatma-local round of the released chunk (to mark `released: true`). */
+  round: number;
+  /** `remainingPages` after merging the released pages back in, ascending. */
+  remainingPages: number[];
+  /** The member's reset streak — 0, since they no longer hold the chunk. */
+  missedStreak: number;
+}
+
+/**
+ * Compute the admin-triggered return of a member's unread pages to the pool
+ * (REQUIREMENTS §5). Finds the member's pending chunk (the last non-empty,
+ * non-released, not-done one — the invariant guarantees at most one), merges its
+ * pages back into `remainingPages` (sorted), and resets the streak to 0. Returns
+ * `undefined` when there is nothing to release. Pure — the data layer applies
+ * the result (mark the chunk `released`, write the pool + streak) in one write.
+ */
+export function releaseChunk(
+  assignment: Assignment,
+  remainingPages: number[],
+): ChunkRelease | undefined {
+  for (let i = assignment.rounds.length - 1; i >= 0; i--) {
+    const chunk = assignment.rounds[i]!;
+    if (chunk.pages.length === 0 || chunk.released === true) continue;
+    if (assignment.doneByRound[chunk.round] !== undefined) continue;
+    return {
+      round: chunk.round,
+      remainingPages: mergeSorted(remainingPages, chunk.pages),
+      missedStreak: 0,
+    };
+  }
+  return undefined;
 }

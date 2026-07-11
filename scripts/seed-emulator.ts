@@ -120,14 +120,13 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
     };
     const plan = planDistribution({
       khatmas: [state],
-      members: members.map((m) => ({ id: m.id, pagesPerDay: m.pagesPerDay, enabled: m.enabled })),
+      members: members.map((m) => ({
+        id: m.id,
+        capacity: { pages: m.pagesPerDay, surahs: 0, juz: 0 },
+        enabled: m.enabled,
+      })),
       newKhatmaPool: pool,
     });
-    for (const release of plan.releases) {
-      const a = assignments.get(release.memberId);
-      const chunk = a?.rounds.find((c) => c.round === release.round);
-      if (chunk) chunk.released = true;
-    }
     for (const [memberId, streak] of Object.entries(plan.streaks)) {
       const a = assignments.get(memberId);
       if (a) a.missedStreak = streak;

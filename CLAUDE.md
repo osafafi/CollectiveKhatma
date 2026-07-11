@@ -51,6 +51,7 @@ src/
 * `totalPages`: number
 * `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
 * `memberIds`: string[]
+* `capacities`: optional Record<memberId, `{ pages, surahs, juz }`> (per-member ADDITIVE per-round capacity — `surahs` is a specific surah id, 0=none; absent ⇒ roster `pagesPerDay` pages)
 * `anonymous`: boolean
 * `status`: 'active' | 'completed'
 * `remainingPages`: number[] (pages not yet in any live chunk, ascending)
@@ -74,23 +75,27 @@ src/
 
 ### Verbatim Invariants
 1. Every scope page is in exactly one of: a non-released chunk, or `remainingPages`.
-2. Only a member's last chunk with `pages.length > 0` may be pending; distribution releases any pending previous chunk.
-3. `remainingPages` is always ascending; distribution shifts from the front; releases merge back sorted (so released low pages are re-served first automatically — no priority queue needed).
+2. Only a member's last chunk with `pages.length > 0` may be pending. Distribution does NOT auto-release it — an unread member is skipped; pages return to the pool only via the admin's manual `releaseMemberChunk` (or `removeMemberFromKhatma`).
+3. `remainingPages` is always ascending; distribution shifts from the front; released pages merge back sorted (so released low pages are re-served first automatically — no priority queue needed).
 4. `lastDistributionDate === today` ⇒ distribution for this series today is blocked.
 
 ---
 
 ## Distribution Algorithm (planDistribution)
 
-1. **Settle previous round**: Per member, find the last non-empty chunk across all active khatmas in the series. If it is pending (not done, not released): release it (merge pages back into that khatma's `remainingPages` sorted), and set `missedStreak + 1`. If done: reset `missedStreak` to 0. If there is no prior chunk (new member) or it was already released: streak is untouched.
-2. **Order members**: Clean members (`missedStreak === 0` after Step 1) first, in roster order; then flagged members. Disabled members are skipped entirely.
-3. **Serve**: Shift `pagesPerDay` pages from the front of the oldest active khatma's pool. If the pool drains mid-round, trigger **rollover**: mint N+1 (seeded with full `newKhatmaPool`). Chunks never span two khatmas; the member at the boundary gets a short chunk from N, and subsequent members draw from N+1.
-4. **Completion check**: Any khatma with empty `remainingPages` and all its chunks either marked done or released becomes completed.
+1. **Settle previous round (no auto-reclaim)**: Per member, find the last non-empty chunk across all active khatmas. If **done**: reset `missedStreak` to 0 (member is *ready*). If **pending** (not done, not released): the member KEEPS the pages and is **skipped** this round, and `missedStreak + 1` (the ⚠ flag auto-escalates by rounds waited). No prior chunk / already released: *ready*, streak untouched.
+2. **Order members**: Only *ready* members (enabled, not holding a pending chunk). Clean (`missedStreak === 0`) first in roster order, then flagged. Disabled members are skipped.
+3. **Serve**: Each ready member takes their additive `MemberCapacity` — `pages` loose pages + the specific surah `surahs` (id; 0=none) + `juz` whole ajzā' (via `takeChunk` + `unitOfPage`) off the front of the oldest pool; whole units are never split. If the pool drains mid-round, **rollover**: mint N+1 (seeded with full `newKhatmaPool`). Chunks never span two khatmas.
+4. **Completion check**: Any khatma with empty `remainingPages` and all its chunks either done or released becomes completed. A pending (held) chunk therefore blocks completion until it is done or the admin releases it.
+
+Returning unread pages is a separate admin action: `releaseMemberChunk` marks the chunk `released`, merges its pages back (sorted), and resets the streak.
 
 ---
 
 ## Gotchas & Conventions
 * **No Firestore Nested Arrays**: Saved round chunks are stored as `rounds: Array<{round, date, pages: number[], released?}>` which is standard flat array behavior (no nested arrays).
+* **Per-member capacity is per-khatma**: stored in `Khatma.capacities` (additive pages+surahs+juz), not on the roster `Person` (whose `pagesPerDay` is only the fallback). Copied forward at rollover.
+* **Manual page-return & N+1 while active**: the admin returns an unread member's pages (`releaseMemberChunk`) or removes a member (`removeMemberFromKhatma`, which returns their outstanding pages to the pool); and can create khatma N+1 in a series while N is still active (the engine already supports 1–2 active per series).
 * **No Authentication**: Trust-based community model. Firestore rules validate document shape and paths only.
 * **Hash Routing**: Uses client-side hash routing (`#/home`, `#/roster`, etc.) to run on GitHub Pages.
 * **Base Asset URL**: Use `import.meta.env.BASE_URL` when building public URLs.

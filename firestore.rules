@@ -67,6 +67,7 @@ service cloud.firestore {
         && d.roundCount is number
         && d.createdAt is number
         && (!('scope' in d) || d.scope is map)
+        && (!('capacities' in d) || d.capacities is map)
         && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
         && (!('duaReciterId' in d) || d.duaReciterId is string)
         && (!('completedAt' in d) || d.completedAt is number);
