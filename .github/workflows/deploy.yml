@@ -49,11 +49,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check Google Cloud deployment configuration
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$WIF_PROVIDER" ]; then
+            echo "::error::Missing repository variable GCP_WORKLOAD_IDENTITY_PROVIDER"
+            exit 1
+          fi
+          if [ -z "$WIF_SERVICE_ACCOUNT" ]; then
+            echo "::error::Missing repository variable GCP_SERVICE_ACCOUNT"
+            exit 1
+          fi
       - uses: google-github-actions/auth@v3
         with:
           project_id: collectivekhatma
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

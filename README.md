@@ -104,8 +104,11 @@ build. One-time GitHub/Google Cloud setup:
    Admin role (`roles/firebaserules.admin`).
 2. Configure a Workload Identity Federation provider restricted to this GitHub
    repository and allow it to impersonate that service account.
-3. Add repository secrets `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full
-   resource name) and `GCP_SERVICE_ACCOUNT` (the service-account email).
+3. Under **Settings → Secrets and variables → Actions → Variables**, add:
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`: the provider's full resource name, using
+     project number `476780851513` (for example,
+     `projects/476780851513/locations/global/workloadIdentityPools/<pool>/providers/<provider>`).
+   - `GCP_SERVICE_ACCOUNT`: the deploy service-account email.
 
 For an intentional manual deployment from an authenticated machine, run:
 
