@@ -68,69 +68,83 @@ src/
 Collections and their document shapes (typed in [`src/domain/types.ts`](src/domain/types.ts)):
 
 ### 1. `roster/{personId}` (Person)
+
 Represents a global reader in the community roster.
-* `name`: string (unique)
-* `completedPages`: number[] (deduplicated pages read over lifetime; consulted by distribution to prefer new coverage)
-* `pagesPerDay`: number (capacity check per round)
-* `enabled`: boolean (active/paused flag)
-* `createdAt`: number (epoch ms)
+
+- `name`: string (unique)
+- `completedPages`: number[] (deduplicated pages read over lifetime; consulted by distribution to prefer new coverage)
+- `pagesPerDay`: number (capacity check per round)
+- `enabled`: boolean (active/paused flag)
+- `createdAt`: number (epoch ms)
 
 ### 2. `khatmas/{khatmaId}` (Khatma)
+
 Represents a single open-ended, numbered group reading session.
-* `seriesId`: string (stable identifier across series)
-* `seriesName`: string (e.g. "أهل القرآن")
-* `seriesNumber`: number (e.g., 1, 2, 3...)
-* `totalPages`: number
-* `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
-* `memberIds`: string[] (list of participants)
-* `anonymous`: boolean
-* `status`: 'active' | 'completed'
-* `remainingPages`: number[] (pool of pages not yet assigned, sorted ascending)
-* `roundCount`: number (number of distribution rounds triggered)
-* `lastDistributionDate`: optional string (ISO YYYY-MM-DD)
-* `duaReciterId`: optional string (assigned du3a reader)
-* `completedAt`: optional number (epoch ms)
-* `createdAt`: number (epoch ms)
+
+- `seriesId`: string (stable identifier across series)
+- `seriesName`: string (e.g. "أهل القرآن")
+- `seriesNumber`: number (e.g., 1, 2, 3...)
+- `totalPages`: number
+- `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
+- `memberIds`: string[] (list of participants)
+- `status`: 'active' | 'completed'
+- `remainingPages`: number[] (pool of pages not yet assigned, sorted ascending)
+- `roundCount`: number (number of distribution rounds triggered)
+- `lastDistributionDate`: optional string (ISO YYYY-MM-DD)
+- `duaReciterId`: optional string (assigned du3a reader)
+- `completedAt`: optional number (epoch ms)
+- `createdAt`: number (epoch ms)
 
 ### 3. `khatmas/{khatmaId}/assignments/{memberId}` (Assignment)
+
 Represents a member's reading assignment history for a specific khatma.
-* `memberId`: string
-* `rounds`: RoundChunk[]
-* `doneByRound`: Record<number, number> (round number -> completedAt epoch ms)
-* `missedStreak`: number (consecutive missed rounds)
+
+- `memberId`: string
+- `rounds`: RoundChunk[]
+- `doneByRound`: Record<number, number> (round number -> completedAt epoch ms)
+- `missedStreak`: number (consecutive missed rounds)
 
 **`RoundChunk`**:
-* `round`: number (round identifier)
-* `date`: string (ISO YYYY-MM-DD)
-* `pages`: number[] (pages assigned for this round)
-* `released`: optional true (marks that pages were returned to the pool due to a miss)
+
+- `round`: number (round identifier)
+- `date`: string (ISO YYYY-MM-DD)
+- `pages`: number[] (pages assigned for this round)
+- `released`: optional true (marks that pages were returned to the pool due to a miss)
 
 ---
 
 ## Key Subsystems
 
 ### 1. Distribution & Rollover Engine
+
 The distribution logic is split into a pure planning phase and an atomic transaction phase:
-* **Pure Plan** (`planDistribution`):
+
+- **Pure Plan** (`planDistribution`):
   1. Settles prior rounds. Pending chunks stay with their reader, block a new assignment, and increment `missedStreak`; only an explicit admin release returns them to the sorted pool. Done chunks clear the streak.
   2. Orders active roster members with clean members before flagged members, while rotating first-choice priority by `seriesNumber` on each khatma cycle.
   3. Serves from the oldest active khatma pool, preferring pages each member has not completed before. Loose pages and whole juz use lifetime coverage; a specifically configured surah remains explicit admin intent.
   4. If a pool drains, it triggers rollover: khatma N is sealed and N+1 is spawned. A chunk never spans khatmas; the boundary member receives a short chunk from N and the next member starts N+1.
-* **Database Transaction** (`runDistribution`):
-  Performs a single Firestore transaction: reads active khatmas and assignments, checks same-day idempotency guards, executes `planDistribution`, and applies updates atomically (writing N+1 and its initial assignments if rollover is triggered).
+- **Database Transaction** (`runDistribution`):
+  Performs a single Firestore transaction for one selected khatma: reads it and its assignments, checks the same-day idempotency guard, executes `planDistribution`, and applies updates atomically (writing N+1 and its initial assignments if rollover is triggered). Redistribution uses the same transaction but first recalls only the stored `loosePages` portion of pending chunks; unit allocations remain held.
 
 ### 2. Admin routed SPA
+
 The admin dashboard is structured as a single-page app utilizing hash-based routing (`#/home`, `#/roster`, etc.).
-* **Router** (`createRouter`): general hash-routing framework shared with the member app.
-* **Routed Pages** (`src/ui/admin/pages/`): Modules render specific screens and dispatch transactional writes directly to Firestore.
+
+- **Router** (`createRouter`): general hash-routing framework shared with the member app.
+- **Routed Pages** (`src/ui/admin/pages/`): Modules render specific screens and dispatch transactional writes directly to Firestore.
 
 ### 3. Icon Override System
+
 Supports zero-code custom iconography for low-friction customization:
-* `resolveIconOverrides()` probes the static assets folder at startup via lightweight `HEAD` requests checking for `public/icons/{name}.png`.
-* If a PNG is found, it overrides the default SVG asset.
-* Mask styles are written using `currentColor` so both SVGs and transparent PNGs automatically inherit active theme styling (primary/secondary highlight tints).
+
+- `resolveIconOverrides()` probes the static assets folder at startup via lightweight `HEAD` requests checking for `public/icons/{name}.png`.
+- If a PNG is found, it overrides the default SVG asset.
+- Mask styles are written using `currentColor` so both SVGs and transparent PNGs automatically inherit active theme styling (primary/secondary highlight tints).
 
 ### 4. Custom SVG Charts
+
 Charts are hand-rolled using simple, theme-aware SVGs to maintain a zero-dependency build setup:
-* **Donut Chart** (`donutChart`): Draws two SVG circles. The foreground circle uses `stroke-dasharray` and `stroke-dashoffset` to represent completion percentage.
-* **Segmented Bar** (`segmentBar`): Builds a single flexbox container containing block divs colored with CSS theme variables to show Done vs. Pending vs. Remaining pages.
+
+- **Donut Chart** (`donutChart`): Draws two SVG circles. The foreground circle uses `stroke-dasharray` and `stroke-dashoffset` to represent completion percentage.
+- **Segmented Bar** (`segmentBar`): Builds a single flexbox container containing block divs colored with CSS theme variables to show Done vs. Pending vs. Remaining pages.

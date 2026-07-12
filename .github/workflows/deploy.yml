@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy app and Firestore rules
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   pages: write
   id-token: write
 
-# Only one Pages deploy at a time.
+# Keep the frontend and its Firestore rules in one serialized production release.
 concurrency:
-  group: pages
+  group: production
   cancel-in-progress: true
 
 jobs:
@@ -44,8 +44,26 @@ jobs:
         with:
           path: dist
 
-  deploy:
+  deploy-rules:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: collectivekhatma
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Deploy Firestore rules
+        run: npm run deploy:rules
+
+  deploy:
+    needs: [build, deploy-rules]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

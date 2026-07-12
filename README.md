@@ -97,10 +97,20 @@ is all you need for local development — just `npm run emulators`.
 ### Deploying Firestore rules
 
 Rules live in [`firestore.rules`](firestore.rules) and are version-controlled.
-Deploy them with the Firebase CLI (GitHub Pages hosts only the static files):
+The production workflow deploys them before publishing the matching GitHub Pages
+build. One-time GitHub/Google Cloud setup:
+
+1. Create a deploy service account in `collectivekhatma` with the Firebase Rules
+   Admin role (`roles/firebaserules.admin`).
+2. Configure a Workload Identity Federation provider restricted to this GitHub
+   repository and allow it to impersonate that service account.
+3. Add repository secrets `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full
+   resource name) and `GCP_SERVICE_ACCOUNT` (the service-account email).
+
+For an intentional manual deployment from an authenticated machine, run:
 
 ```bash
-firebase deploy --only firestore:rules --project <your-project-id>
+npm run deploy:rules
 ```
 
 ## Building & deploying to GitHub Pages
@@ -113,7 +123,7 @@ builds and publishes to GitHub Pages on every push to `main`.
    `VITE_FIREBASE_PROJECT_ID`, …). They are injected at build time.
 3. Set the **base path**. For a project site
    (`https://<user>.github.io/<repo>/`), `BASE_PATH` must be `/<repo>/` — it is
-   set to `/Ranqur/` in `deploy.yml`; change it to match your repo, or remove it
+   set to `/CollectiveKhatma/` in `deploy.yml`; change it to match your repo, or remove it
    for a user/custom-domain site.
 
 CI (typecheck + lint + test + build) runs on PRs via
@@ -165,7 +175,7 @@ dataset + Uthmani font with rendered symbols, a live member/roster slice, and
 this documentation.
 
 **Deferred (later stages):** the page-assignment algorithm, the daily reading
-flow and one-tap "done", group progress + anonymous mode, the admin dashboard
+flow and one-tap "done", group progress, the admin dashboard
 (roster/khatma management, corrections, urgency escalation), du3a completion
 screen, the full paged reading/browsing UI, and the font-size slider control.
 Backlogged items are listed in [REQUIREMENTS.md](REQUIREMENTS.md#9-out-of-scope-for-v1-explicit-backlog-not-to-be-built-now).

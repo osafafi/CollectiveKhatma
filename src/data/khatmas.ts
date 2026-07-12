@@ -16,7 +16,13 @@ import {
 } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
 import type { Khatma, MemberCapacity } from '@/domain/types';
-import { assignmentDoc, assignmentsCol, emptyAssignment, fromStored, type StoredAssignment } from './assignments';
+import {
+  assignmentDoc,
+  assignmentsCol,
+  emptyAssignment,
+  fromStored,
+  type StoredAssignment,
+} from './assignments';
 import { db } from './firebase';
 
 /** Firestore collection handle for khatmas. */
@@ -30,7 +36,8 @@ export function subscribeKhatmas(
   const q = query(khatmasCol, orderBy('createdAt', 'desc'));
   return onSnapshot(
     q,
-    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Khatma, 'id'>) }))),
+    (snap) =>
+      onChange(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Khatma, 'id'>) }))),
     (error) => onError?.(error),
   );
 }
@@ -38,7 +45,9 @@ export function subscribeKhatmas(
 /** Read one khatma once (undefined if not found). */
 export async function getKhatma(id: string): Promise<Khatma | undefined> {
   const snap = await getDoc(doc(khatmasCol, id));
-  return snap.exists() ? { id: snap.id, ...(snap.data() as Omit<Khatma, 'id'>) } : undefined;
+  return snap.exists()
+    ? { id: snap.id, ...(snap.data() as Omit<Khatma, 'id'>) }
+    : undefined;
 }
 
 /**
@@ -73,7 +82,6 @@ export async function createKhatma(input: CreateKhatmaInput): Promise<string> {
     totalPages: input.totalPages,
     scope: input.scope,
     memberIds: input.memberIds,
-    anonymous: input.anonymous,
     remainingPages: input.remainingPages,
     roundCount: 0,
     ...(input.duaReciterId ? { duaReciterId: input.duaReciterId } : {}),
@@ -92,7 +100,7 @@ export async function createKhatma(input: CreateKhatmaInput): Promise<string> {
 }
 
 /**
- * Update editable khatma fields (REQUIREMENTS §8): anonymity, status, du3a
+ * Update editable khatma fields (REQUIREMENTS §8): status, du3a
  * reciter, and the admin-editable series metadata — name, number, creation
  * date, and per-member capacities. To rename a whole series use
  * {@link renameSeries} (this only touches one khatma doc).
@@ -102,7 +110,12 @@ export function updateKhatma(
   changes: Partial<
     Pick<
       Khatma,
-      'anonymous' | 'status' | 'duaReciterId' | 'seriesName' | 'seriesNumber' | 'createdAt' | 'capacities'
+      | 'status'
+      | 'duaReciterId'
+      | 'seriesName'
+      | 'seriesNumber'
+      | 'createdAt'
+      | 'capacities'
     >
   >,
 ): Promise<void> {
@@ -146,7 +159,9 @@ export async function addMemberToKhatma(
     memberIds: arrayUnion(memberId),
     ...(capacity ? { [`capacities.${memberId}`]: capacity } : {}),
   });
-  batch.set(doc(assignmentsCol(khatmaId), memberId), emptyAssignment(memberId), { merge: true });
+  batch.set(doc(assignmentsCol(khatmaId), memberId), emptyAssignment(memberId), {
+    merge: true,
+  });
   await batch.commit();
 }
 
@@ -156,7 +171,10 @@ export async function addMemberToKhatma(
  * Marks their pending chunk `released`, merges its pages back into
  * `remainingPages`, and resets their streak, in one transaction.
  */
-export async function releaseMemberChunk(khatmaId: string, memberId: string): Promise<void> {
+export async function releaseMemberChunk(
+  khatmaId: string,
+  memberId: string,
+): Promise<void> {
   await runTransaction(db, async (tx) => {
     const kRef = doc(khatmasCol, khatmaId);
     const aRef = assignmentDoc(khatmaId, memberId);
@@ -182,7 +200,10 @@ export async function releaseMemberChunk(khatmaId: string, memberId: string): Pr
  * their assignment doc — all in one transaction. Any pages they had already
  * read return to the pool to be re-read, the only invariant-safe removal.
  */
-export async function removeMemberFromKhatma(khatmaId: string, memberId: string): Promise<void> {
+export async function removeMemberFromKhatma(
+  khatmaId: string,
+  memberId: string,
+): Promise<void> {
   await runTransaction(db, async (tx) => {
     const kRef = doc(khatmasCol, khatmaId);
     const aRef = assignmentDoc(khatmaId, memberId);

@@ -8,14 +8,27 @@ import { defaultCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { currentChunk, khatmaProgress, pendingReaders } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
-import { activeSeriesGroups, nextSeriesNumber, seriesTitle, type SeriesGroup } from '@/domain/series';
+import {
+  activeSeriesGroups,
+  nextSeriesNumber,
+  seriesTitle,
+  type SeriesGroup,
+} from '@/domain/series';
 import type { Assignment, Khatma } from '@/domain/types';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { donutChart, segmentBar } from '@/ui/shared/charts';
-import { card, emptyNode, mutedText, primaryButton, todayIso } from '@/ui/shared/components';
+import {
+  card,
+  emptyNode,
+  mutedText,
+  primaryButton,
+  secondaryButton,
+  todayIso,
+} from '@/ui/shared/components';
 import { el } from '@/ui/shared/dom';
 import type { AdminCtx } from '@/ui/admin/ctx';
+import { adminHash } from '@/ui/admin/routes';
 
 export function homePage(ctx: AdminCtx): HTMLElement {
   const groups = activeSeriesGroups(ctx.state.khatmas);
@@ -28,46 +41,74 @@ export function homePage(ctx: AdminCtx): HTMLElement {
 }
 
 function seriesBlock(ctx: AdminCtx, group: SeriesGroup): HTMLElement {
-  const { draft } = ctx;
   const body: Node[] = [];
 
   for (const k of group.active) {
-    body.push(khatmaMetrics(ctx, k));
+    body.push(khatmaMetrics(ctx, k), distributionAction(ctx, group, k));
   }
 
   body.push(warningsLine(ctx, group), pendingLine(ctx, group));
 
-  // The daily action. One button per series; blocked when today already ran.
-  const distributedToday = group.active.some((k) => k.lastDistributionDate === todayIso());
-  if (distributedToday) {
-    body.push(el('p', { class: 'font-semibold text-success' }, [strings.admin.distributedToday]));
-  } else {
-    const busy = draft.busy.has(group.seriesId);
-    const btn = primaryButton(strings.admin.distribute, () => {
-      if (confirm(strings.admin.confirmDistribute)) void onDistribute(ctx, group);
-    });
-    btn.disabled = busy;
-    if (busy) btn.classList.add('opacity-50');
-    body.push(btn);
-  }
-
-  const status = draft.status[group.seriesId];
-  if (status) body.push(el('p', { class: 'text-success' }, [status]));
-
   return card(seriesTitle(group.latest, toArabicDigits), body);
+}
+
+/** A separate distribute/redistribute action for every active khatma. */
+function distributionAction(ctx: AdminCtx, group: SeriesGroup, k: Khatma): HTMLElement {
+  const distributedToday = k.lastDistributionDate === todayIso();
+  const busy = ctx.draft.busy.has(k.id);
+  const button = distributedToday
+    ? secondaryButton(strings.admin.redistribute, () => {
+        if (confirm(strings.admin.confirmRedistribute))
+          void onDistribute(ctx, group, k, true);
+      })
+    : primaryButton(strings.admin.distribute, () => {
+        if (confirm(strings.admin.confirmDistribute))
+          void onDistribute(ctx, group, k, false);
+      });
+  button.disabled = busy;
+  if (busy) button.classList.add('opacity-50');
+
+  const children: Node[] = [];
+  if (distributedToday) {
+    children.push(
+      el('p', { class: 'font-semibold text-success' }, [strings.admin.distributedToday]),
+    );
+  }
+  children.push(button);
+  const status = ctx.draft.status[k.id];
+  if (status) children.push(el('p', { class: 'text-success' }, [status]));
+  return el('div', { class: 'space-y-2 border-b border-border pb-3' }, children);
 }
 
 /** One active khatma's numbers: donut, breakdown bar, remaining/round/last-run. */
 function khatmaMetrics(ctx: AdminCtx, k: Khatma): HTMLElement {
   const assignments = ctx.state.assignments.get(k.id) ?? [];
   const progress = khatmaProgress(k, assignments);
-  const pendingPages = assignments.reduce((sum, a) => sum + (currentChunk(a)?.pages.length ?? 0), 0);
+  const pendingPages = assignments.reduce(
+    (sum, a) => sum + (currentChunk(a)?.pages.length ?? 0),
+    0,
+  );
 
   const facts = el('div', { class: 'flex-1 space-y-2' }, [
-    el('p', { class: 'font-semibold' }, [seriesTitle(k, toArabicDigits)]),
+    el(
+      'a',
+      {
+        class: 'inline-block font-semibold text-primary underline',
+        href: adminHash.khatma(k.id),
+      },
+      [seriesTitle(k, toArabicDigits)],
+    ),
     segmentBar([
-      { value: progress.donePages, color: 'var(--color-primary)', label: strings.admin.legendDone },
-      { value: pendingPages, color: 'var(--color-accent)', label: strings.admin.legendPending },
+      {
+        value: progress.donePages,
+        color: 'var(--color-primary)',
+        label: strings.admin.legendDone,
+      },
+      {
+        value: pendingPages,
+        color: 'var(--color-accent)',
+        label: strings.admin.legendPending,
+      },
       {
         value: k.remainingPages.length,
         color: 'var(--color-border)',
@@ -133,7 +174,8 @@ export function warningChip(name: string, level: 'yellow' | 'red'): HTMLElement 
     level === 'red'
       ? 'rounded-button bg-danger/10 px-2 py-1 text-xs font-semibold text-danger'
       : 'rounded-button bg-warn/10 px-2 py-1 text-xs font-semibold text-warn';
-  const word = level === 'red' ? strings.admin.warningRedWord : strings.admin.warningYellowWord;
+  const word =
+    level === 'red' ? strings.admin.warningRedWord : strings.admin.warningYellowWord;
   return el('span', { class: cls }, [`⚠ ${name} · ${word}`]);
 }
 
@@ -141,62 +183,73 @@ export function warningChip(name: string, level: 'yellow' | 'red'): HTMLElement 
 // The distribute action.
 // -----------------------------------------------------------------------------
 
-async function onDistribute(ctx: AdminCtx, group: SeriesGroup): Promise<void> {
+async function onDistribute(
+  ctx: AdminCtx,
+  group: SeriesGroup,
+  khatma: Khatma,
+  redistributePages: boolean,
+): Promise<void> {
   const { state, draft } = ctx;
-  const { latest } = group;
 
   let pool: number[];
   try {
-    pool = resolvePageScope(latest.scope, state.surahToPages);
+    pool = resolvePageScope(khatma.scope, state.surahToPages);
   } catch {
-    draft.status[group.seriesId] = strings.admin.distributeError;
+    draft.status[khatma.id] = strings.admin.distributeError;
     ctx.rerender();
     return;
   }
 
-  const members: DistributionMember[] = latest.memberIds
+  const members: DistributionMember[] = khatma.memberIds
     .map((id) => state.roster.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => p !== undefined)
     .map((p) => ({
       id: p.id,
-      capacity: latest.capacities?.[p.id] ?? defaultCapacity(p),
+      capacity: khatma.capacities?.[p.id] ?? defaultCapacity(p),
       completedPages: p.completedPages,
       enabled: p.enabled,
     }));
 
-  draft.busy.add(group.seriesId);
-  delete draft.status[group.seriesId];
+  draft.busy.add(khatma.id);
+  delete draft.status[khatma.id];
   ctx.rerender();
   try {
+    const isNewestActive = group.active.every(
+      (active) => active.seriesNumber <= khatma.seriesNumber,
+    );
     const outcome = await runDistribution({
-      khatmaIds: group.active.map((k) => k.id),
+      khatmaIds: [khatma.id],
       members,
       today: todayIso(),
       unitOfPage: state.pageUnitMaps,
+      redistributePages,
       rolloverSeed: {
         seriesId: group.seriesId,
         seriesName: group.seriesName,
         seriesNumber: nextSeriesNumber(state.khatmas, group.seriesId),
         totalPages: pool.length,
-        scope: latest.scope,
-        memberIds: latest.memberIds,
-        anonymous: latest.anonymous,
-        duaReciterId: pickDuaReciter(latest.memberIds, state.khatmas),
-        ...(latest.capacities ? { capacities: latest.capacities } : {}),
-        pool,
+        scope: khatma.scope,
+        memberIds: khatma.memberIds,
+        duaReciterId: pickDuaReciter(khatma.memberIds, state.khatmas),
+        ...(khatma.capacities ? { capacities: khatma.capacities } : {}),
+        pool: isNewestActive ? pool : [],
       },
     });
-    const notes: string[] = [strings.admin.distributeSuccess];
+    const notes: string[] = [
+      redistributePages
+        ? strings.admin.redistributeSuccess
+        : strings.admin.distributeSuccess,
+    ];
     if (outcome.rolloverKhatmaId) notes.push(strings.admin.rolloverNote);
     if (outcome.completedKhatmaIds.length > 0) notes.push(strings.admin.completedNote);
-    draft.status[group.seriesId] = notes.join(' · ');
+    draft.status[khatma.id] = notes.join(' · ');
   } catch (err) {
-    draft.status[group.seriesId] =
+    draft.status[khatma.id] =
       err instanceof AlreadyDistributedError
         ? strings.admin.alreadyDistributed
         : strings.admin.distributeError;
   } finally {
-    draft.busy.delete(group.seriesId);
+    draft.busy.delete(khatma.id);
     ctx.rerender();
   }
 }

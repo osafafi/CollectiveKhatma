@@ -1,22 +1,29 @@
 import { doc, runTransaction } from 'firebase/firestore';
 import {
   planDistribution,
+  recallLoosePagesFromAssignment,
   type DistributionKhatmaState,
   type DistributionMember,
 } from '@/domain/distribution';
 import type { PageUnitMaps } from '@/domain/assignment';
-import type { Assignment, Khatma, MemberCapacity, PageScope, RoundChunk } from '@/domain/types';
+import type {
+  Assignment,
+  Khatma,
+  MemberCapacity,
+  PageScope,
+  RoundChunk,
+} from '@/domain/types';
 import { assignmentDoc, fromStored, type StoredAssignment } from './assignments';
 import { db } from './firebase';
 import { khatmasCol } from './khatmas';
 
 /**
- * Thrown when a distribution already ran today for this series (double-press,
+ * Thrown when a distribution already ran today for this khatma (double-press,
  * or a second admin tab). The UI shows a friendly "already distributed" note.
  */
 export class AlreadyDistributedError extends Error {
   constructor() {
-    super('runDistribution: a distribution already ran today for this series');
+    super('runDistribution: a distribution already ran today for this khatma');
     this.name = 'AlreadyDistributedError';
   }
 }
@@ -30,7 +37,6 @@ export interface RolloverSeed {
   totalPages: number;
   scope: PageScope;
   memberIds: string[];
-  anonymous: boolean;
   /** Chosen by `pickDuaReciter` over all prior khatmas — computed by the caller. */
   duaReciterId?: string;
   /** Per-member capacities carried into the new khatma (memberId -> capacity). */
@@ -40,7 +46,7 @@ export interface RolloverSeed {
 }
 
 export interface RunDistributionParams {
-  /** The series' ACTIVE khatma ids. Order does not matter (sorted internally). */
+  /** Active khatma ids to distribute. The dashboard normally passes one. */
   khatmaIds: string[];
   /** Participating members in roster order (from the newest khatma's memberIds). */
   members: DistributionMember[];
@@ -49,6 +55,8 @@ export interface RunDistributionParams {
   rolloverSeed: RolloverSeed;
   /** page -> surah/juz lookups for whole-surah / whole-juz capacities. */
   unitOfPage?: PageUnitMaps;
+  /** Recall pending loose pages first and permit another run on the same date. */
+  redistributePages?: boolean;
 }
 
 export interface DistributionOutcome {
@@ -67,11 +75,72 @@ function nextAssignment(
   missedStreak: number,
 ): Assignment {
   const rounds = appended ? [...existing.rounds, appended] : existing.rounds;
-  return { memberId: existing.memberId, rounds, doneByRound: existing.doneByRound, missedStreak };
+  return {
+    memberId: existing.memberId,
+    rounds,
+    doneByRound: existing.doneByRound,
+    missedStreak,
+  };
 }
 
 /**
- * Run one distribution round for a series (REQUIREMENTS §5) as a single
+ * Recall only the loose-page portion of pending chunks. Whole-surah and
+ * whole-juz portions stay with their readers. Legacy mixed-unit chunks are
+ * preserved conservatively because their page/unit split was not stored.
+ */
+interface PageRecallResult {
+  changedAssignments: Set<string>;
+  /** Members still holding a preserved whole-unit allocation; freeze their warning. */
+  preservedMemberIds: Set<string>;
+}
+
+function recallLoosePages(
+  khatmas: Array<Khatma & { assignments: Assignment[] }>,
+  members: readonly DistributionMember[],
+): PageRecallResult {
+  const changedAssignments = new Set<string>();
+  const preservedMemberIds = new Set<string>();
+  for (const khatma of khatmas) {
+    for (const assignment of khatma.assignments) {
+      for (let i = assignment.rounds.length - 1; i >= 0; i--) {
+        const chunk = assignment.rounds[i]!;
+        if (
+          chunk.pages.length === 0 ||
+          chunk.released === true ||
+          assignment.doneByRound[chunk.round] !== undefined
+        ) {
+          continue;
+        }
+        const capacity = members.find(
+          (member) => member.id === assignment.memberId,
+        )?.capacity;
+        if (!capacity) break;
+        const recall = recallLoosePagesFromAssignment(
+          assignment,
+          khatma.remainingPages,
+          capacity,
+        );
+        if (!recall) {
+          if (capacity.surahs > 0 || capacity.juz > 0) {
+            preservedMemberIds.add(assignment.memberId);
+          }
+          break;
+        }
+        khatma.assignments[khatma.assignments.indexOf(assignment)] = recall.assignment;
+        khatma.remainingPages = recall.remainingPages;
+        changedAssignments.add(`${khatma.id}:${assignment.memberId}`);
+        if (recall.assignment.rounds[i]?.pages.length) {
+          preservedMemberIds.add(assignment.memberId);
+        }
+        break;
+      }
+    }
+  }
+  return { changedAssignments, preservedMemberIds };
+}
+
+/**
+ * Run one distribution round for the selected khatma(s) as a single
  * Firestore transaction: re-reads every active khatma + assignment doc,
  * re-checks the same-day guard, re-plans on the transactional snapshot, and
  * applies everything atomically — new chunks, escalated warnings, pool updates,
@@ -79,9 +148,20 @@ function nextAssignment(
  * docs. Unread chunks are NOT reclaimed here — that is a separate admin action
  * (`releaseMemberChunk`). Retried automatically by Firestore on contention; a
  * concurrent same-day run loses and surfaces {@link AlreadyDistributedError}.
+ * In redistribution mode, pending loose pages are recalled inside the same
+ * transaction and the same-day guard is intentionally bypassed.
  */
-export function runDistribution(params: RunDistributionParams): Promise<DistributionOutcome> {
-  const { khatmaIds, members, today, rolloverSeed, unitOfPage } = params;
+export function runDistribution(
+  params: RunDistributionParams,
+): Promise<DistributionOutcome> {
+  const {
+    khatmaIds,
+    members,
+    today,
+    rolloverSeed,
+    unitOfPage,
+    redistributePages = false,
+  } = params;
 
   return runTransaction(db, async (tx) => {
     // --- Reads (Firestore requires all reads before any write) -------------
@@ -91,7 +171,9 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
       if (!snap.exists()) throw new Error(`runDistribution: khatma ${id} not found`);
       const khatma = { id, ...(snap.data() as Omit<Khatma, 'id'>) };
       if (khatma.status !== 'active') continue; // completed since the button was drawn
-      if (khatma.lastDistributionDate === today) throw new AlreadyDistributedError();
+      if (!redistributePages && khatma.lastDistributionDate === today) {
+        throw new AlreadyDistributedError();
+      }
       khatmas.push({ ...khatma, assignments: [] });
     }
     khatmas.sort((a, b) => a.seriesNumber - b.seriesNumber);
@@ -107,6 +189,10 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
       }
     }
 
+    const pageRecall = redistributePages
+      ? recallLoosePages(khatmas, members)
+      : { changedAssignments: new Set<string>(), preservedMemberIds: new Set<string>() };
+
     // --- Plan on the transactional snapshot --------------------------------
     const states: DistributionKhatmaState[] = khatmas.map((k) => ({
       id: k.id,
@@ -117,7 +203,11 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
     }));
     const plan = planDistribution({
       khatmas: states,
-      members,
+      members: members.map((member) =>
+        pageRecall.preservedMemberIds.has(member.id)
+          ? { ...member, enabled: false }
+          : member,
+      ),
       newKhatmaPool: rolloverSeed.pool,
       newKhatmaSeriesNumber: rolloverSeed.seriesNumber,
       unitOfPage,
@@ -151,12 +241,21 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
           (c) => c.khatmaId === khatma.id && c.memberId === assignment.memberId,
         );
         const appended: RoundChunk | undefined = planned
-          ? { round: planned.round, date: today, pages: planned.pages }
+          ? {
+              round: planned.round,
+              date: today,
+              pages: planned.pages,
+              loosePages: planned.loosePages,
+            }
           : undefined;
         if (planned) chunkCount++;
 
         const streak = finalStreak(assignment.memberId);
-        if (!appended && streak === assignment.missedStreak) {
+        if (
+          !appended &&
+          streak === assignment.missedStreak &&
+          !pageRecall.changedAssignments.has(`${khatma.id}:${assignment.memberId}`)
+        ) {
           continue; // untouched — skip the write
         }
         tx.set(
@@ -178,7 +277,6 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
         totalPages: rolloverSeed.totalPages,
         scope: rolloverSeed.scope,
         memberIds: rolloverSeed.memberIds,
-        anonymous: rolloverSeed.anonymous,
         remainingPages: plan.rollover.remainingPages,
         roundCount: 1,
         lastDistributionDate: today,
@@ -188,10 +286,19 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
         createdAt: Date.now(),
       });
       for (const memberId of rolloverSeed.memberIds) {
-        const planned = plan.chunks.find((c) => c.khatmaId === null && c.memberId === memberId);
+        const planned = plan.chunks.find(
+          (c) => c.khatmaId === null && c.memberId === memberId,
+        );
         if (planned) chunkCount++;
         const rounds: RoundChunk[] = planned
-          ? [{ round: planned.round, date: today, pages: planned.pages }]
+          ? [
+              {
+                round: planned.round,
+                date: today,
+                pages: planned.pages,
+                loosePages: planned.loosePages,
+              },
+            ]
           : [];
         tx.set(assignmentDoc(newRef.id, memberId), {
           memberId,

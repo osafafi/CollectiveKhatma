@@ -82,7 +82,8 @@ export type PageScope =
  *    or `remainingPages`.
  * 2. `remainingPages` is always ascending; distribution shifts from the front;
  *    released pages merge back in sorted position (so they re-serve first).
- * 3. `lastDistributionDate === today` blocks another distribution today.
+ * 3. `lastDistributionDate === today` blocks a new round, except an explicit
+ *    page redistribution that first recalls the prior round's loose pages.
  */
 export interface Khatma {
   id: string;
@@ -104,8 +105,6 @@ export interface Khatma {
    * pages). Copied forward at rollover so the next khatma keeps the same pace.
    */
   capacities?: Record<string, MemberCapacity>;
-  /** When true, member-facing progress is shown without names (per-khatma). */
-  anonymous: boolean;
   status: KhatmaStatus;
   /** Pages not yet held by any live chunk, ascending. Starts as the full pool. */
   remainingPages: number[];
@@ -135,6 +134,13 @@ export interface RoundChunk {
   date: string;
   /** Ascending page numbers; may be empty (pool drained that round). */
   pages: number[];
+  /**
+   * The subset of `pages` assigned by loose-page capacity. Optional for legacy
+   * chunks. This allows redistribution without recalling whole surahs or ajza'.
+   */
+  loosePages?: number[];
+  /** Loose pages recalled by a later redistribution, retained as audit history. */
+  redistributedPages?: number[];
   /**
    * Set when the member missed the round: the pages were returned to the pool
    * and reassigned. The chunk is kept as history; it can never be marked done.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   planDistribution,
+  recallLoosePagesFromAssignment,
   releaseChunk,
   takeChunk,
   warningLevel,
@@ -23,7 +24,11 @@ function member(id: string, pages = 2, enabled = true): DistributionMember {
   return { id, capacity: cap(pages), completedPages: [], enabled };
 }
 
-function memberCap(id: string, capacity: MemberCapacity, enabled = true): DistributionMember {
+function memberCap(
+  id: string,
+  capacity: MemberCapacity,
+  enabled = true,
+): DistributionMember {
   return { id, capacity, completedPages: [], enabled };
 }
 
@@ -75,7 +80,10 @@ function chunkFor(plan: ReturnType<typeof planDistribution>, memberId: string) {
 }
 
 // Small synthetic Quran maps: surahs 1..3 over pages 1..7, juz 1..2 over 1..41.
-const units = buildPageUnitMaps({ 1: [1, 1], 2: [2, 4], 3: [5, 7] }, { 1: [1, 21], 2: [22, 41] });
+const units = buildPageUnitMaps(
+  { 1: [1, 1], 2: [2, 4], 3: [5, 7] },
+  { 1: [1, 21], 2: [22, 41] },
+);
 
 describe('warningLevel', () => {
   it('maps streaks to none / yellow / red', () => {
@@ -124,7 +132,7 @@ describe('takeChunk', () => {
     expect(pool).toEqual([3, 4]);
   });
 
-  it('expands a member\'s unique coverage across repeated khatma pools', () => {
+  it("expands a member's unique coverage across repeated khatma pools", () => {
     const completed = new Set<number>();
     for (let cycle = 0; cycle < 3; cycle++) {
       const pages = takeChunk(range(1, 6), cap(2), undefined, [...completed]);
@@ -173,11 +181,25 @@ describe('planDistribution — serving', () => {
         members: [member('a', 2), member('b', 3)],
       }),
     );
-    expect(chunkFor(plan, 'a')).toEqual({ khatmaId: 'k1', memberId: 'a', round: 1, pages: [1, 2] });
-    expect(chunkFor(plan, 'b')).toEqual({ khatmaId: 'k1', memberId: 'b', round: 1, pages: [3, 4, 5] });
+    expect(chunkFor(plan, 'a')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'a',
+      round: 1,
+      pages: [1, 2],
+      loosePages: [1, 2],
+    });
+    expect(chunkFor(plan, 'b')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'b',
+      round: 1,
+      pages: [3, 4, 5],
+      loosePages: [3, 4, 5],
+    });
     expect(plan.streaks).toEqual({});
     expect(plan.completions).toEqual([]);
-    expect(plan.khatmaUpdates).toEqual([{ khatmaId: 'k1', remainingPages: range(6, 10), roundCount: 1 }]);
+    expect(plan.khatmaUpdates).toEqual([
+      { khatmaId: 'k1', remainingPages: range(6, 10), roundCount: 1 },
+    ]);
     expect(plan.rollover).toBeUndefined();
   });
 
@@ -190,8 +212,18 @@ describe('planDistribution — serving', () => {
         unitOfPage: units,
       }),
     );
-    expect(chunkFor(plan, 'm1')).toEqual({ khatmaId: 'k1', memberId: 'm1', round: 1, pages: range(1, 21) });
-    expect(plan.khatmaUpdates[0]).toEqual({ khatmaId: 'k1', remainingPages: range(22, 604), roundCount: 1 });
+    expect(chunkFor(plan, 'm1')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'm1',
+      round: 1,
+      pages: range(1, 21),
+      loosePages: [],
+    });
+    expect(plan.khatmaUpdates[0]).toEqual({
+      khatmaId: 'k1',
+      remainingPages: range(22, 604),
+      roundCount: 1,
+    });
   });
 
   it('serves an additive pages-plus-surah capacity', () => {
@@ -203,23 +235,28 @@ describe('planDistribution — serving', () => {
       }),
     );
     expect(chunkFor(plan, 'm1')?.pages).toEqual([1, 2, 3, 4]);
+    expect(chunkFor(plan, 'm1')?.loosePages).toEqual([1]);
     expect(plan.khatmaUpdates[0]?.remainingPages).toEqual([5, 6, 7]);
   });
 
-  it('rotates first choice and avoids each member\'s prior pages', () => {
+  it("rotates first choice and avoids each member's prior pages", () => {
     const plan = planDistribution(
       input({
-        khatmas: [
-          khatma('k2', range(1, 8), 0, [assignment('a'), assignment('b')], 2),
-        ],
+        khatmas: [khatma('k2', range(1, 8), 0, [assignment('a'), assignment('b')], 2)],
         members: [coveredMember('a', 3, [1, 2, 3]), coveredMember('b', 1, [4])],
         newKhatmaSeriesNumber: 3,
       }),
     );
 
     expect(plan.chunks).toEqual([
-      { khatmaId: 'k2', memberId: 'b', round: 1, pages: [1] },
-      { khatmaId: 'k2', memberId: 'a', round: 1, pages: [4, 5, 6] },
+      { khatmaId: 'k2', memberId: 'b', round: 1, pages: [1], loosePages: [1] },
+      {
+        khatmaId: 'k2',
+        memberId: 'a',
+        round: 1,
+        pages: [4, 5, 6],
+        loosePages: [4, 5, 6],
+      },
     ]);
     expect(chunkFor(plan, 'a')?.pages).not.toContain(1);
     expect(chunkFor(plan, 'b')?.pages).not.toContain(4);
@@ -238,7 +275,11 @@ describe('planDistribution — settling (no auto-reclaim)', () => {
     );
     expect(chunkFor(plan, 'm1')).toBeUndefined(); // nothing piled on
     expect(plan.streaks).toEqual({ m1: 1 }); // rounds-waited flag
-    expect(plan.khatmaUpdates[0]).toEqual({ khatmaId: 'k1', remainingPages: range(3, 10), roundCount: 1 });
+    expect(plan.khatmaUpdates[0]).toEqual({
+      khatmaId: 'k1',
+      remainingPages: range(3, 10),
+      roundCount: 1,
+    });
   });
 
   it('resets a finished member and serves their next chunk', () => {
@@ -251,7 +292,13 @@ describe('planDistribution — settling (no auto-reclaim)', () => {
       }),
     );
     expect(plan.streaks).toEqual({ m1: 0 });
-    expect(chunkFor(plan, 'm1')).toEqual({ khatmaId: 'k1', memberId: 'm1', round: 2, pages: [10, 11] });
+    expect(chunkFor(plan, 'm1')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'm1',
+      round: 2,
+      pages: [10, 11],
+      loosePages: [10, 11],
+    });
     expect(plan.khatmaUpdates[0]?.remainingPages).toEqual([12]);
   });
 
@@ -270,7 +317,9 @@ describe('planDistribution — settling (no auto-reclaim)', () => {
     expect(plan.streaks).toEqual({}); // disabled streak frozen, done b already 0
     expect(chunkFor(plan, 'a')).toBeUndefined(); // skipped, keeps [1,2]
     expect(chunkFor(plan, 'b')?.pages).toEqual([5, 6]); // b draws the pool (a's pages NOT returned)
-    expect(plan.khatmaUpdates).toEqual([{ khatmaId: 'k1', remainingPages: [], roundCount: 2 }]);
+    expect(plan.khatmaUpdates).toEqual([
+      { khatmaId: 'k1', remainingPages: [], roundCount: 2 },
+    ]);
   });
 });
 
@@ -278,16 +327,36 @@ describe('planDistribution — rollover', () => {
   it('mints khatma N+1 when the pool drains and never spans a chunk across khatmas', () => {
     const plan = planDistribution(
       input({
-        khatmas: [khatma('k1', [601, 602, 603], 5, [assignment('a'), assignment('b'), assignment('c')])],
+        khatmas: [
+          khatma('k1', [601, 602, 603], 5, [
+            assignment('a'),
+            assignment('b'),
+            assignment('c'),
+          ]),
+        ],
         members: [member('a', 2), member('b', 2), member('c', 2)],
         newKhatmaPool: [1, 2, 3, 4, 5],
       }),
     );
     expect(chunkFor(plan, 'a')?.pages).toEqual([601, 602]);
-    expect(chunkFor(plan, 'b')).toEqual({ khatmaId: 'k1', memberId: 'b', round: 6, pages: [603] });
-    expect(chunkFor(plan, 'c')).toEqual({ khatmaId: null, memberId: 'c', round: 1, pages: [1, 2] });
+    expect(chunkFor(plan, 'b')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'b',
+      round: 6,
+      pages: [603],
+      loosePages: [603],
+    });
+    expect(chunkFor(plan, 'c')).toEqual({
+      khatmaId: null,
+      memberId: 'c',
+      round: 1,
+      pages: [1, 2],
+      loosePages: [1, 2],
+    });
     expect(plan.rollover).toEqual({ remainingPages: [3, 4, 5] });
-    expect(plan.khatmaUpdates).toEqual([{ khatmaId: 'k1', remainingPages: [], roundCount: 6 }]);
+    expect(plan.khatmaUpdates).toEqual([
+      { khatmaId: 'k1', remainingPages: [], roundCount: 6 },
+    ]);
   });
 
   it('drains the oldest khatma first while two coexist', () => {
@@ -296,14 +365,28 @@ describe('planDistribution — rollover', () => {
       input({
         khatmas: [
           khatma('k1', [7, 8], 6, [assignment('a', [chunk(5, [1, 2], true)], {}, 1)]),
-          khatma('k2', [10, 11, 12, 13], 1, [assignment('b', [chunk(1, [9, 9])], { 1: 1 })]),
+          khatma('k2', [10, 11, 12, 13], 1, [
+            assignment('b', [chunk(1, [9, 9])], { 1: 1 }),
+          ]),
         ],
         members: [member('a', 2), member('b', 2)],
       }),
     );
     // b is clean → served first, from the OLDEST pool (k1); a is flagged → after.
-    expect(chunkFor(plan, 'b')).toEqual({ khatmaId: 'k1', memberId: 'b', round: 7, pages: [7, 8] });
-    expect(chunkFor(plan, 'a')).toEqual({ khatmaId: 'k2', memberId: 'a', round: 2, pages: [10, 11] });
+    expect(chunkFor(plan, 'b')).toEqual({
+      khatmaId: 'k1',
+      memberId: 'b',
+      round: 7,
+      pages: [7, 8],
+      loosePages: [7, 8],
+    });
+    expect(chunkFor(plan, 'a')).toEqual({
+      khatmaId: 'k2',
+      memberId: 'a',
+      round: 2,
+      pages: [10, 11],
+      loosePages: [10, 11],
+    });
   });
 });
 
@@ -338,7 +421,9 @@ describe('planDistribution — completion', () => {
       }),
     );
     expect(chunkFor(plan, 'b')?.pages).toEqual([601, 602]);
-    expect(plan.khatmaUpdates).toEqual([{ khatmaId: 'k1', remainingPages: [], roundCount: 10 }]);
+    expect(plan.khatmaUpdates).toEqual([
+      { khatmaId: 'k1', remainingPages: [], roundCount: 10 },
+    ]);
     expect(plan.completions).toEqual([]);
   });
 });
@@ -346,11 +431,51 @@ describe('planDistribution — completion', () => {
 describe('releaseChunk', () => {
   it('returns a pending chunk to the pool and clears the streak', () => {
     const a = assignment('m1', [chunk(2, [50, 51])], {}, 2);
-    expect(releaseChunk(a, [1, 2, 3])).toEqual({ round: 2, remainingPages: [1, 2, 3, 50, 51], missedStreak: 0 });
+    expect(releaseChunk(a, [1, 2, 3])).toEqual({
+      round: 2,
+      remainingPages: [1, 2, 3, 50, 51],
+      missedStreak: 0,
+    });
   });
 
   it('has nothing to release once the chunk is done', () => {
     const a = assignment('m1', [chunk(2, [50, 51])], { 2: 1 });
     expect(releaseChunk(a, [1, 2, 3])).toBeUndefined();
+  });
+});
+
+describe('recallLoosePagesFromAssignment', () => {
+  it('recalls loose pages but preserves the whole-surah portion', () => {
+    const a = assignment('m1', [{ ...chunk(1, [1, 2, 3, 4]), loosePages: [1] }]);
+    const result = recallLoosePagesFromAssignment(a, [5, 6], cap(1, 2, 0));
+    expect(result?.remainingPages).toEqual([1, 5, 6]);
+    expect(result?.assignment.rounds[0]).toEqual({
+      round: 1,
+      date: '2026-07-01',
+      pages: [2, 3, 4],
+      loosePages: [],
+      redistributedPages: [1],
+    });
+  });
+
+  it('recalls all pages from a legacy page-only chunk', () => {
+    const result = recallLoosePagesFromAssignment(
+      assignment('m1', [chunk(1, [1, 2])], {}, 2),
+      [3, 4],
+      cap(2),
+    );
+    expect(result?.remainingPages).toEqual([1, 2, 3, 4]);
+    expect(result?.assignment.missedStreak).toBe(0);
+    expect(result?.assignment.rounds[0]?.released).toBe(true);
+  });
+
+  it('does not guess the split of a legacy mixed-unit chunk', () => {
+    expect(
+      recallLoosePagesFromAssignment(
+        assignment('m1', [chunk(1, [1, 2, 3, 4])]),
+        [5],
+        cap(1, 2, 0),
+      ),
+    ).toBeUndefined();
   });
 });

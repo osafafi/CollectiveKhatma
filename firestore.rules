@@ -61,7 +61,6 @@ service cloud.firestore {
         && d.seriesNumber is number
         && d.totalPages is number
         && d.memberIds is list
-        && d.anonymous is bool
         && d.status is string
         && d.remainingPages is list
         && d.roundCount is number

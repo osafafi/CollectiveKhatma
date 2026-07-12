@@ -105,9 +105,15 @@ function scopeControls(ctx: AdminCtx): HTMLElement {
       ? [
           el('div', { class: 'flex items-center gap-2' }, [
             el('label', { class: 'text-muted' }, [strings.admin.fromPage]),
-            numberField(draft.rangeFrom, (v) => (draft.rangeFrom = v), { min: '1', width: 'w-24' }),
+            numberField(draft.rangeFrom, (v) => (draft.rangeFrom = v), {
+              min: '1',
+              width: 'w-24',
+            }),
             el('label', { class: 'text-muted' }, [strings.admin.toPage]),
-            numberField(draft.rangeTo, (v) => (draft.rangeTo = v), { min: '1', width: 'w-24' }),
+            numberField(draft.rangeTo, (v) => (draft.rangeTo = v), {
+              min: '1',
+              width: 'w-24',
+            }),
           ]),
         ]
       : []),
@@ -128,16 +134,20 @@ function surahChecklist(ctx: AdminCtx): HTMLElement {
 
 function surahCheckbox(ctx: AdminCtx, s: Surah): HTMLElement {
   const { draft } = ctx;
-  const box = el('input', { type: 'checkbox', class: 'accent-primary' }) as HTMLInputElement;
+  const box = el('input', {
+    type: 'checkbox',
+    class: 'accent-primary',
+  }) as HTMLInputElement;
   box.checked = draft.surahIds.has(s.id);
   box.addEventListener('change', () => {
     if (box.checked) draft.surahIds.add(s.id);
     else draft.surahIds.delete(s.id);
   });
-  return el('label', { class: 'flex items-center gap-1 rounded-button bg-surface px-2 py-1 text-sm' }, [
-    box,
-    el('span', {}, [`${toArabicDigits(s.id)}. ${s.name}`]),
-  ]);
+  return el(
+    'label',
+    { class: 'flex items-center gap-1 rounded-button bg-surface px-2 py-1 text-sm' },
+    [box, el('span', {}, [`${toArabicDigits(s.id)}. ${s.name}`])],
+  );
 }
 
 /** When the typed name matches an existing series, say which number comes next. */
@@ -152,7 +162,10 @@ function seriesContinuationNote(ctx: AdminCtx): HTMLElement {
 
 function memberCheckbox(ctx: AdminCtx, p: Person): HTMLElement {
   const { draft } = ctx;
-  const box = el('input', { type: 'checkbox', class: 'accent-primary' }) as HTMLInputElement;
+  const box = el('input', {
+    type: 'checkbox',
+    class: 'accent-primary',
+  }) as HTMLInputElement;
   box.checked = draft.memberIds.has(p.id);
   box.addEventListener('change', () => {
     if (box.checked) draft.memberIds.add(p.id);
@@ -162,12 +175,16 @@ function memberCheckbox(ctx: AdminCtx, p: Person): HTMLElement {
     }
     ctx.rerender();
   });
-  return el('label', { class: 'flex items-center gap-1 rounded-button bg-bg px-3 py-1' }, [
-    box,
-    el('span', { class: p.enabled ? '' : 'text-muted' }, [
-      p.enabled ? p.name : `${p.name} (${strings.admin.disabledBadge})`,
-    ]),
-  ]);
+  return el(
+    'label',
+    { class: 'flex items-center gap-1 rounded-button bg-bg px-3 py-1' },
+    [
+      box,
+      el('span', { class: p.enabled ? '' : 'text-muted' }, [
+        p.enabled ? p.name : `${p.name} (${strings.admin.disabledBadge})`,
+      ]),
+    ],
+  );
 }
 
 /** Per-selected-member additive capacity: pages + whole surahs + whole juz. */
@@ -178,7 +195,11 @@ function capacitySection(ctx: AdminCtx): HTMLElement {
   const solo = selected.length === 1;
   return labelled(
     strings.admin.capacityLabel,
-    el('div', { class: 'space-y-2' }, selected.map((p) => capacityRow(ctx, p, solo))),
+    el(
+      'div',
+      { class: 'space-y-2' },
+      selected.map((p) => capacityRow(ctx, p, solo)),
+    ),
   );
 }
 
@@ -197,7 +218,11 @@ function capacityRow(ctx: AdminCtx, p: Person, solo: boolean): HTMLElement {
   ]);
 }
 
-function capacityField(value: number, label: string, onSet: (n: number) => void): HTMLElement {
+function capacityField(
+  value: number,
+  label: string,
+  onSet: (n: number) => void,
+): HTMLElement {
   return el('label', { class: 'flex items-center gap-1 text-xs text-muted' }, [
     numberField(String(value), (v) => onSet(Math.max(0, parseInt(v, 10) || 0)), {
       min: '0',
@@ -325,7 +350,6 @@ async function onCreate(ctx: AdminCtx): Promise<void> {
       totalPages: pool.length,
       scope,
       memberIds: ids,
-      anonymous: false,
       remainingPages: pool,
       duaReciterId: reciter,
       ...(Object.keys(capacities).length > 0 ? { capacities } : {}),
@@ -415,9 +439,17 @@ function listLine(ctx: AdminCtx, k: Khatma): HTMLElement {
       class: 'flex items-center justify-between gap-2 border-b border-border py-2',
     },
     [
-      el('span', { class: 'flex-1 font-semibold text-primary' }, [seriesTitle(k, toArabicDigits)]),
-      badge(k.status === 'active' ? strings.admin.statusActive : strings.admin.statusCompleted),
-      el('span', { class: 'text-sm tabular-nums text-muted' }, [`${toArabicDigits(percent)}٪`]),
+      el('span', { class: 'flex-1 font-semibold text-primary' }, [
+        seriesTitle(k, toArabicDigits),
+      ]),
+      badge(
+        k.status === 'active'
+          ? strings.admin.statusActive
+          : strings.admin.statusCompleted,
+      ),
+      el('span', { class: 'text-sm tabular-nums text-muted' }, [
+        `${toArabicDigits(percent)}٪`,
+      ]),
     ],
   );
 }

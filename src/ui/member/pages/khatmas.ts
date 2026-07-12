@@ -47,7 +47,10 @@ export function khatmasListView(params: {
 
   const groups = activeSeriesGroups(khatmas);
   if (groups.length === 0) {
-    return el('div', { class: 'space-y-4' }, [heading, card('', [mutedText(strings.member.noKhatmas)])]);
+    return el('div', { class: 'space-y-4' }, [
+      heading,
+      card('', [mutedText(strings.member.noKhatmas)]),
+    ]);
   }
 
   const grid = el(
@@ -74,10 +77,14 @@ function listCard(k: Khatma, assignments: Assignment[], memberId: string): HTMLE
   const myLine = !chunk
     ? mutedText(strings.member.awaitingDistribution)
     : isRoundDone(mine!, chunk.round)
-      ? el('p', { class: 'font-semibold text-success' }, [`✓ ${strings.member.doneToday}`])
+      ? el('p', { class: 'font-semibold text-success' }, [
+          `✓ ${strings.member.doneToday}`,
+        ])
       : el('p', {}, [
           `${strings.member.todayHeading}: `,
-          el('span', { class: 'font-semibold tabular-nums' }, [pagesCount(chunk.pages.length)]),
+          el('span', { class: 'font-semibold tabular-nums' }, [
+            pagesCount(chunk.pages.length),
+          ]),
         ]);
 
   return el(
@@ -88,8 +95,12 @@ function listCard(k: Khatma, assignments: Assignment[], memberId: string): HTMLE
     },
     [
       el('div', { class: 'flex items-center justify-between gap-2' }, [
-        el('h2', { class: 'text-lg font-bold text-primary' }, [seriesTitle(k, toArabicDigits)]),
-        el('span', { class: 'text-sm text-muted' }, [`${toArabicDigits(progress.percent)}٪`]),
+        el('h2', { class: 'text-lg font-bold text-primary' }, [
+          seriesTitle(k, toArabicDigits),
+        ]),
+        el('span', { class: 'text-sm text-muted' }, [
+          `${toArabicDigits(progress.percent)}٪`,
+        ]),
       ]),
       progressBar(progress.percent),
       myLine,
@@ -115,7 +126,9 @@ export function khatmaLandingView(params: {
 
   const sections: Node[] = [
     backLink(strings.member.khatmasHeading, hash.khatmas()),
-    el('h1', { class: 'text-2xl font-bold text-primary' }, [seriesTitle(k, toArabicDigits)]),
+    el('h1', { class: 'text-2xl font-bold text-primary' }, [
+      seriesTitle(k, toArabicDigits),
+    ]),
     roundLine(k),
   ];
 
@@ -124,15 +137,19 @@ export function khatmaLandingView(params: {
 
   if (paused) {
     sections.push(
-      el('p', { class: 'rounded-button bg-primary/10 px-4 py-3 text-center text-primary' }, [
-        strings.member.pausedNote,
-      ]),
+      el(
+        'p',
+        { class: 'rounded-button bg-primary/10 px-4 py-3 text-center text-primary' },
+        [strings.member.pausedNote],
+      ),
     );
   } else if (mine) {
     sections.push(myRoundCard(k, mine, memberId));
   }
 
-  sections.push(card(strings.member.groupProgress, [groupProgress(k, assignments, roster)]));
+  sections.push(
+    card(strings.member.groupProgress, [groupProgress(k, assignments, roster)]),
+  );
 
   const history = completedInSeries(allKhatmas, k.seriesId);
   if (history.length > 0) sections.push(historyCard(history));
@@ -148,7 +165,9 @@ export function khatmaLandingView(params: {
 function roundLine(k: Khatma): HTMLElement {
   const started = new Date(k.createdAt).toISOString().slice(0, 10);
   return el('p', { class: 'flex justify-between text-muted' }, [
-    el('span', {}, [`${strings.member.roundWord} ${toArabicDigits(Math.max(1, k.roundCount))}`]),
+    el('span', {}, [
+      `${strings.member.roundWord} ${toArabicDigits(Math.max(1, k.roundCount))}`,
+    ]),
     el('span', {}, [`${strings.member.startedWord} ${started}`]),
   ]);
 }
@@ -165,11 +184,14 @@ function warningBanner(level: 'yellow' | 'red'): HTMLElement {
 function myRoundCard(k: Khatma, mine: Assignment, memberId: string): HTMLElement {
   const chunk = latestReadableChunk(mine);
   if (!chunk) {
-    return card(strings.member.todayHeading, [mutedText(strings.member.awaitingDistribution)]);
+    return card(strings.member.todayHeading, [
+      mutedText(strings.member.awaitingDistribution),
+    ]);
   }
   const done = isRoundDone(mine, chunk.round);
   const children: Node[] = [pagesRow(chunk.pages)];
-  if (!done) children.push(primaryLink(strings.reader.readMyPages, hash.khatmaRead(k.id)));
+  if (!done)
+    children.push(primaryLink(strings.reader.readMyPages, hash.khatmaRead(k.id)));
   children.push(done ? doneBanner() : finishButton(k.id, memberId, chunk));
   return card(strings.member.todayHeading, children);
 }
@@ -195,7 +217,11 @@ function pagesRow(pages: number[]): HTMLElement {
   ]);
 }
 
-function finishButton(khatmaId: string, memberId: string, chunk: RoundChunk): HTMLElement {
+function finishButton(
+  khatmaId: string,
+  memberId: string,
+  chunk: RoundChunk,
+): HTMLElement {
   const error = el('p', { class: 'mt-2 text-center text-danger' }, []);
   const button = el('button', { type: 'button', class: primaryButtonClass(true) }, [
     strings.member.finishedToday,
@@ -217,12 +243,19 @@ function finishButton(khatmaId: string, memberId: string, chunk: RoundChunk): HT
 function doneBanner(): HTMLElement {
   return el(
     'p',
-    { class: 'rounded-button bg-success/10 px-4 py-4 text-center text-lg font-semibold text-success' },
+    {
+      class:
+        'rounded-button bg-success/10 px-4 py-4 text-center text-lg font-semibold text-success',
+    },
     [`✓ ${strings.member.doneToday}`],
   );
 }
 
-function groupProgress(k: Khatma, assignments: Assignment[], roster: Person[]): HTMLElement {
+function groupProgress(
+  k: Khatma,
+  assignments: Assignment[],
+  roster: Person[],
+): HTMLElement {
   const progress = khatmaProgress(k, assignments);
   const children: Node[] = [
     el('div', { class: 'flex justify-between text-sm text-muted' }, [
@@ -234,7 +267,9 @@ function groupProgress(k: Khatma, assignments: Assignment[], roster: Person[]): 
 
   // This round: who received a chunk in the khatma's current round, who's done.
   const inRound = assignments.filter((a) =>
-    a.rounds.some((c) => c.round === k.roundCount && c.pages.length > 0 && c.released !== true),
+    a.rounds.some(
+      (c) => c.round === k.roundCount && c.pages.length > 0 && c.released !== true,
+    ),
   );
   if (inRound.length > 0) {
     const doneCount = inRound.filter((a) => isRoundDone(a, k.roundCount)).length;
@@ -245,16 +280,14 @@ function groupProgress(k: Khatma, assignments: Assignment[], roster: Person[]): 
     );
   }
 
-  // Names of who's still reading — only when the khatma isn't anonymous
-  // (REQUIREMENTS §6: anonymous mode shows counts only, never names). Members
-  // never see each other's warning levels — that is admin-only (§8).
-  if (!k.anonymous) {
-    const pendingNames = pendingReaders(assignments)
-      .map((id) => roster.find((p) => p.id === id)?.name)
-      .filter((name): name is string => Boolean(name));
-    if (pendingNames.length > 0) {
-      children.push(el('p', { class: 'text-sm text-muted' }, [`⏳ ${pendingNames.join('، ')}`]));
-    }
+  // Members can see who is still reading, but never each other's warning levels.
+  const pendingNames = pendingReaders(assignments)
+    .map((id) => roster.find((p) => p.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  if (pendingNames.length > 0) {
+    children.push(
+      el('p', { class: 'text-sm text-muted' }, [`⏳ ${pendingNames.join('، ')}`]),
+    );
   }
 
   return el('div', { class: 'space-y-1' }, children);
@@ -265,7 +298,9 @@ function historyCard(history: Khatma[]): HTMLElement {
   return card(
     strings.member.historyHeading,
     history.map((k) => {
-      const date = k.completedAt ? new Date(k.completedAt).toISOString().slice(0, 10) : '—';
+      const date = k.completedAt
+        ? new Date(k.completedAt).toISOString().slice(0, 10)
+        : '—';
       return el('p', { class: 'border-b border-border py-2 text-sm text-muted' }, [
         `${seriesTitle(k, toArabicDigits)} · ${strings.member.completedOn} ${date}`,
       ]);

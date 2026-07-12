@@ -46,8 +46,10 @@ export const strings = {
     noKhatmas: 'لست مشتركًا في أي ختمة حالية.',
     saveError: 'تعذّر حفظ الإنجاز، حاول مرة أخرى.',
     // Warnings (the member sees only their OWN warning, gently worded).
-    warningNote: 'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابعي مع صفحاتك الجديدة عند توزيعها.',
-    releasedNote: 'أُعيدت هذه الصفحات إلى المجموعة وأُسندت لغيرك — انتظري الجولة القادمة.',
+    warningNote:
+      'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابعي مع صفحاتك الجديدة عند توزيعها.',
+    releasedNote:
+      'أُعيدت هذه الصفحات إلى المجموعة وأُسندت لغيرك — انتظري الجولة القادمة.',
     // Insights & progress
     groupProgress: 'تقدّم المجموعة',
     completedRoundCount: 'أتمّوا صفحات الجولة',
@@ -101,11 +103,15 @@ export const strings = {
     // Home — per-series metrics + the daily distribution action.
     homeHeading: 'نظرة عامة',
     distribute: 'توزيع صفحات اليوم',
+    redistribute: 'إعادة توزيع الصفحات',
     confirmDistribute:
       'توزيع الجولة التالية الآن؟ ستُعاد صفحات من لم يُكمِل إلى المجموعة وسيُنبَّه.',
     distributedToday: 'تم توزيع صفحات اليوم ✓',
     distributeSuccess: 'تم التوزيع',
-    alreadyDistributed: 'سبق توزيع صفحات اليوم لهذه السلسلة',
+    confirmRedistribute:
+      'إعادة الصفحات الموزعة غير المقروءة إلى المجموعة وتوزيعها من جديد؟ لن تُسحب السور أو الأجزاء الموزعة.',
+    redistributeSuccess: 'تمت إعادة توزيع الصفحات',
+    alreadyDistributed: 'سبق توزيع صفحات اليوم لهذه الختمة',
     distributeError: 'تعذّر التوزيع، حاولي مرة أخرى',
     rolloverNote: 'اكتملت صفحات الختمة وبدأت الختمة التالية تلقائيًا 🎉',
     completedNote: 'اكتملت الختمة، تقبّل الله 🎉',
@@ -173,8 +179,6 @@ export const strings = {
     markComplete: 'إنهاء الختمة',
     confirmComplete: 'إنهاء هذه الختمة ونقلها إلى «السابقة»؟',
     confirmRemoveKhatma: 'حذف هذه الختمة نهائيًا مع كل تكليفاتها؟',
-    anonymousOn: 'الأسماء مخفية عن الأعضاء',
-    anonymousOff: 'الأسماء ظاهرة للأعضاء',
     reciterIs: 'قارئ الدعاء',
     none: 'غير محدد',
     startNext: 'بدء الختمة التالية',

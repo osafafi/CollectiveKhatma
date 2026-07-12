@@ -60,7 +60,7 @@ export interface AdminDraft {
   editKhatma: Record<string, { name: string; number: string; date: string }>;
   /** Transient per-entity messages, keyed by seriesId or khatmaId. */
   status: Record<string, string>;
-  /** Series ids with a distribution in flight (disables the button). */
+  /** Khatma ids with a distribution in flight (disables that khatma's button). */
   busy: Set<string>;
 }
 

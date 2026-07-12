@@ -136,7 +136,7 @@ On opening the app, an identified member sees:
 - **Easy Confirm**: A single tap button to mark the round chunk done (`markRoundDone`). If their pages were already released, they see a gentle note: "تمت إعادة صفحاتك للمجموعة" ("Your pages were returned to the group").
 - **Reading Mushaf**: Assigned pages are readable directly in-app.
 - **Warning Banner**: A personalized banner appears at the top of their page if their streak is flagged (Yellow/Red warning background with gentle reminders).
-- **Group Progress**: Shows which members have completed their readings in the current round. If anonymous mode is toggled, names are hidden, showing counts/percentages only. Warning levels of other members are never visible to readers.
+- **Group Progress**: Shows which members have completed their readings in the current round and the names of readers who are still pending. Warning levels of other members are never visible to readers.
 - **Series History**: Shows completed khatmas of this series with completion dates and reciter names.
 - **Quran Browsing & Settings**: Access to the full 604-page mushaf and the font-size slider.
 
@@ -153,16 +153,17 @@ The admin app is a routed SPA with five main views:
 1. **Home**:
    - Lists active series with overall completion metrics (donut charts and segmented bar charts showing done, pending, and remaining pages).
    - Shows active warning chips (names flagged as yellow/red) and pending readers.
-   - The **Distribute** button: Triggers `runDistribution` for active khatmas. Disabled with a success indicator once run for the day.
+   - Each active khatma name links directly to its detail page and has its own **Distribute** action.
+   - After a same-day distribution, **Redistribute pages** recalls only unread loose pages and runs the algorithm again; whole-surah and whole-juz allocations remain assigned.
 2. **Roster**:
    - Roster CRUD (add/edit/delete members).
    - Set each person's daily capacity (`pagesPerDay`) and enabled status.
    - Search filter to query members by name client-side.
 3. **Khatmas**:
-   - Creation form (name, scope, members, anonymous toggle, reciter selection). If the name matches an existing series, it automatically increments the sequence number.
+   - Creation form (name, scope, members, reciter selection). If the name matches an existing series, it automatically increments the sequence number.
    - Lists all active and completed khatmas.
 4. **Khatma Detail (`#/khatmas/{id}`)**:
-   - Detailed status, anonymous status toggle, and reciter selection.
+   - Detailed status and reciter selection.
    - Member management (add/remove members, force mark-complete, delete).
    - Member assignment table: Lists member names, warning status, current round chunk status (done/pending/released), and admin buttons to manually force mark-done, clear-done, or clear warnings.
    - Series History: Complete list of prior completed khatmas in this series.

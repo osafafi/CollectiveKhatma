@@ -60,6 +60,8 @@ export interface PlannedChunk {
   memberId: string;
   round: number;
   pages: number[];
+  /** Subset of `pages` taken by the member's loose-page capacity. */
+  loosePages: number[];
 }
 
 export interface DistributionPlan {
@@ -68,7 +70,11 @@ export interface DistributionPlan {
   /** New chunk per served member. Empty-page chunks are never emitted. */
   chunks: PlannedChunk[];
   /** Post-round pool + round counter for every input khatma. */
-  khatmaUpdates: Array<{ khatmaId: string; remainingPages: number[]; roundCount: number }>;
+  khatmaUpdates: Array<{
+    khatmaId: string;
+    remainingPages: number[];
+    roundCount: number;
+  }>;
   /** Present when the oldest pools drained mid-round: seed for khatma N+1. */
   rollover?: { remainingPages: number[] };
   /** Khatma ids that are fully read after settling — flip to `completed`. */
@@ -101,13 +107,39 @@ export function takeChunk(
   unitOfPage?: PageUnitMaps,
   completedPages: readonly number[] = [],
 ): number[] {
+  return takeChunkParts(pool, cap, unitOfPage, completedPages).pages;
+}
+
+interface ChunkParts {
+  pages: number[];
+  loosePages: number[];
+}
+
+/** Take one additive chunk while retaining which pages came from loose capacity. */
+function takeChunkParts(
+  pool: number[],
+  cap: MemberCapacity,
+  unitOfPage?: PageUnitMaps,
+  completedPages: readonly number[] = [],
+): ChunkParts {
   const taken: number[] = [];
+  const loosePages: number[] = [];
   const completed = new Set(completedPages);
   const pages = Math.max(0, Math.floor(cap.pages));
-  takePreferredPages(pool, taken, pages, completed);
+  takePreferredPages(pool, loosePages, pages, completed);
+  taken.push(...loosePages);
   takeSpecificSurah(pool, taken, Math.max(0, Math.floor(cap.surahs)), unitOfPage?.surah);
-  takeWholeUnits(pool, taken, Math.max(0, Math.floor(cap.juz)), unitOfPage?.juz, completed);
-  return taken.sort((a, b) => a - b);
+  takeWholeUnits(
+    pool,
+    taken,
+    Math.max(0, Math.floor(cap.juz)),
+    unitOfPage?.juz,
+    completed,
+  );
+  return {
+    pages: taken.sort((a, b) => a - b),
+    loosePages: loosePages.sort((a, b) => a - b),
+  };
 }
 
 /** Take unseen pages first, then fill any shortfall from the front of the pool. */
@@ -117,7 +149,7 @@ function takePreferredPages(
   count: number,
   completed: ReadonlySet<number>,
 ): void {
-  for (let i = 0; i < pool.length && taken.length < count; ) {
+  for (let i = 0; i < pool.length && taken.length < count;) {
     if (!completed.has(pool[i]!)) taken.push(pool.splice(i, 1)[0]!);
     else i++;
   }
@@ -132,7 +164,7 @@ function takeSpecificSurah(
   ofPage?: Record<number, number>,
 ): void {
   if (surahId <= 0 || !ofPage) return;
-  for (let i = 0; i < pool.length; ) {
+  for (let i = 0; i < pool.length;) {
     if (ofPage[pool[i]!] === surahId) taken.push(pool.splice(i, 1)[0]!);
     else i++;
   }
@@ -158,7 +190,7 @@ function takeWholeUnits(
         pool.every((page) => ofPage[page] !== id || !completed.has(page)),
       ) ?? ofPage[pool[0]!];
     if (unit === undefined) break; // page outside the known map — stop rather than loop
-    for (let i = 0; i < pool.length; ) {
+    for (let i = 0; i < pool.length;) {
       if (ofPage[pool[i]!] === unit) taken.push(pool.splice(i, 1)[0]!);
       else i++;
     }
@@ -213,7 +245,10 @@ function latestChunk(
 }
 
 /** Highest stored streak across the member's assignment docs (robust to drift). */
-function currentStreak(khatmas: readonly DistributionKhatmaState[], memberId: string): number {
+function currentStreak(
+  khatmas: readonly DistributionKhatmaState[],
+  memberId: string,
+): number {
   let streak = 0;
   for (const k of khatmas) {
     const assignment = k.assignments.find((a) => a.memberId === memberId);
@@ -290,22 +325,40 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
     const source = pools.find((p) => p.pages.length > 0);
     let khatmaId: string | null;
     let round: number;
-    let pages: number[];
+    let parts: ChunkParts;
     if (source) {
       const khatma = khatmas.find((k) => k.id === source.id);
-      pages = takeChunk(source.pages, member.capacity, unitOfPage, member.completedPages);
-      if (pages.length > 0) source.served = true;
+      parts = takeChunkParts(
+        source.pages,
+        member.capacity,
+        unitOfPage,
+        member.completedPages,
+      );
+      if (parts.pages.length > 0) source.served = true;
       khatmaId = source.id;
       round = (khatma?.roundCount ?? 0) + 1;
     } else {
       // Rollover: every existing pool is empty — mint khatma N+1.
       rolloverPool ??= [...newKhatmaPool];
-      pages = takeChunk(rolloverPool, member.capacity, unitOfPage, member.completedPages);
+      parts = takeChunkParts(
+        rolloverPool,
+        member.capacity,
+        unitOfPage,
+        member.completedPages,
+      );
       khatmaId = null;
       round = 1;
-      if (pages.length > 0) rolloverServed = true;
+      if (parts.pages.length > 0) rolloverServed = true;
     }
-    if (pages.length > 0) chunks.push({ khatmaId, memberId: member.id, round, pages });
+    if (parts.pages.length > 0) {
+      chunks.push({
+        khatmaId,
+        memberId: member.id,
+        round,
+        pages: parts.pages,
+        loosePages: parts.loosePages,
+      });
+    }
   }
 
   // 4. Completions: pool empty, nothing served this round, all chunks settled.
@@ -335,7 +388,9 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
         roundCount: (k?.roundCount ?? 0) + (p.served ? 1 : 0),
       };
     }),
-    ...(rolloverServed && rolloverPool ? { rollover: { remainingPages: rolloverPool } } : {}),
+    ...(rolloverServed && rolloverPool
+      ? { rollover: { remainingPages: rolloverPool } }
+      : {}),
     completions,
   };
 }
@@ -370,6 +425,56 @@ export function releaseChunk(
       round: chunk.round,
       remainingPages: mergeSorted(remainingPages, chunk.pages),
       missedStreak: 0,
+    };
+  }
+  return undefined;
+}
+
+/** Result of recalling only the loose-page portion of one pending chunk. */
+export interface LoosePageRecall {
+  assignment: Assignment;
+  remainingPages: number[];
+}
+
+/**
+ * Recall loose pages for redistribution while preserving whole-surah and
+ * whole-juz allocations. Legacy page-only chunks can be recalled safely;
+ * legacy mixed-unit chunks are left untouched because their split is unknown.
+ */
+export function recallLoosePagesFromAssignment(
+  assignment: Assignment,
+  remainingPages: number[],
+  capacity: MemberCapacity,
+): LoosePageRecall | undefined {
+  for (let i = assignment.rounds.length - 1; i >= 0; i--) {
+    const chunk = assignment.rounds[i]!;
+    if (chunk.pages.length === 0 || chunk.released === true) continue;
+    if (assignment.doneByRound[chunk.round] !== undefined) continue;
+
+    const loosePages =
+      chunk.loosePages ??
+      (capacity.surahs === 0 && capacity.juz === 0 ? chunk.pages : []);
+    const recalled = new Set(loosePages.filter((page) => chunk.pages.includes(page)));
+    if (recalled.size === 0) return undefined;
+
+    const pages = chunk.pages.filter((page) => !recalled.has(page));
+    const rounds = [...assignment.rounds];
+    rounds[i] = {
+      ...chunk,
+      pages,
+      loosePages: [],
+      redistributedPages: [
+        ...new Set([...(chunk.redistributedPages ?? []), ...recalled]),
+      ].sort((a, b) => a - b),
+      ...(pages.length === 0 ? { released: true as const } : {}),
+    };
+    return {
+      assignment: {
+        ...assignment,
+        rounds,
+        missedStreak: pages.length === 0 ? 0 : assignment.missedStreak,
+      },
+      remainingPages: mergeSorted(remainingPages, [...recalled]),
     };
   }
   return undefined;

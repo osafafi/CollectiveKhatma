@@ -2,7 +2,7 @@
  * Admin per-khatma management page (REQUIREMENTS §8): header with donut +
  * status, an edit card (name/number/creation date), a per-member table (warning
  * with clear, current chunk with mark-done/undo, manual return-to-pool, remove,
- * and per-member capacity), reciter + anonymous controls, start-next-in-series,
+ * and per-member capacity), reciter controls, start-next-in-series,
  * complete/delete, and the series' completed-khatmas history.
  */
 import { clearRoundDone, clearWarning, markRoundDone } from '@/data/assignments';
@@ -19,7 +19,14 @@ import { defaultCapacity } from '@/domain/assignment';
 import { warningLevel } from '@/domain/distribution';
 import { isRoundDone, khatmaProgress, latestReadableChunk } from '@/domain/progress';
 import { completedInSeries, seriesTitle } from '@/domain/series';
-import type { Assignment, Khatma, MemberCapacity, PageScope, Person, RoundChunk } from '@/domain/types';
+import type {
+  Assignment,
+  Khatma,
+  MemberCapacity,
+  PageScope,
+  Person,
+  RoundChunk,
+} from '@/domain/types';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { donutChart } from '@/ui/shared/charts';
@@ -46,22 +53,31 @@ export function khatmaPage(ctx: AdminCtx, id: string): HTMLElement {
   if (!k) {
     return el('div', { class: 'space-y-4' }, [
       backToList(),
-      card('', [mutedText(ctx.state.khatmas.length === 0 ? strings.common.loading : strings.admin.noActive)]),
+      card('', [
+        mutedText(
+          ctx.state.khatmas.length === 0
+            ? strings.common.loading
+            : strings.admin.noActive,
+        ),
+      ]),
     ]);
   }
   const assignments = ctx.state.assignments.get(k.id) ?? [];
 
   const sections: Node[] = [backToList(), headerCard(k, assignments), editCard(ctx, k)];
-  if (k.status === 'active') sections.push(membersCard(ctx, k, assignments), controlsCard(ctx, k));
+  if (k.status === 'active')
+    sections.push(membersCard(ctx, k, assignments), controlsCard(ctx, k));
   else sections.push(completedControls(ctx, k));
   sections.push(historyCard(ctx, k));
   return el('div', { class: 'space-y-4' }, sections);
 }
 
 function backToList(): HTMLElement {
-  return el('a', { href: adminHash.khatmas(), class: 'inline-block text-sm text-muted underline' }, [
-    `‹ ${strings.admin.navKhatmas}`,
-  ]);
+  return el(
+    'a',
+    { href: adminHash.khatmas(), class: 'inline-block text-sm text-muted underline' },
+    [`‹ ${strings.admin.navKhatmas}`],
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -75,8 +91,14 @@ function headerCard(k: Khatma, assignments: Assignment[]): HTMLElement {
     el('div', { class: 'flex items-center gap-4' }, [
       donutChart(percent, 88),
       el('div', { class: 'flex-1 space-y-1' }, [
-        el('h1', { class: 'text-2xl font-bold text-primary' }, [seriesTitle(k, toArabicDigits)]),
-        badge(k.status === 'active' ? strings.admin.statusActive : strings.admin.statusCompleted),
+        el('h1', { class: 'text-2xl font-bold text-primary' }, [
+          seriesTitle(k, toArabicDigits),
+        ]),
+        badge(
+          k.status === 'active'
+            ? strings.admin.statusActive
+            : strings.admin.statusCompleted,
+        ),
         el('p', { class: 'text-sm text-muted' }, [
           `${toArabicDigits(k.remainingPages.length)} ${strings.admin.pagesRemaining}` +
             ` · ${strings.admin.roundWord} ${toArabicDigits(k.roundCount)}` +
@@ -139,7 +161,8 @@ async function onSaveEdit(ctx: AdminCtx, k: Khatma): Promise<void> {
 
   const changes: Partial<Pick<Khatma, 'seriesNumber' | 'createdAt'>> = {};
   const num = parseInt(edit.number, 10);
-  if (Number.isInteger(num) && num > 0 && num !== k.seriesNumber) changes.seriesNumber = num;
+  if (Number.isInteger(num) && num > 0 && num !== k.seriesNumber)
+    changes.seriesNumber = num;
   const ms = dateToEpoch(edit.date);
   if (ms !== undefined && ms !== k.createdAt) changes.createdAt = ms;
   if (Object.keys(changes).length > 0) await updateKhatma(k.id, changes);
@@ -185,7 +208,8 @@ function memberRow(ctx: AdminCtx, k: Khatma, a: Assignment): HTMLElement {
   if (pending) {
     top.push(
       linkButton(strings.admin.returnToPool, () => {
-        if (confirm(strings.admin.confirmReturnToPool)) void releaseMemberChunk(k.id, a.memberId);
+        if (confirm(strings.admin.confirmReturnToPool))
+          void releaseMemberChunk(k.id, a.memberId);
       }),
     );
   }
@@ -193,7 +217,8 @@ function memberRow(ctx: AdminCtx, k: Khatma, a: Assignment): HTMLElement {
     linkButton(
       strings.admin.removeFromKhatma,
       () => {
-        if (confirm(strings.admin.confirmRemoveFromKhatma)) void removeMemberFromKhatma(k.id, a.memberId);
+        if (confirm(strings.admin.confirmRemoveFromKhatma))
+          void removeMemberFromKhatma(k.id, a.memberId);
       },
       'danger',
     ),
@@ -217,11 +242,22 @@ function surahSelectEl(ctx: AdminCtx, selectedId: number): HTMLSelectElement {
   return selectField(options, selectedId > 0 ? String(selectedId) : '', () => undefined);
 }
 
-function capacityEditor(ctx: AdminCtx, k: Khatma, memberId: string, person: Person): HTMLElement {
+function capacityEditor(
+  ctx: AdminCtx,
+  k: Khatma,
+  memberId: string,
+  person: Person,
+): HTMLElement {
   const start = k.capacities?.[memberId] ?? defaultCapacity(person);
-  const pagesIn = numberField(String(start.pages), () => undefined, { min: '0', width: 'w-16' });
+  const pagesIn = numberField(String(start.pages), () => undefined, {
+    min: '0',
+    width: 'w-16',
+  });
   const surahsIn = surahSelectEl(ctx, start.surahs);
-  const juzIn = numberField(String(start.juz), () => undefined, { min: '0', width: 'w-16' });
+  const juzIn = numberField(String(start.juz), () => undefined, {
+    min: '0',
+    width: 'w-16',
+  });
   const field = (input: HTMLElement, label: string): HTMLElement =>
     el('label', { class: 'flex items-center gap-1 text-xs text-muted' }, [input, label]);
   return el('div', { class: 'flex flex-wrap items-center gap-2 ps-2' }, [
@@ -234,7 +270,9 @@ function capacityEditor(ctx: AdminCtx, k: Khatma, memberId: string, person: Pers
         surahs: toInt(surahsIn.value),
         juz: toInt(juzIn.value),
       };
-      void updateKhatma(k.id, { capacities: { ...(k.capacities ?? {}), [memberId]: capacity } });
+      void updateKhatma(k.id, {
+        capacities: { ...(k.capacities ?? {}), [memberId]: capacity },
+      });
     }),
   ]);
 }
@@ -255,7 +293,11 @@ function chunkCell(k: Khatma, a: Assignment): HTMLElement {
     : 'rounded-button bg-bg px-2 py-1 text-xs text-muted';
   const chip = el(
     'button',
-    { type: 'button', class: cls, title: done ? strings.admin.undo : strings.admin.markDone },
+    {
+      type: 'button',
+      class: cls,
+      title: done ? strings.admin.undo : strings.admin.markDone,
+    },
     [label],
   ) as HTMLButtonElement;
   chip.addEventListener('click', () => {
@@ -286,7 +328,10 @@ function addMemberRow(ctx: AdminCtx, k: Khatma): HTMLElement {
     candidates[0]?.id ?? '',
     () => undefined,
   );
-  const pagesIn = numberField(String(candidates[0]?.pagesPerDay ?? 2), () => undefined, { min: '0', width: 'w-16' });
+  const pagesIn = numberField(String(candidates[0]?.pagesPerDay ?? 2), () => undefined, {
+    min: '0',
+    width: 'w-16',
+  });
   const surahsIn = surahSelectEl(ctx, 0);
   const juzIn = numberField('0', () => undefined, { min: '0', width: 'w-16' });
   const field = (input: HTMLElement, label: string): HTMLElement =>
@@ -329,9 +374,6 @@ function controlsCard(ctx: AdminCtx, k: Khatma): HTMLElement {
     reciter,
     el('div', { class: 'flex flex-wrap gap-2' }, [
       secondaryButton(strings.admin.startNext, () => prefillNextKhatma(ctx, k)),
-      secondaryButton(k.anonymous ? strings.admin.anonymousOn : strings.admin.anonymousOff, () =>
-        void updateKhatma(k.id, { anonymous: !k.anonymous }),
-      ),
       primaryButton(strings.admin.markComplete, () => {
         if (confirm(strings.admin.confirmComplete)) void completeKhatma(k.id);
       }),
@@ -348,7 +390,9 @@ function controlsCard(ctx: AdminCtx, k: Khatma): HTMLElement {
 
 /** For a completed khatma: start the next cycle (prefilled create form). */
 function completedControls(ctx: AdminCtx, k: Khatma): HTMLElement {
-  return card('', [secondaryButton(strings.admin.startNext, () => prefillNextKhatma(ctx, k))]);
+  return card('', [
+    secondaryButton(strings.admin.startNext, () => prefillNextKhatma(ctx, k)),
+  ]);
 }
 
 /**
@@ -390,7 +434,9 @@ function hydrateScope(draft: AdminCtx['draft'], scope: PageScope): void {
 // -----------------------------------------------------------------------------
 
 function historyCard(ctx: AdminCtx, k: Khatma): HTMLElement {
-  const history = completedInSeries(ctx.state.khatmas, k.seriesId).filter((x) => x.id !== k.id);
+  const history = completedInSeries(ctx.state.khatmas, k.seriesId).filter(
+    (x) => x.id !== k.id,
+  );
   if (history.length === 0 && k.status === 'active') {
     return card(strings.admin.historyHeading, [mutedText(strings.admin.noCompleted)]);
   }

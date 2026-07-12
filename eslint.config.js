@@ -8,6 +8,14 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
+  // Node scripts use process/console rather than browser globals.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
+
   // TypeScript handles undefined identifiers and unused-var analysis; let
   // underscore-prefixed args/vars through (used by the Stage 2 stub signatures).
   {

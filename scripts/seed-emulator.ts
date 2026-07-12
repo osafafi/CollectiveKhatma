@@ -17,7 +17,10 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { DEFAULT_DU3A_TEXT } from '../src/content/strings.ar';
 import { resolvePageScope } from '../src/domain/assignment';
-import { planDistribution, type DistributionKhatmaState } from '../src/domain/distribution';
+import {
+  planDistribution,
+  type DistributionKhatmaState,
+} from '../src/domain/distribution';
 import { pickDuaReciter } from '../src/domain/rotation';
 import type { Assignment, PageScope, RoundChunk } from '../src/domain/types';
 
@@ -107,7 +110,10 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
   let remainingPages = pool;
   let roundCount = 0;
   const assignments = new Map<string, Assignment>(
-    memberIds.map((id) => [id, { memberId: id, rounds: [], doneByRound: {}, missedStreak: 0 }]),
+    memberIds.map((id) => [
+      id,
+      { memberId: id, rounds: [], doneByRound: {}, missedStreak: 0 },
+    ]),
   );
   const khatmaId = db.collection('khatmas').doc().id;
 
@@ -171,7 +177,6 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
     totalPages: pool.length,
     scope,
     memberIds,
-    anonymous: false,
     remainingPages,
     roundCount,
     lastDistributionDate: isoDate(-1),
@@ -186,7 +191,9 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
       .filter((c) => c.released !== true && a.doneByRound[c.round] !== undefined)
       .flatMap((c) => c.pages);
     if (donePages.length > 0) {
-      batch.update(db.collection('roster').doc(a.memberId), { completedPages: donePages });
+      batch.update(db.collection('roster').doc(a.memberId), {
+        completedPages: donePages,
+      });
     }
   }
   await batch.commit();
