@@ -152,7 +152,7 @@ The admin app is a routed SPA with five main views:
 
 1. **Home**:
    - Lists active series with overall completion metrics (donut charts and segmented bar charts showing done, pending, and remaining pages).
-   - Shows active warning chips (names flagged as yellow/red) and pending readers.
+   - Shows warning chips and pending readers inside the exact khatma they belong to; each pending reader includes their assigned page ranges.
    - Each active khatma name links directly to its detail page and has its own **Distribute** action.
    - After a same-day distribution, **Redistribute pages** recalls only unread loose pages and runs the algorithm again; whole-surah and whole-juz allocations remain assigned.
 2. **Roster**:

@@ -6,7 +6,7 @@
 import { AlreadyDistributedError, runDistribution } from '@/data/distribution';
 import { defaultCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
-import { currentChunk, khatmaProgress, pendingReaders } from '@/domain/progress';
+import { currentChunk, khatmaProgress } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
 import {
   activeSeriesGroups,
@@ -44,12 +44,20 @@ function seriesBlock(ctx: AdminCtx, group: SeriesGroup): HTMLElement {
   const body: Node[] = [];
 
   for (const k of group.active) {
-    body.push(khatmaMetrics(ctx, k), distributionAction(ctx, group, k));
+    body.push(khatmaBlock(ctx, group, k));
   }
 
-  body.push(warningsLine(ctx, group), pendingLine(ctx, group));
-
   return card(seriesTitle(group.latest, toArabicDigits), body);
+}
+
+/** Keep every khatma's metrics, readers, warnings, and actions visibly together. */
+function khatmaBlock(ctx: AdminCtx, group: SeriesGroup, k: Khatma): HTMLElement {
+  return el('section', { class: 'space-y-3 rounded-button border border-border p-3' }, [
+    khatmaMetrics(ctx, k),
+    pendingLine(ctx, k),
+    warningsLine(ctx, k),
+    distributionAction(ctx, group, k),
+  ]);
 }
 
 /** A separate distribute/redistribute action for every active khatma. */
@@ -130,25 +138,32 @@ function khatmaMetrics(ctx: AdminCtx, k: Khatma): HTMLElement {
   ]);
 }
 
-/** Names still reading their current chunk, across the series' active khatmas. */
-function pendingLine(ctx: AdminCtx, group: SeriesGroup): HTMLElement {
-  const ids = new Set<string>();
-  for (const k of group.active) {
-    for (const id of pendingReaders(ctx.state.assignments.get(k.id) ?? [])) ids.add(id);
+/** Readers still pending in this khatma, including their exact current pages. */
+function pendingLine(ctx: AdminCtx, k: Khatma): HTMLElement {
+  const rows: Node[] = [];
+  for (const assignment of ctx.state.assignments.get(k.id) ?? []) {
+    const chunk = currentChunk(assignment);
+    if (!chunk) continue;
+    const name =
+      ctx.state.roster.find((person) => person.id === assignment.memberId)?.name ??
+      assignment.memberId;
+    rows.push(
+      el('li', { class: 'flex flex-wrap justify-between gap-2' }, [
+        el('span', { class: 'font-medium' }, [name]),
+        el('span', { class: 'tabular-nums' }, [pageRanges(chunk.pages)]),
+      ]),
+    );
   }
-  const names = [...ids]
-    .map((id) => ctx.state.roster.find((p) => p.id === id)?.name)
-    .filter((n): n is string => Boolean(n));
-  if (names.length === 0) return emptyNode();
+  if (rows.length === 0) return emptyNode();
   return el('div', { class: 'rounded-button bg-bg p-3 text-muted' }, [
     el('p', { class: 'font-semibold' }, [strings.admin.pendingHeading]),
-    el('p', {}, [names.join('، ')]),
+    el('ul', { class: 'mt-2 space-y-1 text-sm' }, rows),
   ]);
 }
 
-/** Yellow/red warning chips with names (admin sees everything). */
-function warningsLine(ctx: AdminCtx, group: SeriesGroup): HTMLElement {
-  const flagged = flaggedMembers(ctx.state.assignments.get(group.latest.id) ?? []);
+/** Yellow/red warning chips for this khatma (admin sees everything). */
+function warningsLine(ctx: AdminCtx, k: Khatma): HTMLElement {
+  const flagged = flaggedMembers(ctx.state.assignments.get(k.id) ?? []);
   const chips: Node[] = [];
   for (const { memberId, level } of flagged) {
     const name = ctx.state.roster.find((p) => p.id === memberId)?.name ?? memberId;
@@ -156,6 +171,26 @@ function warningsLine(ctx: AdminCtx, group: SeriesGroup): HTMLElement {
   }
   if (chips.length === 0) return emptyNode();
   return el('div', { class: 'flex flex-wrap gap-2' }, chips);
+}
+
+/** Compress sorted page numbers into exact Arabic-digit runs: "١–٣، ٥". */
+function pageRanges(pages: readonly number[]): string {
+  const sorted = [...new Set(pages)].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  for (let i = 0; i < sorted.length;) {
+    const start = sorted[i]!;
+    let end = start;
+    while (i + 1 < sorted.length && sorted[i + 1] === end + 1) {
+      end = sorted[++i]!;
+    }
+    ranges.push(
+      start === end
+        ? toArabicDigits(start)
+        : `${toArabicDigits(start)}–${toArabicDigits(end)}`,
+    );
+    i++;
+  }
+  return ranges.join('، ');
 }
 
 export function flaggedMembers(
