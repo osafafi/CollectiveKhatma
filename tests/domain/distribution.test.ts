@@ -20,11 +20,20 @@ const range = (a: number, b: number): number[] => {
 };
 
 function member(id: string, pages = 2, enabled = true): DistributionMember {
-  return { id, capacity: cap(pages), enabled };
+  return { id, capacity: cap(pages), completedPages: [], enabled };
 }
 
 function memberCap(id: string, capacity: MemberCapacity, enabled = true): DistributionMember {
-  return { id, capacity, enabled };
+  return { id, capacity, completedPages: [], enabled };
+}
+
+function coveredMember(
+  id: string,
+  pages: number,
+  completedPages: number[],
+  enabled = true,
+): DistributionMember {
+  return { id, capacity: cap(pages), completedPages, enabled };
 }
 
 function chunk(round: number, pages: number[], released?: true): RoundChunk {
@@ -45,8 +54,9 @@ function khatma(
   remainingPages: number[],
   roundCount: number,
   assignments: Assignment[],
+  seriesNumber = 1,
 ): DistributionKhatmaState {
-  return { id, remainingPages, roundCount, assignments };
+  return { id, seriesNumber, remainingPages, roundCount, assignments };
 }
 
 function input(overrides: Partial<DistributionInput>): DistributionInput {
@@ -54,6 +64,7 @@ function input(overrides: Partial<DistributionInput>): DistributionInput {
     khatmas: [],
     members: [],
     newKhatmaPool: Array.from({ length: 20 }, (_, i) => i + 101),
+    newKhatmaSeriesNumber: 2,
     ...overrides,
   };
 }
@@ -99,6 +110,27 @@ describe('takeChunk', () => {
     const pool = range(1, 3);
     expect(takeChunk(pool, cap(5))).toEqual([1, 2, 3]);
     expect(pool).toEqual([]);
+  });
+
+  it('prefers pages the member has never completed', () => {
+    const pool = range(1, 6);
+    expect(takeChunk(pool, cap(2), undefined, [1, 2, 5])).toEqual([3, 4]);
+    expect(pool).toEqual([1, 2, 5, 6]);
+  });
+
+  it('falls back to completed pages after full coverage', () => {
+    const pool = range(1, 4);
+    expect(takeChunk(pool, cap(2), undefined, range(1, 4))).toEqual([1, 2]);
+    expect(pool).toEqual([3, 4]);
+  });
+
+  it('expands a member\'s unique coverage across repeated khatma pools', () => {
+    const completed = new Set<number>();
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const pages = takeChunk(range(1, 6), cap(2), undefined, [...completed]);
+      pages.forEach((page) => completed.add(page));
+    }
+    expect([...completed].sort((a, b) => a - b)).toEqual(range(1, 6));
   });
 
   it('pulls a specific surah from the middle of the pool', () => {
@@ -172,6 +204,25 @@ describe('planDistribution — serving', () => {
     );
     expect(chunkFor(plan, 'm1')?.pages).toEqual([1, 2, 3, 4]);
     expect(plan.khatmaUpdates[0]?.remainingPages).toEqual([5, 6, 7]);
+  });
+
+  it('rotates first choice and avoids each member\'s prior pages', () => {
+    const plan = planDistribution(
+      input({
+        khatmas: [
+          khatma('k2', range(1, 8), 0, [assignment('a'), assignment('b')], 2),
+        ],
+        members: [coveredMember('a', 3, [1, 2, 3]), coveredMember('b', 1, [4])],
+        newKhatmaSeriesNumber: 3,
+      }),
+    );
+
+    expect(plan.chunks).toEqual([
+      { khatmaId: 'k2', memberId: 'b', round: 1, pages: [1] },
+      { khatmaId: 'k2', memberId: 'a', round: 1, pages: [4, 5, 6] },
+    ]);
+    expect(chunkFor(plan, 'a')?.pages).not.toContain(1);
+    expect(chunkFor(plan, 'b')?.pages).not.toContain(4);
   });
 });
 

@@ -110,6 +110,7 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
     // --- Plan on the transactional snapshot --------------------------------
     const states: DistributionKhatmaState[] = khatmas.map((k) => ({
       id: k.id,
+      seriesNumber: k.seriesNumber,
       remainingPages: k.remainingPages,
       roundCount: k.roundCount,
       assignments: k.assignments,
@@ -118,6 +119,7 @@ export function runDistribution(params: RunDistributionParams): Promise<Distribu
       khatmas: states,
       members,
       newKhatmaPool: rolloverSeed.pool,
+      newKhatmaSeriesNumber: rolloverSeed.seriesNumber,
       unitOfPage,
     });
 

@@ -124,7 +124,7 @@ Khatmas belong to named series and operate without fixed schedules, durations, o
 - **Warnings Carry Over**: Flagged warning states carry over to the new khatma during rollover, though the admin can clear streaks/warnings manually from the roster or active khatma page.
 
 ### Removed Features & Accepted Trade-offs
-* **No Rotation-Avoidance History**: Pages are served sequentially from the front of the active pool. Past personal reading history does not affect page assignment order.
+* **Coverage-aware Rotation**: On each khatma iteration, first-choice priority rotates by `seriesNumber`. Within the active pool, loose pages and whole-juz capacities prefer pages absent from that member's deduplicated `completedPages` history, then fall back to already-covered pages only when necessary. An explicitly configured surah remains fixed admin intent.
 * **No Credit for Post-Release Reading**: If a member reads their pages after they have been released back to the pool, their work goes uncredited (their page assignment is marked as released).
 * **Missed the Day is Missed the Round**: If the admin does not trigger a distribution on a given day, no warnings are generated. Missing a round is determined strictly at the moment of the admin's manual distribution action.
 * **Removed**: Durations, leftover/volunteer logic, manual page regenerations, manual overrides of specific pages, and restart overlays.

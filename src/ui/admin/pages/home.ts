@@ -160,6 +160,7 @@ async function onDistribute(ctx: AdminCtx, group: SeriesGroup): Promise<void> {
     .map((p) => ({
       id: p.id,
       capacity: latest.capacities?.[p.id] ?? defaultCapacity(p),
+      completedPages: p.completedPages,
       enabled: p.enabled,
     }));
 

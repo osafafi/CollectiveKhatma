@@ -114,6 +114,7 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
   const runRound = (date: string): void => {
     const state: DistributionKhatmaState = {
       id: khatmaId,
+      seriesNumber: 1,
       remainingPages,
       roundCount,
       assignments: [...assignments.values()],
@@ -123,9 +124,11 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
       members: members.map((m) => ({
         id: m.id,
         capacity: { pages: m.pagesPerDay, surahs: 0, juz: 0 },
+        completedPages: [],
         enabled: m.enabled,
       })),
       newKhatmaPool: pool,
+      newKhatmaSeriesNumber: 2,
     });
     for (const [memberId, streak] of Object.entries(plan.streaks)) {
       const a = assignments.get(memberId);

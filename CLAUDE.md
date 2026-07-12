@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## Repository Instruction Source
+
+`CLAUDE.md` is the single source of repository instructions for ALL coding agents.
+Keep project guidance here and do not create or maintain a duplicate `AGENTS.md`.
+
 ## Reference Commands
 
 ### Build & Validate
@@ -76,7 +81,7 @@ src/
 ### Verbatim Invariants
 1. Every scope page is in exactly one of: a non-released chunk, or `remainingPages`.
 2. Only a member's last chunk with `pages.length > 0` may be pending. Distribution does NOT auto-release it — an unread member is skipped; pages return to the pool only via the admin's manual `releaseMemberChunk` (or `removeMemberFromKhatma`).
-3. `remainingPages` is always ascending; distribution shifts from the front; released pages merge back sorted (so released low pages are re-served first automatically — no priority queue needed).
+3. `remainingPages` is always ascending. Coverage-aware distribution may select from anywhere in the pool; released pages merge back sorted.
 4. `lastDistributionDate === today` ⇒ distribution for this series today is blocked.
 
 ---
@@ -84,8 +89,8 @@ src/
 ## Distribution Algorithm (planDistribution)
 
 1. **Settle previous round (no auto-reclaim)**: Per member, find the last non-empty chunk across all active khatmas. If **done**: reset `missedStreak` to 0 (member is *ready*). If **pending** (not done, not released): the member KEEPS the pages and is **skipped** this round, and `missedStreak + 1` (the ⚠ flag auto-escalates by rounds waited). No prior chunk / already released: *ready*, streak untouched.
-2. **Order members**: Only *ready* members (enabled, not holding a pending chunk). Clean (`missedStreak === 0`) first in roster order, then flagged. Disabled members are skipped.
-3. **Serve**: Each ready member takes their additive `MemberCapacity` — `pages` loose pages + the specific surah `surahs` (id; 0=none) + `juz` whole ajzā' (via `takeChunk` + `unitOfPage`) off the front of the oldest pool; whole units are never split. If the pool drains mid-round, **rollover**: mint N+1 (seeded with full `newKhatmaPool`). Chunks never span two khatmas.
+2. **Order members**: Only *ready* members (enabled, not holding a pending chunk). Clean (`missedStreak === 0`) members come before flagged members; first-choice priority rotates by `seriesNumber`. Disabled members are skipped.
+3. **Serve**: Each ready member takes their additive `MemberCapacity` — `pages` loose pages + the specific surah `surahs` (id; 0=none) + `juz` whole ajzā' (via `takeChunk` + `unitOfPage`) from the oldest pool. Loose pages and whole juz prefer pages absent from that member's lifetime `completedPages`, then fall back to previously covered pages. A specifically configured surah remains fixed admin intent. If the pool drains mid-round, **rollover** mints N+1 from `newKhatmaPool`. Chunks never span two khatmas.
 4. **Completion check**: Any khatma with empty `remainingPages` and all its chunks either done or released becomes completed. A pending (held) chunk therefore blocks completion until it is done or the admin releases it.
 
 Returning unread pages is a separate admin action: `releaseMemberChunk` marks the chunk `released`, merges its pages back (sorted), and resets the streak.

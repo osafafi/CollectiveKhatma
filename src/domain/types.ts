@@ -19,7 +19,7 @@ export interface Person {
   /**
    * Lifetime set of page numbers this person has marked done, across every
    * khatma. Feeds the personal "pages of the Quran read" insight only —
-   * distribution is front-of-pool sequential and does not consult it.
+   * distribution prefers pages they have not read before.
    */
   completedPages: number[];
   /**

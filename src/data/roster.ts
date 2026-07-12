@@ -19,6 +19,7 @@ function fromStored(id: string, data: Omit<Person, 'id'>): Person {
   return {
     ...data,
     id,
+    completedPages: data.completedPages ?? [],
     pagesPerDay: data.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
     enabled: data.enabled ?? true,
   };
