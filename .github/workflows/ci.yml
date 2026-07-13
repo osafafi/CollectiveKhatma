@@ -15,10 +15,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
+      - name: Typecheck TypeScript and TSX
+        run: npm run typecheck
+      - name: Lint TypeScript and TSX
+        run: npm run lint
+      - name: Test legacy and React projects
+        run: npm test
+      - name: Build production entries
+        run: npm run build
         env:
           # Non-secret placeholder so the client bundle initializes at build.
           VITE_FIREBASE_PROJECT_ID: demo-khatma

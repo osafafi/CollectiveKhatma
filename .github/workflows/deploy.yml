@@ -26,7 +26,13 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Build
+      - name: Typecheck TypeScript and TSX
+        run: npm run typecheck
+      - name: Lint TypeScript and TSX
+        run: npm run lint
+      - name: Test legacy and React projects
+        run: npm test
+      - name: Build production entries
         run: npm run build
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).

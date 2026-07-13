@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120, RM-130 DONE) |
-| Next milestone | RM-140 — Update CI/deploy tooling |
+| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120, RM-130, RM-140 DONE) |
+| Next milestone | RM-150 — Verify clean toolchain installation |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -408,7 +408,7 @@ failure exists.
 | RM-115 Map Tailwind tokens/components to MUI | Claude | DONE | RM-020 | P1-A | 2026-07-13: [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md) — token table maps all 11 active colors (+1 dead) to `palette`, both fonts (Tajawal not-bundled flagged) + type scale/weights + reading scale to `typography`/retained, radii→`shape`, spacing (4px-unit reconciliation) + breakpoints (md/lg→`breakpoints.values`), every legacy component→MUI (§7), and retained CSS (§8). Derived from `theme.css`/compiled CSS + grep at `38fbe43`. |
 | RM-120 Install React/MUI/Redux toolchain | Codex | DONE | RM-110 | — | 2026-07-13: installed React 19.2.7, MUI/Emotion/RTL, Redux Toolkit 2.12.0, React-Redux 9.3.0, React Router 7.18.1, Vite React plugin, types, and component-test dependencies; applied RM-110 safe refreshes; pinned reviewed install scripts; clean `npm ci` and the full baseline suite passed on Node 24.18.0. |
 | RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | DONE | RM-120 | — | 2026-07-13: enabled `react-jsx`, Vite React/Fast Refresh, Hooks/refresh lint rules, and separate Node/jsdom Vitest projects; clean install and full suite passed with 67 tests. |
-| RM-140 Update CI/deploy tooling | Codex | NOT STARTED | RM-100, RM-130 | — | Both workflows use the pinned Node version and execute React-aware checks. |
+| RM-140 Update CI/deploy tooling | Codex | DONE | RM-100, RM-130 | — | 2026-07-13: CI and deploy use `.nvmrc`; both run named TS/TSX typecheck, React-aware lint, legacy + React tests, and the two-entry production build before integration/deployment. Full pinned-runtime suite passed with 67 tests. |
 | RM-150 Verify clean toolchain installation | Codex | NOT STARTED | RM-140 | — | Clean install, typecheck, lint, legacy tests, and production build pass on pinned Node. |
 
 **Phase 1 exit:** one Node LTS version is used everywhere; dependency changes
@@ -590,6 +590,45 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-140 → DONE
+
+- Branch/commit: `reactmigration`, implemented from
+  `58f8c79f048b7cc881fb60716d2463a7a15485ae`; task commit pending at log-update
+  time.
+- Outcome: CI and the deployment build job both use Node `24.18.0` through
+  `.nvmrc` and run explicit TS/TSX typecheck, React-aware lint, legacy + React
+  tests, and production-build gates. The Firestore-rules deployment job remains
+  pinned through the same `.nvmrc`.
+- Files/areas changed: `.github/workflows/ci.yml`,
+  `.github/workflows/deploy.yml`, and this tracker.
+- Verification on checksum-verified Node `24.18.0` / npm `11.16.0`: fresh
+  `npm ci` installed 1,040 packages; `npm ls --depth=0`, typecheck, lint, 8 test
+  files / 67 tests, and the two-entry production build passed. Static workflow
+  assertions, workflow Prettier check, and `git diff --check` passed.
+- Decisions and risks: the workflows keep explicit commands so their gates stay
+  visible in GitHub Actions; those commands consume RM-130's TSX, Hooks/refresh,
+  and separate Node/jsdom Vitest configuration. The existing >500 kB shared
+  chunk warning remains assigned to RM-040/RM-630.
+- Recommended next action: take RM-150; RM-140 is now `DONE`, so its clean
+  toolchain verification can proceed.
+
+### 2026-07-13 — Codex — RM-140 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at
+  `58f8c79f048b7cc881fb60716d2463a7a15485ae`, with a clean working tree at
+  preflight; RM-100 and RM-130 are `DONE`, so both dependencies are satisfied.
+- Outcome: claimed RM-140 under Codex; CI and deployment workflow alignment with
+  the React-aware toolchain is beginning.
+- Files/areas changed: this tracker only before broad workflow changes.
+- Verification on checksum-verified Node `24.18.0` / npm `11.16.0`: fresh
+  `npm ci` installed 1,040 packages and the pre-change `npm run typecheck`
+  baseline passed.
+- Decisions and risks: both workflows already read the pinned version from
+  `.nvmrc`; the exact React-aware checks and duplication boundary still need to
+  be verified before editing the workflows.
+- Recommended next action: audit and update `.github/workflows/ci.yml` and
+  `.github/workflows/deploy.yml`, then validate their commands locally.
 
 ### 2026-07-13 — Codex — RM-130 → DONE
 
