@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-115 DONE) |
-| Next milestone | RM-110 — Audit/group dependency updates (Codex), then RM-120/RM-130 toolchain |
+| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115 DONE) |
+| Next milestone | RM-120 — Install React/MUI/Redux toolchain, then RM-130 configuration |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -404,7 +404,7 @@ failure exists.
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
 | RM-100 Pin Node 24 LTS consistently | Codex | DONE | RM-010 | P1-A | 2026-07-13: pinned Node 24.18.0 in `.nvmrc`, package metadata, CI, deploy, and docs; aligned `@types/node` to 24.13.3; clean install and full baseline suite passed on the pinned runtime. |
-| RM-110 Audit and group existing dependency updates | Codex | NOT STARTED | RM-100 | — | Direct dependencies classified as keep/update/replace/remove; breaking changes noted; no blind all-major upgrade. |
+| RM-110 Audit and group existing dependency updates | Codex | DONE | RM-100 | — | 2026-07-13: [`REACT_MIGRATION_DEPENDENCY_AUDIT.md`](REACT_MIGRATION_DEPENDENCY_AUDIT.md) classifies all 15 direct packages; eight same-major refreshes grouped for RM-120, TypeScript 7 and Node 26 types rejected on compatibility grounds, and Tailwind removal deferred to RM-620. No manifest/lockfile change. |
 | RM-115 Map Tailwind tokens/components to MUI | Claude | DONE | RM-020 | P1-A | 2026-07-13: [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md) — token table maps all 11 active colors (+1 dead) to `palette`, both fonts (Tajawal not-bundled flagged) + type scale/weights + reading scale to `typography`/retained, radii→`shape`, spacing (4px-unit reconciliation) + breakpoints (md/lg→`breakpoints.values`), every legacy component→MUI (§7), and retained CSS (§8). Derived from `theme.css`/compiled CSS + grep at `38fbe43`. |
 | RM-120 Install React/MUI/Redux toolchain | Codex | NOT STARTED | RM-110 | — | Add React, React DOM, MUI/Emotion/RTL, Redux Toolkit, React-Redux, routing, Vite React plugin, types, and test dependencies. Lockfile is reproducible. |
 | RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | NOT STARTED | RM-120 | — | TSX builds, Fast Refresh works, lint recognizes hooks/JSX, and component test environment runs. |
@@ -589,6 +589,32 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-110 → DONE
+
+- Branch/commit: `reactmigration`, starting from `d12d291` with a clean working
+  tree. The handoff prompt contained the literal `<hash>` placeholder; `d12d291`
+  was accepted as the intended handoff because it is the current clean HEAD and
+  contains the latest RM-115 theme-map/tracker commit.
+- Outcome: added [`REACT_MIGRATION_DEPENDENCY_AUDIT.md`](REACT_MIGRATION_DEPENDENCY_AUDIT.md),
+  classifying all 15 existing direct dependencies. Eight same-major refreshes
+  are grouped for RM-120; five registry-current/compatibility-pinned packages are
+  retained; TypeScript 7 and Node 26 types are explicitly rejected; Tailwind and
+  its Vite plugin remain through coexistence and are removed at RM-620. RM-110
+  made no `package.json` or `package-lock.json` change.
+- Verification: direct-package coverage check reported 15 declared / 15 audited
+  with no missing or extra rows; registry evidence came from
+  `npm outdated --json --long` and targeted `npm view` engine/peer metadata;
+  local imports, configs, scripts, and workflows were inspected for actual use;
+  `npm run typecheck` passed; documentation link/path review and
+  `git diff --check` passed.
+- Environment/risk note: `npm ls --depth=0` exited successfully but reported
+  several extraneous transitive WASM packages in the local install. This shell
+  is Node `24.14.0` / npm `11.9.0`, not the pinned Node `24.18.0`; RM-120 must
+  create and verify its lockfile with a clean install on the pinned runtime.
+- Recommended next action: take RM-120 and apply the audit's Group A refreshes
+  while installing the React/MUI/Redux packages, then run the full dependency
+  verification suite before RM-130.
 
 ### 2026-07-13 — Claude — RM-115 → DONE
 
