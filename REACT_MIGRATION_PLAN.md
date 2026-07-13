@@ -27,7 +27,7 @@ and this document is updated.
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
 | Current phase | Phase 0, Phase 1, and Phase 2 complete; Phase 3 ready |
-| Next milestone | RM-030 — record the implemented React architecture addendum |
+| Next milestone | Phase 3 — shared React providers, shells, and primitives (RM-300…RM-350) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -393,7 +393,7 @@ update the owner field. The file boundaries are more important than the names.
 | RM-000 Create migration plan and branch rules | Codex | DONE | — | — | This document exists and names `reactmigration` as the integration branch. |
 | RM-010 Confirm baseline health on migration branch | Codex | DONE | RM-000 | P0-A | 2026-07-13: typecheck, lint, 66 tests, and production build passed on `reactmigration`. |
 | RM-020 Build route-by-route UI parity inventory | Claude | DONE | RM-000 | P0-A | 2026-07-13: [`REACT_MIGRATION_UI_INVENTORY.md`](REACT_MIGRATION_UI_INVENTORY.md) covers all 11 member+admin hash routes plus the identity gate and completion overlay, every action, loading/empty/error/not-found states, the 4 localStorage persistence keys, and responsive/RTL behavior; adds a parity-risk oracle (§4) and baseline-quirk list (§5). Derived from source at `d3b277d`. |
-| RM-030 Record React migration architecture addendum | Unassigned | NOT STARTED | RM-020, RM-260 | — | `ARCHITECTURE.md` describes the implemented React/state boundaries without erasing historical intent. |
+| RM-030 Record React migration architecture addendum | Claude | DONE | RM-020, RM-260 | — | 2026-07-13: [`ARCHITECTURE.md`](ARCHITECTURE.md) gained a "React Migration Architecture (branch-only)" section documenting the implemented `src/app/` layer, preserved dependency boundary (Firebase still only in `src/data/`), provider composition, the four-slice Redux store + state-ownership model, the reference-counted Firestore→Redux subscription bridge, the 16-mutation write adapter with local operation feedback, shared hash-routing contract, and MUI RTL theme — verified against shipped code. The legacy framework-free description is retained intact and explicitly marked as what production still ships. Doc-only checks passed: `git diff --check` clean, Prettier clean, internal anchors and referenced paths resolve. |
 | RM-040 Establish bundle/performance budgets | Codex | NOT STARTED | RM-120, RM-200 | — | Baseline and React/MUI spike sizes are recorded; accepted member/admin initial-load budgets are documented. |
 
 **Phase 0 exit:** RM-000, RM-010, and RM-020 are `DONE`; no unrecorded baseline
@@ -590,6 +590,74 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-030 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `51118ee`; task commit pending at log-update time.
+- Outcome: recorded the implemented React migration architecture in
+  `ARCHITECTURE.md` as a new "React Migration Architecture (branch-only)" section,
+  without erasing historical intent. The section documents: the new `src/app/`
+  layer and its subtree; the preserved one-directional dependency boundary
+  (Firebase confined to `src/data/`, enforced by the same ESLint Guardrail 1 that
+  now also covers `src/app/`); the provider composition
+  (`AppStoreProvider` → `AppThemeProvider` → `AppHashRouter`, `bootstrap` mounting
+  under `StrictMode`); the four serializable Redux slices (roster, khatmas,
+  per-khatma assignments, nullable content) with shared listener state, typed
+  hooks, and selectors; the reference-counted, Strict-Mode/Fast-Refresh-safe
+  Firestore→Redux subscription bridge with injectable sources and string-only
+  errors; the frozen 16-mutation write adapter plus `useWriteOperation` local,
+  latest-call-safe feedback (not Redux); the shared pure hash-route contract used
+  by both legacy and React; and the centralized MUI RTL theme with retained CSS.
+- Files/areas changed: `ARCHITECTURE.md` (new section + an Overview coexistence
+  note + a Directory-Map pointer; existing legacy content unchanged); this tracker
+  (RM-030 row → DONE with evidence, Next-milestone pointer, and this log entry).
+  No source, data/domain, dependency, or lockfile change.
+- Verification: this is a documentation-only change (Verification Matrix →
+  "Documentation only"). `git diff --check` is clean; `npx prettier --check
+  ARCHITECTURE.md` passes (the pre-existing non-conforming `REACT_MIGRATION_PLAN.md`
+  was left as hand-maintained rather than bulk-reformatted, to keep the diff
+  focused); both new internal anchors resolve to real headings; every referenced
+  path (`src/app/`, `vite.config.ts`, `REACT_MIGRATION_PLAN.md`, `eslint.config.js`,
+  `src/domain/types.ts`) exists. Content was cross-checked against the shipped
+  files under `src/app/`, `eslint.config.js`, and `vite.config.ts`.
+- Decisions and risks: the addendum is explicit that React is a **branch-only Vite
+  dev preview** and that production still ships the legacy two-entry framework-free
+  app until the Phase 6 cutover, so the doc does not overstate migration status.
+  This resolves Claude Review Note #2 (RM-030 previously had no owner). Observed
+  but out of scope: `vite.config.ts` links readers to `ARCHITECTURE.md#security`,
+  but no `## Security` heading exists in `ARCHITECTURE.md` (a pre-existing dangling
+  anchor) — flagged for a separate docs fix, not folded into this React-focused
+  task.
+- Recommended next action: begin Phase 3. RM-300 (shared providers, error
+  boundary, feedback states) is the natural next Claude task — its dependencies
+  RM-210 and RM-230 are `DONE`. RM-040 (bundle/performance budgets, Codex) is also
+  now unblocked (RM-120 and RM-200 are `DONE`) if the owner prefers to close that
+  Phase 0/2 straggler first.
+
+### 2026-07-13 — Claude — RM-030 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `51118ee`.
+- Outcome: claimed RM-030 (previously `Unassigned`, resolving Claude Review Note
+  #2) to record the now-verified React, MUI/RTL theme, hash-routing, Redux store,
+  Firestore→Redux subscription bridge, and local write-operation boundaries in
+  `ARCHITECTURE.md`. No broad changes yet.
+- Files/areas changed: tracker claim (RM-030 row + this Session Log entry) only.
+- Verification: confirmed branch `reactmigration`, exact HEAD `51118ee`, and a
+  clean working tree; read the plan top → active Phase 3 → latest Session Log
+  handoff; confirmed both dependencies (RM-020 UI inventory, RM-260 foundation
+  verification) are `DONE`; inspected the implemented `src/app/` tree (store,
+  slices, subscription bridge, providers, routing, operations, roots) plus
+  `eslint.config.js` and `vite.config.ts` so the addendum matches shipped code.
+- Decisions and risks: this is documentation only (Verification Matrix →
+  "Documentation only" row: link/path review + `git diff --check`, no full suite
+  unless code also changes). The addendum must state that React is a branch-only
+  dev preview and that production still ships the legacy two-entry framework-free
+  app until the Phase 6 cutover — it must not erase or overstate the current
+  architecture. The legacy layer description remains accurate and stays.
+- Recommended next action: add the "React Migration Architecture (branch-only)"
+  section to `ARCHITECTURE.md`, then run the documentation-only checks and set
+  RM-030 `DONE`.
 
 ### 2026-07-13 — Codex — RM-260 → DONE
 
