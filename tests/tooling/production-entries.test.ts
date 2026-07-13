@@ -8,6 +8,26 @@ const root = resolve(import.meta.dirname, '../..');
 const config = viteConfig as UserConfig;
 
 describe('production and React preview entry isolation', () => {
+  it('keeps React transformation and Fast Refresh in the Vite plugin chain', () => {
+    const configuredPlugins = (config.plugins ?? []) as unknown[];
+    const plugins = configuredPlugins.flat(Number.POSITIVE_INFINITY);
+    const pluginNames = plugins.flatMap((plugin) => {
+      if (
+        typeof plugin === 'object' &&
+        plugin !== null &&
+        'name' in plugin &&
+        typeof plugin.name === 'string'
+      ) {
+        return [plugin.name];
+      }
+      return [];
+    });
+
+    expect(pluginNames).toEqual(
+      expect.arrayContaining(['vite:react-babel', 'vite:react-refresh']),
+    );
+  });
+
   it('keeps the production build restricted to the two legacy entries', () => {
     const input = config.build?.rollupOptions?.input;
 

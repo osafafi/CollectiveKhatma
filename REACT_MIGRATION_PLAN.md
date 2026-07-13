@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230, RM-240, RM-250 done) |
-| Next milestone | RM-260 — verify foundation behavior (Joint) |
+| Current phase | Phase 0, Phase 1, and Phase 2 complete; Phase 3 ready |
+| Next milestone | RM-030 — record the implemented React architecture addendum |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -424,7 +424,7 @@ are documented; the legacy application still builds and passes tests.
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | DONE | RM-200 | P2-B | 2026-07-13: normalized roster, khatma, and per-khatma assignment slices plus nullable global content use serializable listener state/actions; typed store hooks and selectors are covered by 4 focused state/type/selector/serialization tests. Full suite passes with 92 tests. |
 | RM-240 Bridge Firestore subscriptions into Redux | Codex | DONE | RM-230 | — | 2026-07-13: reference-counted global and per-khatma assignment bridges dispatch snapshots/plain errors into Redux; provider/hook lifecycle tests prove no overlapping listeners and complete Strict Mode cleanup. Full suite passes with 96 tests. |
 | RM-250 Integrate existing write functions and operation feedback | Codex | DONE | RM-230 | P2-C | 2026-07-13: one typed adapter exposes all 16 existing mutations; `useWriteOperation` provides local pending/success/failure state, typed results/errors, retry/reset, latest-call-safe feedback, and injectable test overrides. Five focused tests plus the 101-test full suite pass; lint confirms no Firebase import escapes `src/data/`. |
-| RM-260 Verify foundation behavior | Joint | NOT STARTED | RM-210, RM-220, RM-240, RM-250 | — | Fast Refresh, navigation, initial snapshots, remote updates, local optimistic updates, error handling, and listener cleanup are tested. |
+| RM-260 Verify foundation behavior | Codex | DONE | RM-210, RM-220, RM-240, RM-250 | — | 2026-07-13: a composed provider/router/store/write test covers navigation, initial and remote snapshots, latency-compensated local writes, errors, refresh-style rerenders, and cleanup; a gated real-emulator smoke covers initial/client/remote listener flow; live Vite probes confirm both preview entries and Fast Refresh injection. Full suite passes with 103 tests plus the gated emulator smoke. |
 
 **Phase 2 exit:** a themed React preview can navigate and react to Firestore
 updates without duplicate listeners or changes to the data/domain contract.
@@ -590,6 +590,57 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-260 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `a9a68db`; task commit pending at log-update time.
+- Outcome: verified the complete Phase 2 foundation with a composed React test
+  spanning the store provider, typed hash router, Firestore bridge, assignment
+  lifecycle, and write-operation feedback. Added a gated real-emulator smoke
+  that proves an initial roster snapshot, a client write, and a separate-client
+  remote update all reach Redux. Added explicit Vite plugin-chain coverage and
+  live dev-server evidence for Fast Refresh injection.
+- Files/areas changed: added focused foundation integration and emulator smoke
+  tests; extended the production-entry tooling test with the React/Fast Refresh
+  plugin assertion; updated this tracker. No production source, data/domain
+  contract, dependency, or lockfile changed.
+- Verification: focused foundation/lifecycle/tooling suite passed (6 files / 17
+  tests); gated Firestore emulator smoke passed (1 file / 1 test) and shut down
+  cleanly; live Vite probes returned 200 for both React previews and found the
+  refresh preamble plus transformed-module refresh registration; `npm run
+  typecheck` passed; `npm run lint` passed; `npm test -- --run` passed (18 files
+  / 103 tests, with only the separately-passed gated emulator test skipped);
+  `npm run build` passed and emitted only `index.html` and `admin-nano.html` as
+  production entries. Changed test files pass Prettier.
+- Decisions and risks: the deterministic composed test models Firestore's
+  latency-compensated local snapshot while the write promise remains pending;
+  the emulator smoke independently proves the actual data boundary and Redux
+  bridge. The in-app browser binding was unavailable because its local runtime
+  hit a sandbox permission error, so live runtime proof used Vite HTTP/transform
+  probes while navigation behavior remained covered interactively in jsdom.
+  The existing shared-chunk warning remains assigned to RM-040/RM-630.
+- Recommended next action: take RM-030 to document the now-verified React,
+  routing, Redux, subscription, and local-operation boundaries in
+  `ARCHITECTURE.md`; both of its dependencies are `DONE`.
+
+### 2026-07-13 — Codex — RM-260 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `a9a68db`.
+- Outcome: claimed RM-260 after confirming all dependencies are `DONE`; no
+  implementation changes have been made yet.
+- Files/areas changed: tracker claim and this Session Log entry only; no broad
+  changes yet.
+- Verification: confirmed the requested HEAD is `a9a68db`; confirmed the
+  working tree was clean; read the plan through active Phase 2 and the latest
+  Session Log handoff; baseline `npm test -- --run` passed (17 files / 101
+  tests).
+- Decisions and risks: sequential single-writer mode remains active. RM-260
+  must add evidence for Fast Refresh, navigation, initial snapshots, remote
+  updates, local optimistic updates, error handling, and listener cleanup
+  without weakening the legacy two-entry production boundary.
+- Recommended next action: inspect the Phase 2 implementation and focused tests,
+  close RM-260 coverage gaps, then run its complete acceptance checks.
 
 ### 2026-07-13 — Codex — RM-250 → DONE
 
