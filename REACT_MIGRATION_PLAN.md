@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 — UI parity inventory; Phase 1 runtime pin complete |
-| Next milestone | RM-020 — Build route-by-route UI parity inventory |
+| Current phase | Phase 0 complete (RM-000/010/020 DONE); Phase 1 runtime pin (RM-100) done |
+| Next milestone | RM-115 — Map Tailwind tokens/components to MUI (Claude; unblocked by RM-020) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -392,7 +392,7 @@ update the owner field. The file boundaries are more important than the names.
 | --- | --- | --- | --- | --- | --- |
 | RM-000 Create migration plan and branch rules | Codex | DONE | — | — | This document exists and names `reactmigration` as the integration branch. |
 | RM-010 Confirm baseline health on migration branch | Codex | DONE | RM-000 | P0-A | 2026-07-13: typecheck, lint, 66 tests, and production build passed on `reactmigration`. |
-| RM-020 Build route-by-route UI parity inventory | Claude | NOT STARTED | RM-000 | P0-A | Checklist covers every member/admin route, action, loading/empty/error state, persistence behavior, and responsive state. |
+| RM-020 Build route-by-route UI parity inventory | Claude | DONE | RM-000 | P0-A | 2026-07-13: [`REACT_MIGRATION_UI_INVENTORY.md`](REACT_MIGRATION_UI_INVENTORY.md) covers all 11 member+admin hash routes plus the identity gate and completion overlay, every action, loading/empty/error/not-found states, the 4 localStorage persistence keys, and responsive/RTL behavior; adds a parity-risk oracle (§4) and baseline-quirk list (§5). Derived from source at `d3b277d`. |
 | RM-030 Record React migration architecture addendum | Unassigned | NOT STARTED | RM-020, RM-260 | — | `ARCHITECTURE.md` describes the implemented React/state boundaries without erasing historical intent. |
 | RM-040 Establish bundle/performance budgets | Codex | NOT STARTED | RM-120, RM-200 | — | Baseline and React/MUI spike sizes are recorded; accepted member/admin initial-load budgets are documented. |
 
@@ -589,6 +589,39 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-020 → DONE
+
+- Branch/commit: `reactmigration`, started from `d3b277d` (clean tree confirmed,
+  matched Codex's RM-100 handoff block). Docs-only task; no `src/` code changed.
+- Outcome: Built the route-by-route UI parity inventory
+  [`REACT_MIGRATION_UI_INVENTORY.md`](REACT_MIGRATION_UI_INVENTORY.md) — the
+  migration's parity oracle. Covers all 11 hash routes plus the identity gate and
+  completion overlay (member: gate, khatmas list, khatma landing, assigned reader,
+  browse reader, personal, settings, completion overlay; admin: home, roster,
+  khatmas+create, khatma detail, settings) with
+  actions, loading/empty/error/not-found states, the 4 localStorage keys
+  (`memberId`, `readingScale`, `lastReadPage`, `du3aAck.{id}`), and responsive/
+  RTL behavior. Adds §4 parity-risk oracle (P1–P11, cross-referenced to
+  RM-240/440/550/etc.), §5 baseline quirks to preserve, and §7 acceptance
+  mapping. RM-020 set `DONE`; Phase 0 exit now satisfied (RM-000/010/020 DONE).
+- Files/areas changed: added `REACT_MIGRATION_UI_INVENTORY.md`; updated this
+  tracker (RM-020 status+evidence, Migration Status phase/next-milestone, this
+  entry). No `src/`, config, or dependency changes.
+- Verification: docs-only per the Verification Matrix → `git diff --check` clean;
+  all inventory file/path references verified against the tree; unused-string
+  claims (§5.4) confirmed by grep (0 UI references). Baseline suite untouched
+  (no code changed).
+- Decisions and risks: Inventory is source-derived at `d3b277d`, complete but not
+  yet witnessed live — RM-460/RM-570 are where each `☐` is checked against the
+  running React app (emulator-backed). Flagged as a decision for RM-240/RM-300:
+  keep the current silent shell-error behavior (§1.7) or add a global error
+  surface — if changed, record it as an intentional delta, not parity.
+- Recommended next action: Claude continues with **RM-115** (Tailwind→MUI token
+  map), now unblocked; it consumes inventory §1–§3. Codex's RM-110 (dependency
+  audit) can proceed in parallel-by-dependency. If handing to Codex instead, emit
+  a Handoff Instruction Block first (this work should be committed to
+  `reactmigration` as one RM-020 task boundary before any cross-agent handoff).
 
 ### 2026-07-13 — Codex — RM-100
 
