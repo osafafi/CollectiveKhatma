@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230 done) |
-| Next milestone | RM-240 — bridge Firestore subscriptions into Redux (Codex) |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230, RM-240 done) |
+| Next milestone | RM-250 — integrate existing write functions and operation feedback (Codex) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -422,7 +422,7 @@ are documented; the legacy application still builds and passes tests.
 | RM-210 Implement centralized MUI RTL theme | Claude | DONE | RM-115, RM-130 | P2-A | 2026-07-13: `createAppTheme` maps the theme-map §2–§6 tokens (palette + white `contrastText`, type scale, `shape` 12px, `spacing:4`, Tailwind-px breakpoints, `direction:'rtl'`); `AppThemeProvider` composes the `stylis-plugin-rtl` Emotion cache → `ThemeProvider` → `CssBaseline` → retained `GlobalStyles`, and forces `dir=rtl`/`lang=ar`. Verified in the branch preview: `dir=rtl`, primary `#0f766e`/12px/`mui-rtl` class, body `#faf7f0`, Amiri `.quran-text`, and a portalled RTL Select (into `body`). 13 new tests (token-parity vs `theme.css`, portal RTL) + full baseline suite green (typecheck, lint, 84 tests, two-entry build). |
 | RM-220 Implement typed hash routing | Codex | DONE | RM-200 | P2-B | 2026-07-13: one discriminated-union route contract now serves both legacy and React member/admin apps; React previews use `HashRouter`, typed hooks, typed navigation, and typed links. All established hashes and non-rewriting fallbacks remain covered (19 focused route tests; 88 full-suite tests). |
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | DONE | RM-200 | P2-B | 2026-07-13: normalized roster, khatma, and per-khatma assignment slices plus nullable global content use serializable listener state/actions; typed store hooks and selectors are covered by 4 focused state/type/selector/serialization tests. Full suite passes with 92 tests. |
-| RM-240 Bridge Firestore subscriptions into Redux | Codex | NOT STARTED | RM-230 | — | Roster, content, khatma, and dynamic assignment listeners dispatch updates and errors; all listeners clean up correctly, including under Strict Mode. |
+| RM-240 Bridge Firestore subscriptions into Redux | Codex | DONE | RM-230 | — | 2026-07-13: reference-counted global and per-khatma assignment bridges dispatch snapshots/plain errors into Redux; provider/hook lifecycle tests prove no overlapping listeners and complete Strict Mode cleanup. Full suite passes with 96 tests. |
 | RM-250 Integrate existing write functions and operation feedback | Codex | NOT STARTED | RM-230 | P2-C | UI-facing actions call existing data functions; pending/success/failure behavior is consistent; no Firebase import escapes `src/data/`. |
 | RM-260 Verify foundation behavior | Joint | NOT STARTED | RM-210, RM-220, RM-240, RM-250 | — | Fast Refresh, navigation, initial snapshots, remote updates, local optimistic updates, error handling, and listener cleanup are tested. |
 
@@ -539,7 +539,7 @@ Every box must be checked before RM-740:
 | Risk | Likelihood / impact | Mitigation | Owner/status |
 | --- | --- | --- | --- |
 | Reader resets or scroll jumps after Redux updates | Medium / High | Narrow selectors, stable component keys, local reader state, regression tests | RM-440 |
-| Duplicate Firestore listeners under Strict Mode/HMR | Medium / High | Central subscription lifecycle, idempotent start, cleanup tests | RM-240 |
+| Duplicate Firestore listeners under Strict Mode/HMR | Medium / High | Central subscription lifecycle, idempotent start, cleanup tests | RM-240 DONE |
 | Admin drafts overwritten by snapshots | Medium / High | Keep drafts local, distinguish pristine/touched values, targeted tests | RM-550 |
 | MUI RTL defects in dialogs/selects/icons | Medium / Medium | RTL Emotion cache, theme direction, portal QA, directional-icon review | RM-210/RM-650 |
 | React/MUI bundle growth harms older phones | Medium / Medium | Measure early, route split, direct imports, avoid unused icon package | RM-040/RM-630 |
@@ -590,6 +590,55 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-240 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `f32e325`; task commit pending at log-update time.
+- Outcome: connected the existing roster, global-content, khatma, and assignment
+  subscriptions to Redux through a reference-counted lifecycle bridge. Both
+  React previews now mount the Redux/store provider; later feature components
+  can retain assignments dynamically with a typed hook.
+- Files/areas changed: added the Firestore subscription bridge, production source
+  adapter, provider context, Redux provider, and assignment-subscription hook
+  under `src/app/`; wired the member/admin preview roots; added focused bridge,
+  Strict Mode, cleanup, snapshot, and error tests; updated this tracker.
+- Verification: scoped bridge/provider/root/store suite passed (4 files / 10
+  tests); `npm run typecheck` passed; `npm run lint` passed; `npm test` passed
+  (16 files / 96 tests); `npm run build` passed and emitted only `index.html` and
+  `admin-nano.html` as production entries. Changed code and tests pass Prettier;
+  `git diff --check` passed.
+- Decisions and risks: the three global listeners share one reference count;
+  assignments are reference-counted independently by khatma and removed from
+  Redux after their final consumer releases them. Cleanup functions are
+  idempotent, post-cleanup callbacks are ignored, Strict Mode never overlaps
+  underlying listeners, missing global content maps to `null`, and subscription
+  failures store plain messages only. Firebase imports remain confined to
+  `src/data/`; no dependency or lockfile change was needed. The existing
+  shared-chunk size warning remains assigned to RM-040/RM-630.
+- Recommended next action: take RM-250 to expose the existing write functions
+  with consistent operation feedback; its RM-230 dependency is already `DONE`.
+
+### 2026-07-13 — Codex — RM-240 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `f32e325`.
+- Outcome: claimed RM-240 under Codex to bridge the existing Firestore roster,
+  content, khatma, and dynamic assignment subscriptions into Redux with
+  lifecycle-safe cleanup.
+- Files/areas changed: tracker claim and this Session Log entry only; no broad
+  implementation changes yet.
+- Verification: confirmed branch `reactmigration`, exact HEAD
+  `f32e325fe4675b084550a9eaa4a8a627a8230853`, and a clean working tree; read the
+  plan through active Phase 2 and the latest Session Log handoff; confirmed
+  dependency RM-230 is `DONE`; scoped pre-change store baseline passed (1 file /
+  4 tests).
+- Decisions and risks: preserve the `src/data/` Firebase boundary and serializable
+  Redux state; centralize subscription ownership so repeated starts and Strict
+  Mode remounts cannot leak or duplicate listeners. `package-lock.json` is
+  unchanged from the preceding RM-230 task, so no fresh install was required.
+- Recommended next action: inspect the current subscription contracts and Redux
+  slice actions, then implement listener lifecycle coordination and focused
+  cleanup/error/update tests.
 
 ### 2026-07-13 — Codex — RM-230 → DONE
 

@@ -1,4 +1,5 @@
 import { strings } from '@/content/strings.ar';
+import { AppStoreProvider } from '@/app/providers/AppStoreProvider';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { PreviewShell } from '@/app/PreviewShell';
 import { ThemeProbe } from '@/app/ThemeProbe';
@@ -7,11 +8,13 @@ import { useMemberRoute } from '@/app/routing/hooks';
 
 export function MemberApp() {
   return (
-    <AppThemeProvider>
-      <AppHashRouter>
-        <MemberPreview />
-      </AppHashRouter>
-    </AppThemeProvider>
+    <AppStoreProvider>
+      <AppThemeProvider>
+        <AppHashRouter>
+          <MemberPreview />
+        </AppHashRouter>
+      </AppThemeProvider>
+    </AppStoreProvider>
   );
 }
 

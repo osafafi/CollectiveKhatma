@@ -1,4 +1,5 @@
 import { strings } from '@/content/strings.ar';
+import { AppStoreProvider } from '@/app/providers/AppStoreProvider';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { PreviewShell } from '@/app/PreviewShell';
 import { ThemeProbe } from '@/app/ThemeProbe';
@@ -7,11 +8,13 @@ import { useAdminRoute } from '@/app/routing/hooks';
 
 export function AdminApp() {
   return (
-    <AppThemeProvider>
-      <AppHashRouter>
-        <AdminPreview />
-      </AppHashRouter>
-    </AppThemeProvider>
+    <AppStoreProvider>
+      <AppThemeProvider>
+        <AppHashRouter>
+          <AdminPreview />
+        </AppHashRouter>
+      </AppThemeProvider>
+    </AppStoreProvider>
   );
 }
 

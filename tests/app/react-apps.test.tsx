@@ -1,8 +1,20 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AdminApp } from '@/app/admin/AdminApp';
 import { MemberApp } from '@/app/member/MemberApp';
 import { strings } from '@/content/strings.ar';
+
+vi.mock('@/app/store/firestoreSubscriptionSources', () => {
+  const subscribe = () => () => undefined;
+  return {
+    firestoreSubscriptionSources: {
+      roster: subscribe,
+      content: subscribe,
+      khatmas: subscribe,
+      assignments: subscribe,
+    },
+  };
+});
 
 describe('React app roots', () => {
   it('renders the isolated member preview root', () => {

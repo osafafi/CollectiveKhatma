@@ -2,6 +2,12 @@ export { assignmentsActions } from './assignmentsSlice';
 export type { AssignmentBucket, AssignmentsState } from './assignmentsSlice';
 export { contentActions } from './contentSlice';
 export type { ContentState } from './contentSlice';
+export { createFirestoreSubscriptionBridge } from './firestoreSubscriptionBridge';
+export type {
+  FirestoreSubscriptionBridge,
+  FirestoreSubscriptionSources,
+  SubscriptionCleanup,
+} from './firestoreSubscriptionBridge';
 export { useAppDispatch, useAppSelector, useAppStore } from './hooks';
 export { khatmasActions } from './khatmasSlice';
 export type { KhatmasState } from './khatmasSlice';
@@ -27,3 +33,4 @@ export {
 } from './selectors';
 export { createAppStore, store } from './store';
 export type { AppDispatch, AppStore, RootState } from './store';
+export { useAssignmentsSubscription } from './useAssignmentsSubscription';
