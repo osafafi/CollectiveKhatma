@@ -1,6 +1,8 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
   { ignores: ['dist', 'node_modules'] },
@@ -19,8 +21,14 @@ export default tseslint.config(
   // TypeScript handles undefined identifiers and unused-var analysis; let
   // underscore-prefixed args/vars through (used by the Stage 2 stub signatures).
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      ...reactHooks.configs.flat.recommended.plugins,
+      ...reactRefresh.configs.vite.plugins,
+    },
     rules: {
+      ...reactHooks.configs.flat.recommended.rules,
+      ...reactRefresh.configs.vite.rules,
       'no-undef': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
@@ -33,7 +41,7 @@ export default tseslint.config(
   // GUARDRAIL 1 — Firebase may only be imported inside src/data/**. Every other
   // layer must go through the typed data-access functions (ARCHITECTURE.md).
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}'],
     ignores: ['src/data/**'],
     rules: {
       'no-restricted-imports': [
@@ -53,7 +61,7 @@ export default tseslint.config(
 
   // GUARDRAIL 2 — the domain layer must stay pure: no Firebase, data, or UI.
   {
-    files: ['src/domain/**/*.ts'],
+    files: ['src/domain/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

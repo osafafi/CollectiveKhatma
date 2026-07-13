@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
@@ -16,7 +17,9 @@ export default defineConfig({
   // custom-domain / user-page hosting.
   base: process.env.BASE_PATH ?? '/',
 
-  plugins: [tailwindcss()],
+  // React owns JSX transformation and development Fast Refresh. Tailwind stays
+  // enabled until both legacy entries have completed their React cutovers.
+  plugins: [react(), tailwindcss()],
 
   resolve: {
     alias: {

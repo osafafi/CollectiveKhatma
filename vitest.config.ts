@@ -8,8 +8,24 @@ export default defineConfig({
     },
   },
   test: {
-    // Domain tests are pure — no DOM needed.
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['tests/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'component',
+          environment: 'jsdom',
+          setupFiles: ['./tests/setup/react.ts'],
+          include: ['tests/**/*.test.tsx'],
+        },
+      },
+    ],
   },
 });

@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120 DONE) |
-| Next milestone | RM-130 — Configure TypeScript, Vite, ESLint, and Vitest for React |
+| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120, RM-130 DONE) |
+| Next milestone | RM-140 — Update CI/deploy tooling |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -407,7 +407,7 @@ failure exists.
 | RM-110 Audit and group existing dependency updates | Codex | DONE | RM-100 | — | 2026-07-13: [`REACT_MIGRATION_DEPENDENCY_AUDIT.md`](REACT_MIGRATION_DEPENDENCY_AUDIT.md) classifies all 15 direct packages; eight same-major refreshes grouped for RM-120, TypeScript 7 and Node 26 types rejected on compatibility grounds, and Tailwind removal deferred to RM-620. No manifest/lockfile change. |
 | RM-115 Map Tailwind tokens/components to MUI | Claude | DONE | RM-020 | P1-A | 2026-07-13: [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md) — token table maps all 11 active colors (+1 dead) to `palette`, both fonts (Tajawal not-bundled flagged) + type scale/weights + reading scale to `typography`/retained, radii→`shape`, spacing (4px-unit reconciliation) + breakpoints (md/lg→`breakpoints.values`), every legacy component→MUI (§7), and retained CSS (§8). Derived from `theme.css`/compiled CSS + grep at `38fbe43`. |
 | RM-120 Install React/MUI/Redux toolchain | Codex | DONE | RM-110 | — | 2026-07-13: installed React 19.2.7, MUI/Emotion/RTL, Redux Toolkit 2.12.0, React-Redux 9.3.0, React Router 7.18.1, Vite React plugin, types, and component-test dependencies; applied RM-110 safe refreshes; pinned reviewed install scripts; clean `npm ci` and the full baseline suite passed on Node 24.18.0. |
-| RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | NOT STARTED | RM-120 | — | TSX builds, Fast Refresh works, lint recognizes hooks/JSX, and component test environment runs. |
+| RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | DONE | RM-120 | — | 2026-07-13: enabled `react-jsx`, Vite React/Fast Refresh, Hooks/refresh lint rules, and separate Node/jsdom Vitest projects; clean install and full suite passed with 67 tests. |
 | RM-140 Update CI/deploy tooling | Codex | NOT STARTED | RM-100, RM-130 | — | Both workflows use the pinned Node version and execute React-aware checks. |
 | RM-150 Verify clean toolchain installation | Codex | NOT STARTED | RM-140 | — | Clean install, typecheck, lint, legacy tests, and production build pass on pinned Node. |
 
@@ -590,6 +590,54 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-130 → DONE
+
+- Branch/commit: `reactmigration`, implemented from
+  `3c162dc8a4630999ba4e1ae0317ce14c82bbd493`; task commit pending at log-update
+  time.
+- Outcome: TypeScript now compiles TSX with the automatic React runtime; Vite's
+  React plugin transforms JSX and supplies Fast Refresh while Tailwind remains
+  enabled for legacy coexistence; ESLint applies the recommended React Hooks and
+  Vite refresh rules to TS/TSX and extends both architecture guardrails to TSX;
+  Vitest keeps legacy tests in Node and runs component tests in jsdom with
+  jest-dom and automatic Testing Library cleanup.
+- Files/areas changed: `tsconfig.json`, `vite.config.ts`, `eslint.config.js`,
+  `vitest.config.ts`, `package.json`, `package-lock.json`,
+  `tests/setup/react.ts`, `tests/tooling/react-tooling.test.tsx`, and this
+  tracker.
+- Verification on checksum-verified Node `24.18.0` / npm `11.16.0`: fresh
+  `npm ci` installed 1,040 packages; `npm ls --depth=0`, typecheck, lint, 8 test
+  files / 67 tests, and the two-entry production build passed. A Vite
+  development transform contained both the React refresh registration wrapper
+  and `/@react-refresh` HTML preamble; ESLint's resolved TSX configuration
+  contained the Hooks and refresh rules. Prettier check and `git diff --check`
+  passed.
+- Decisions and risks: the production member/admin entries and bundle sizes are
+  unchanged; the existing >500 kB shared-chunk warning remains assigned to
+  RM-040/RM-630. `npm ci` still reports the nine known moderate findings in the
+  existing Firebase development tree, already assigned to RM-150.
+- Recommended next action: take RM-140; its RM-100 and RM-130 dependencies are
+  now `DONE`, so CI and deploy can be aligned with the React-aware checks.
+
+### 2026-07-13 — Codex — RM-130 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at
+  `3c162dc8a4630999ba4e1ae0317ce14c82bbd493`, with a clean working tree;
+  RM-120 is `DONE`, so the dependency is satisfied.
+- Outcome: claimed RM-130 under Codex; React-aware TypeScript, Vite, ESLint, and
+  Vitest configuration work is beginning.
+- Files/areas changed: this tracker only before broad configuration changes.
+- Verification: checksum-verified Node `24.18.0` and npm `11.16.0` selected from
+  `C:\tmp\node-v24.18.0-win-x64`; the pre-change `npm run typecheck` baseline
+  passed.
+- Decisions and risks: preserve both legacy production entries and their current
+  behavior; configuration proof should exercise TSX, Fast Refresh wiring,
+  hooks/JSX linting, and a jsdom component test without beginning RM-200 app
+  structure work.
+- Recommended next action: inspect the current tool configurations, add the
+  smallest React-specific configuration and proof fixture, then run the full
+  Node/dependencies/config verification suite.
 
 ### 2026-07-13 — Codex — RM-120 → DONE
 
