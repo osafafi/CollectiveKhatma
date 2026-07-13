@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete (RM-000/010/020 DONE); Phase 1 runtime pin (RM-100) done |
-| Next milestone | RM-115 — Map Tailwind tokens/components to MUI (Claude; unblocked by RM-020) |
+| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-115 DONE) |
+| Next milestone | RM-110 — Audit/group dependency updates (Codex), then RM-120/RM-130 toolchain |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -405,7 +405,7 @@ failure exists.
 | --- | --- | --- | --- | --- | --- |
 | RM-100 Pin Node 24 LTS consistently | Codex | DONE | RM-010 | P1-A | 2026-07-13: pinned Node 24.18.0 in `.nvmrc`, package metadata, CI, deploy, and docs; aligned `@types/node` to 24.13.3; clean install and full baseline suite passed on the pinned runtime. |
 | RM-110 Audit and group existing dependency updates | Codex | NOT STARTED | RM-100 | — | Direct dependencies classified as keep/update/replace/remove; breaking changes noted; no blind all-major upgrade. |
-| RM-115 Map Tailwind tokens/components to MUI | Claude | NOT STARTED | RM-020 | P1-A | Token table covers colors, typography, radii, spacing, breakpoints, component variants, and retained CSS. |
+| RM-115 Map Tailwind tokens/components to MUI | Claude | DONE | RM-020 | P1-A | 2026-07-13: [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md) — token table maps all 11 active colors (+1 dead) to `palette`, both fonts (Tajawal not-bundled flagged) + type scale/weights + reading scale to `typography`/retained, radii→`shape`, spacing (4px-unit reconciliation) + breakpoints (md/lg→`breakpoints.values`), every legacy component→MUI (§7), and retained CSS (§8). Derived from `theme.css`/compiled CSS + grep at `38fbe43`. |
 | RM-120 Install React/MUI/Redux toolchain | Codex | NOT STARTED | RM-110 | — | Add React, React DOM, MUI/Emotion/RTL, Redux Toolkit, React-Redux, routing, Vite React plugin, types, and test dependencies. Lockfile is reproducible. |
 | RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | NOT STARTED | RM-120 | — | TSX builds, Fast Refresh works, lint recognizes hooks/JSX, and component test environment runs. |
 | RM-140 Update CI/deploy tooling | Codex | NOT STARTED | RM-100, RM-130 | — | Both workflows use the pinned Node version and execute React-aware checks. |
@@ -589,6 +589,40 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-115 → DONE
+
+- Branch/commit: `reactmigration`, started from `38fbe43` (RM-020 committed; clean
+  tree confirmed). Docs-only task; no `src/` code changed.
+- Outcome: Built the Tailwind→MUI token & component map
+  [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md). Maps the Tailwind
+  v4 CSS-first `@theme` (source of truth — no JS config) into a MUI `createTheme`
+  spec: §2 colors→`palette` (11 active + 1 dead, alpha tints, contrastText), §3
+  typography (font families + **Tajawal-not-bundled** flag, type scale, weights,
+  reading scale as retained), §4 radii→`shape`, §5 spacing (4px-unit vs MUI 8px
+  reconciliation + layout landmarks), §6 breakpoints (only md/lg used →
+  `breakpoints.values` override), §7 every legacy component→MUI (buttons,
+  surfaces, forms, nav/chrome), §8 retained CSS (AD-09), §9 8 decisions/risks
+  feeding OD-03/RM-210, §10 acceptance mapping. RM-115 set `DONE`.
+- Files/areas changed: added `REACT_MIGRATION_THEME_MAP.md`; updated this tracker
+  (RM-115 status+evidence, Migration Status next-milestone, this entry). No
+  `src/`, config, or dependency changes.
+- Verification: docs-only per the Verification Matrix → `git diff --check` clean;
+  all file/path references verified against the tree. Token facts grep-verified:
+  `--color-primary-strong` unused (0 refs); `--font-ui` Tajawal not bundled
+  (no `@font-face`/link); `--color-warn` == `--color-accent` (`#b45309`);
+  theme-color utility usage counts taken from `src/ui`. Baseline suite untouched.
+- Decisions and risks: R1–R8 in §9 — chiefly (R4) bundle-or-drop Tajawal without
+  adding a Google Fonts runtime dependency; (R3) warn/accent share a hex; (R6)
+  set MUI `spacing:4` + Tailwind-px breakpoints for numeric parity; (R1) two
+  palettes coexist until Tailwind removal at RM-620. All are RM-210/OD-03 inputs,
+  not decisions taken here.
+- Recommended next action: Phase-1 platform work is Codex's (RM-110 dependency
+  audit → RM-120 install React/MUI/Redux → RM-130 tooling). Claude's next build
+  task, **RM-210** (central MUI RTL theme), depends on RM-130 **and** this map, so
+  it can't start until the toolchain lands. Suggest **handing off to Codex** now
+  (emit a Handoff Instruction Block) so Phase 1 can proceed; Claude resumes at
+  RM-210 in Wave 2.
 
 ### 2026-07-13 — Claude — RM-020 → DONE
 
