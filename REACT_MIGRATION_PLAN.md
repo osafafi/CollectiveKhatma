@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200 done) |
-| Next milestone | RM-210 — Implement centralized MUI RTL theme |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210 done) |
+| Next milestone | RM-220 / RM-230 — typed hash routing and Redux store (Codex) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -419,7 +419,7 @@ are documented; the legacy application still builds and passes tests.
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
 | RM-200 Create React app structure and branch-only preview entries | Codex | DONE | RM-130 | P2-A | 2026-07-13: member/admin React roots render at dev-only preview URLs; entry-isolation tests and the production build prove only the two legacy HTML entries reach `dist/`. |
-| RM-210 Implement centralized MUI RTL theme | Claude | NOT STARTED | RM-115, RM-130 | P2-A | Theme maps accepted tokens; `dir=rtl`, theme direction, Emotion cache, portals, fonts, and `CssBaseline` verified. |
+| RM-210 Implement centralized MUI RTL theme | Claude | DONE | RM-115, RM-130 | P2-A | 2026-07-13: `createAppTheme` maps the theme-map §2–§6 tokens (palette + white `contrastText`, type scale, `shape` 12px, `spacing:4`, Tailwind-px breakpoints, `direction:'rtl'`); `AppThemeProvider` composes the `stylis-plugin-rtl` Emotion cache → `ThemeProvider` → `CssBaseline` → retained `GlobalStyles`, and forces `dir=rtl`/`lang=ar`. Verified in the branch preview: `dir=rtl`, primary `#0f766e`/12px/`mui-rtl` class, body `#faf7f0`, Amiri `.quran-text`, and a portalled RTL Select (into `body`). 13 new tests (token-parity vs `theme.css`, portal RTL) + full baseline suite green (typecheck, lint, 84 tests, two-entry build). |
 | RM-220 Implement typed hash routing | Codex | NOT STARTED | RM-200 | P2-B | Existing member/admin URLs and fallback behavior are preserved; route tests pass. |
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | NOT STARTED | RM-200 | P2-B | Store contains only serializable planned state; selectors and state types have tests. |
 | RM-240 Bridge Firestore subscriptions into Redux | Codex | NOT STARTED | RM-230 | — | Roster, content, khatma, and dynamic assignment listeners dispatch updates and errors; all listeners clean up correctly, including under Strict Mode. |
@@ -590,6 +590,98 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-210 → DONE
+
+- Branch/commit: `reactmigration`, implemented from
+  `3c082a5daa0f62dbe4f36d46e7ddd297529c0b43`; task commit pending at log-update
+  time.
+- Outcome: the centralized MUI RTL theme is implemented and wired into both RM-200
+  preview roots. RM-210 acceptance criteria pass (tokens, `dir=rtl`, theme
+  direction, Emotion cache, portals, fonts, `CssBaseline` — all verified).
+- Files/areas changed (Lane B only): added `src/theme/muiTheme.ts` (token→
+  `createTheme` map + `tokens` export), `src/theme/rtlCache.ts` (`prefixer` +
+  `rtlPlugin` Emotion cache, key `mui-rtl`), `src/theme/globalStyles.ts` (retained
+  AD-09 CSS: Amiri `@font-face`, `--font-ui`/`--font-quran`/reading-scale vars,
+  `.quran-text`, `.icon-mask`, `.tab-bar`), `src/app/providers/AppThemeProvider.tsx`
+  (CacheProvider ▸ ThemeProvider ▸ CssBaseline ▸ GlobalStyles + forces
+  `dir`/`lang`), `src/app/ThemeProbe.tsx` (preview-only theme demo), and
+  `src/types/stylis.d.ts` (minimal ambient `stylis` types). Wired the provider +
+  probe into `MemberApp`/`AdminApp`. Added `tests/theme/mui-theme.test.ts` and
+  `tests/theme/app-theme-provider.test.tsx`. `theme.css` left byte-unchanged.
+- Verification on Node `24.14.0` (repo pins `24.18.0` — rerun there for the final
+  gate): `npm run typecheck`, `npm run lint`, `npm test` (12 files / **84 tests**,
+  +13 vs RM-200's 71), and `npm run build` (two-entry; `dist/` still emits only
+  `index.html` + `admin-nano.html`) all passed. Live branch-preview evidence via
+  the dev server (both `react-preview.html` and `admin-react-preview.html`):
+  `html[dir=rtl][lang=ar]`; body bg `#faf7f0`, ink `#1f2a24`, `margin:0`
+  (CssBaseline); primary button `#0f766e` / `#fff` / `border-radius:12px` /
+  `direction:rtl` / `mui-rtl-*` class; `.quran-text` in `"Amiri Quran"` at 25.6px
+  (1.6rem × reading-scale 1), `text-align:justify`; and an opened Select whose
+  listbox is portalled **outside `#app` into `body`**, carries the `mui-rtl-*`
+  class, and computes `direction:rtl`. Console clean (the only errors are the
+  legacy `index.html`'s offline-Firestore noise, not the React tree). The
+  screenshot tool timed out environmentally; structure/'computed-style checks
+  (the harness-preferred method) stand as the evidence.
+- Decisions and risks:
+  - **Fonts / theme-map R4 (resolved for RM-210):** kept the current `--font-ui`
+    stack verbatim (Tajawal preferred, `system-ui` fallback) as
+    `typography.fontFamily='var(--font-ui)'` — exact parity, **no third-party font
+    runtime added**. Bundled the already-local Amiri Quran `@font-face` so Quran
+    text renders. The self-host-Tajawal-vs-formally-drop call remains an **OD-03**
+    input for the owner; the app still renders `system-ui` for users without
+    Tajawal installed, exactly as today.
+  - **Two-copy palette (R1):** the palette + retained rules are duplicated between
+    `muiTheme.ts`/`globalStyles.ts` and the still-legacy `theme.css` `@theme`
+    during transition. `theme.css` is byte-unchanged (legacy path unaffected);
+    `tests/theme/mui-theme.test.ts` parses `theme.css` and fails loudly if the two
+    ever drift. Both collapse to one at RM-620.
+  - **`shape.borderRadius` = 12 (button)**; card 16px / pill radii are applied
+    per-component in **RM-320**, not here (kept the task boundary clean). No
+    component `styleOverrides` were added — RM-320 owns those.
+  - **`@types/stylis` FOLLOW-UP (Lane A / Codex):** `stylis` ships no types and
+    `@types/stylis` is absent, so RM-210 added a minimal local `src/types/stylis.d.ts`
+    rather than churn `package.json`/the lockfile on a non-pinned runtime in a
+    theme commit. If Lane A later adds `@types/stylis`, **delete that file** (the
+    two would clash on `prefixer`). Low priority; not a blocker.
+  - **`ThemeProbe`** is a temporary preview-only demo (dev entries only, excluded
+    from production) and is expected to be replaced when RM-320 lands real
+    primitives.
+- Recommended next action: hand off to Codex for **RM-220** (typed hash routing)
+  and **RM-230** (Redux store) — both depend only on RM-200 (`DONE`) and are
+  unblocked. Claude's Phase 3 shell/primitive tasks (RM-300/310/320) now have the
+  theme foundation they need. Emitting a Handoff Instruction Block below.
+
+### 2026-07-13 — Claude — RM-210 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at
+  `3c082a5daa0f62dbe4f36d46e7ddd297529c0b43`; clean working tree confirmed before
+  the tracker claim (matches Codex's RM-200 handoff hash).
+- Outcome: claimed RM-210 (centralized MUI RTL theme) under Claude after
+  confirming both dependencies — RM-115 (Tailwind→MUI token map) and RM-130
+  (React tooling) — are `DONE`. Implementation not yet begun at log-update time.
+- Files/areas changed: this tracker only before broad changes.
+- Preflight/verification: branch, exact HEAD, and clean tree confirmed per
+  §Operating Mode receiving-agent preflight; `npm run typecheck` passed; the React
+  toolchain (React 19.2.7, MUI 9.2.0, Emotion 11.14, `stylis-plugin-rtl` 2.1.1,
+  Redux Toolkit) is present in the shared tree. Local shell is Node `24.14.0`; the
+  repo pins `24.18.0`, which remains required for final acceptance evidence.
+- Plan for the task (consumes `REACT_MIGRATION_THEME_MAP.md` §2–§8): add a pure
+  `createTheme` mapping (palette/typography/`shape`/`spacing:4`/breakpoints px +
+  `direction:'rtl'`), an RTL Emotion cache (`prefixer` + `rtlPlugin`, key
+  `mui-rtl`), an `AppThemeProvider` (CacheProvider ▸ ThemeProvider ▸ CssBaseline ▸
+  retained `GlobalStyles`), and wire it into the RM-200 member/admin preview
+  roots. Font decision (theme-map R4): keep the current `--font-ui` stack verbatim
+  (parity, no third-party font runtime) and bundle the already-local Amiri Quran
+  `@font-face`; the self-host-Tajawal-vs-drop call stays an OD-03 input.
+- Decisions and risks: only Lane B edits the central theme while RM-210 is active
+  (collision rule). The React preview does not import `theme.css`, so retained CSS
+  (AD-09 §8) ships as React `GlobalStyles`; the palette/retained rules temporarily
+  duplicate `theme.css` until RM-620 (accepted R1 pattern), and `theme.css` is left
+  byte-unchanged so the legacy path is unaffected.
+- Recommended next action: implement the theme/provider, add theme + provider +
+  portal RTL tests, verify in the browser preview, then close RM-210 and hand to
+  Codex for RM-220/RM-230.
 
 ### 2026-07-13 — Codex — RM-200 → DONE
 
