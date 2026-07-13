@@ -24,3 +24,4 @@ gha-creds-*.json
 .DS_Store
 .vscode/
 .idea/
+.claude/settings.local.json

@@ -21,7 +21,7 @@
     "deploy:rules": "firebase deploy --only firestore:rules --project collectivekhatma --non-interactive"
   },
   "engines": {
-    "node": ">=20"
+    "node": "24.18.0"
   },
   "dependencies": {
     "firebase": "^12.15.0"
@@ -30,7 +30,7 @@
     "firebase-tools": "^15.22.4",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^26.1.0",
+    "@types/node": "^24.13.3",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "firebase-admin": "^14.1.0",

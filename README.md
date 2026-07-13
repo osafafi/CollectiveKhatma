@@ -29,7 +29,9 @@ product spec and [ARCHITECTURE.md](ARCHITECTURE.md) for how the code is organize
 
 ## Prerequisites
 
-- **Node.js ≥ 20** (developed on Node 24).
+- **Node.js 24.18.0 LTS.** The repository's `.nvmrc`, package metadata, CI, and
+  deployment workflow all use this exact version. With a compatible version
+  manager, run `nvm install` and `nvm use` from the repository root.
 - For running the local **Firestore emulator** (recommended for development):
   - **Java (JDK 11+)** — required by the emulator. Install e.g.
     [Temurin](https://adoptium.net/) (`winget install EclipseAdoptium.Temurin.21.JDK` on Windows).

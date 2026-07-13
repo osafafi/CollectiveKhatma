@@ -25,9 +25,9 @@ and this document is updated.
 | --- | --- |
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
-| Overall status | Planning complete; implementation not started |
-| Current phase | Phase 0 — Baseline and governance |
-| Next milestone | Phase 1 — Runtime and dependency alignment |
+| Overall status | Implementation in progress |
+| Current phase | Phase 0 — UI parity inventory; Phase 1 runtime pin complete |
+| Next milestone | RM-020 — Build route-by-route UI parity inventory |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -403,7 +403,7 @@ failure exists.
 
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| RM-100 Pin Node 24 LTS consistently | Codex | NOT STARTED | RM-010 | P1-A | Add version pin; align `engines`, local docs, `@types/node`, CI, and deploy workflow; exact latest Node 24 patch reverified. |
+| RM-100 Pin Node 24 LTS consistently | Codex | DONE | RM-010 | P1-A | 2026-07-13: pinned Node 24.18.0 in `.nvmrc`, package metadata, CI, deploy, and docs; aligned `@types/node` to 24.13.3; clean install and full baseline suite passed on the pinned runtime. |
 | RM-110 Audit and group existing dependency updates | Codex | NOT STARTED | RM-100 | — | Direct dependencies classified as keep/update/replace/remove; breaking changes noted; no blind all-major upgrade. |
 | RM-115 Map Tailwind tokens/components to MUI | Claude | NOT STARTED | RM-020 | P1-A | Token table covers colors, typography, radii, spacing, breakpoints, component variants, and retained CSS. |
 | RM-120 Install React/MUI/Redux toolchain | Codex | NOT STARTED | RM-110 | — | Add React, React DOM, MUI/Emotion/RTL, Redux Toolkit, React-Redux, routing, Vite React plugin, types, and test dependencies. Lockfile is reproducible. |
@@ -577,7 +577,8 @@ correction or clarification for the owning agent to fold in.
    (Phases 1–2), so it cannot start until the toolchain and preview exist. The
    Phase 0 exit correctly excludes it — noting here so no one treats it as a
    Phase 0 blocker. Consider relocating it to Phase 2 for readability.
-4. **`@types/node` is on the 26 line.** `package.json` pins `@types/node ^26.1.0`
+4. **Resolved by RM-100 — `@types/node` was on the 26 line.** At review time,
+   `package.json` pinned `@types/node ^26.1.0`
    while AD-10 targets Node 24 LTS and `engines.node` is currently the loose
    `>=20`. RM-100 should *downgrade* `@types/node` to the Node 24 major (not just
    "align") and tighten `engines`, so types match the pinned runtime.
@@ -588,6 +589,26 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-100
+
+- Branch/commit: `reactmigration`; committed as one RM-100 task boundary.
+  Local-only `.claude/settings.local.json` remained untouched and is now
+  explicitly ignored so sequential handoffs remain clean.
+- Outcome: Pinned local development, package metadata, CI, and both deployment
+  jobs to Node 24.18.0 LTS. Aligned `@types/node` to 24.13.3 and documented the
+  exact local setup.
+- Files/areas changed: `.nvmrc`, `package.json`, `package-lock.json`, CI and
+  deploy workflows, `README.md`, `.gitignore`, and this tracker.
+- Verification: Official Node sources identify 24.18.0 as the latest 24.x LTS.
+  On Node 24.18.0: clean `npm ci` passed; typecheck passed; lint passed; 7 test
+  files / 66 tests passed; production build passed. `git diff --check` passed.
+- Decisions and risks: The existing Vite 509.63 kB chunk warning and npm's nine
+  moderate audit findings remain for RM-040/RM-110; this task introduced no
+  runtime dependency upgrade. The machine-wide Node installation was not
+  changed; verification used an exact temporary 24.18.0 runner.
+- Recommended next action: Claude takes RM-020, then RM-115. RM-020 is the last
+  Phase 0 exit task and is already unblocked by RM-000.
 
 ### 2026-07-13 — Codex — RM-000, RM-010
 
