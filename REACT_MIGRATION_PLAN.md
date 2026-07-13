@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230, RM-240 done) |
-| Next milestone | RM-250 — integrate existing write functions and operation feedback (Codex) |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230, RM-240, RM-250 done) |
+| Next milestone | RM-260 — verify foundation behavior (Joint) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -423,7 +423,7 @@ are documented; the legacy application still builds and passes tests.
 | RM-220 Implement typed hash routing | Codex | DONE | RM-200 | P2-B | 2026-07-13: one discriminated-union route contract now serves both legacy and React member/admin apps; React previews use `HashRouter`, typed hooks, typed navigation, and typed links. All established hashes and non-rewriting fallbacks remain covered (19 focused route tests; 88 full-suite tests). |
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | DONE | RM-200 | P2-B | 2026-07-13: normalized roster, khatma, and per-khatma assignment slices plus nullable global content use serializable listener state/actions; typed store hooks and selectors are covered by 4 focused state/type/selector/serialization tests. Full suite passes with 92 tests. |
 | RM-240 Bridge Firestore subscriptions into Redux | Codex | DONE | RM-230 | — | 2026-07-13: reference-counted global and per-khatma assignment bridges dispatch snapshots/plain errors into Redux; provider/hook lifecycle tests prove no overlapping listeners and complete Strict Mode cleanup. Full suite passes with 96 tests. |
-| RM-250 Integrate existing write functions and operation feedback | Codex | NOT STARTED | RM-230 | P2-C | UI-facing actions call existing data functions; pending/success/failure behavior is consistent; no Firebase import escapes `src/data/`. |
+| RM-250 Integrate existing write functions and operation feedback | Codex | DONE | RM-230 | P2-C | 2026-07-13: one typed adapter exposes all 16 existing mutations; `useWriteOperation` provides local pending/success/failure state, typed results/errors, retry/reset, latest-call-safe feedback, and injectable test overrides. Five focused tests plus the 101-test full suite pass; lint confirms no Firebase import escapes `src/data/`. |
 | RM-260 Verify foundation behavior | Joint | NOT STARTED | RM-210, RM-220, RM-240, RM-250 | — | Fast Refresh, navigation, initial snapshots, remote updates, local optimistic updates, error handling, and listener cleanup are tested. |
 
 **Phase 2 exit:** a themed React preview can navigate and react to Firestore
@@ -590,6 +590,55 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-250 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `f87431d`; task commit pending at log-update time.
+- Outcome: exposed all 16 existing roster, content, khatma, assignment, and
+  distribution mutations through one typed React-facing adapter. Added a local
+  operation hook with consistent idle/pending/success/failure state, typed
+  results, preserved Error subclasses, retry/reset support, and latest-call-safe
+  feedback; an injectable provider keeps future feature tests off Firestore.
+- Files/areas changed: added `src/app/operations/` adapter, context/provider,
+  generic operation hook, typed write hook, and public exports; added focused
+  write/feedback tests; updated this tracker. Existing `src/data/` and legacy UI
+  behavior were not changed.
+- Verification: focused write-operation suite passed (1 file / 5 tests);
+  `npm run typecheck` passed; `npm run lint` passed; `npm test` passed (17 files /
+  101 tests); `npm run build` passed and emitted only `index.html` and
+  `admin-nano.html` as production entries. Changed code and tests pass Prettier;
+  `git diff --check` passed.
+- Decisions and risks: transient operation feedback remains local rather than in
+  Redux, matching the state-ownership plan; every invocation still reaches the
+  existing data function, while only the newest overlapping invocation controls
+  visible feedback. Typed data-layer errors remain available for route-specific
+  copy such as released-chunk and same-day-distribution messages. No Firebase
+  import exists outside `src/data/`; no dependency or lockfile change was needed.
+  The existing shared-chunk size warning remains assigned to RM-040/RM-630.
+- Recommended next action: take RM-260 jointly to verify the complete Phase 2
+  foundation; RM-210, RM-220, RM-240, and RM-250 are now all `DONE`.
+
+### 2026-07-13 — Codex — RM-250 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `f87431d`.
+- Outcome: claimed RM-250 under Codex to expose the existing data-layer write
+  functions through UI-facing actions with consistent pending, success, and
+  failure feedback.
+- Files/areas changed: tracker claim and this Session Log entry only; no broad
+  implementation changes yet.
+- Verification: confirmed branch `reactmigration`, exact HEAD
+  `f87431defde49f75fa83a27839870a7565ecc562`, and a clean working tree; read the
+  plan through active Phase 2 and the latest Session Log handoff; confirmed
+  dependency RM-230 is `DONE`; focused pre-change store baseline passed (1 file /
+  4 tests).
+- Decisions and risks: preserve the existing `src/data/` Firebase boundary and
+  serializable Redux state; operation feedback must remain consistent without
+  duplicating domain or write behavior in React-facing code. `package-lock.json`
+  is unchanged by the RM-240 handoff, so no fresh install was required.
+- Recommended next action: inventory write signatures and current legacy call
+  sites, define the typed UI-facing operation contract, then add focused tests
+  for pending, success, failure, and retry/concurrency behavior.
 
 ### 2026-07-13 — Codex — RM-240 → DONE
 
