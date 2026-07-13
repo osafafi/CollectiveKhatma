@@ -5,6 +5,15 @@
 `CLAUDE.md` is the single source of repository instructions for ALL coding agents.
 Keep project guidance here and do not create or maintain a duplicate `AGENTS.md`.
 
+### Active React migration
+
+On the `reactmigration` branch (or a `reactmig-*` task branch), read and update
+[`REACT_MIGRATION_PLAN.md`](REACT_MIGRATION_PLAN.md) before starting migration
+work. It is the shared Codex/Claude progress tracker, ownership map, acceptance
+checklist, and session handoff log. Partial migration work must not be merged to
+`main`; the branch strategy and final owner-approval gate in that document are
+binding for this migration.
+
 ## Reference Commands
 
 ### Build & Validate
