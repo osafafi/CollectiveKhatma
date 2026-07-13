@@ -13,14 +13,16 @@ export function PreviewShell({
   heading,
   description,
 }: PreviewShellProps) {
+  // A plain <section>, not <main>: the shell's content column now owns the sole
+  // `main` landmark, so this placeholder must not introduce a second one.
   return (
-    <main data-react-surface={surface} data-route={routeName}>
+    <section data-react-surface={surface} data-route={routeName}>
       <header>
         <p>{strings.preview.migrationLabel}</p>
         <h1>{heading}</h1>
       </header>
       <p>{description}</p>
       <p role="status">{strings.preview.notProduction}</p>
-    </main>
+    </section>
   );
 }

@@ -26,7 +26,7 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300 DONE; RM-310 next) |
+| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300, RM-310 DONE; RM-320 next) |
 | Next milestone | Phase 3 — shared React providers, shells, and primitives (RM-300…RM-350) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
@@ -473,7 +473,7 @@ updates without duplicate listeners or changes to the data/domain contract.
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
 | RM-300 Build shared providers, error boundary, and feedback states | Claude | DONE | RM-210, RM-230 | P3-A | 2026-07-13: shared `AppProviders` composes store → MUI RTL theme → error boundary → write-operations → snackbar → hash router in one injectable place, and MemberApp/AdminApp now render through it (both duplicated provider stacks removed). New feedback primitives `LoadingState`/`EmptyState`/`ErrorState` (optional retry)/`AsyncContent` (maps `ListenerStatus`→loading/empty/error/retry) under `src/components/feedback/`; a class `ErrorBoundary` with a themed RTL fallback + reset-on-retry and a queued `SnackbarProvider`/`useSnackbar` (one toast at a time, FIFO, click-away-safe, Arabic dismiss) under `src/app/providers/`; `feedback.*` copy added to `strings.ar.ts`. Verified: typecheck ✓, lint ✓, 117 tests (+13) with 1 gated emulator test skipped ✓, two-entry production build unchanged ✓; both React previews render live through the composition with no React errors and correct RTL. |
-| RM-310 Build responsive member/admin shells and navigation | Claude | NOT STARTED | RM-210, RM-220 | P3-A | Bottom navigation on mobile, right rail on large screens, safe areas, active routes, and Arabic labels match requirements. |
+| RM-310 Build responsive member/admin shells and navigation | Claude | DONE | RM-210, RM-220 | P3-A | 2026-07-13: generic route-typed `AppShell`/`AppNav`/`NavIcon` (`src/components/navigation/`) reproduce the legacy shared tab bar as MUI — fixed bottom bar `< lg` promoting to a physical-right vertical rail `≥ lg` (RTL `insetInlineStart:0` + `borderInlineEnd` inner edge), retained `.tab-bar` safe-area inset + `.icon-mask` currentColor icons (default SVG; override probe stays RM-330), `aria-current` active tab in primary teal, 56px touch targets, Arabic labels. Thin `MemberShell`/`AdminShell` supply the data-driven tab lists + per-surface column max-widths and own the sole `main` landmark (`MemberApp`/`AdminApp` compose them; `PreviewShell`→`section`). Verified: typecheck ✓, lint ✓, 124 tests (+7) ✓, two-entry build unchanged (member 5.28/admin 9.38 kB gzip) ✓, bundle-budget gate ✓ (member 315.72/350, admin 315.70/375 kB JS); live preview confirms mobile bottom bar + desktop physical-right rail with correct RTL, active state, and 96px content reservation for both apps. |
 | RM-320 Build shared MUI form/display primitives | Claude | NOT STARTED | RM-210 | P3-B | Buttons, cards, fields, select, stepper, badges/chips, progress views, and confirmation pattern cover legacy use cases. |
 | RM-330 Port charts and custom icon override support | Claude | NOT STARTED | RM-210 | P3-B | Donut/segment visuals and file-based icon overrides work without legacy DOM builders. |
 | RM-340 Port browser-persistence hooks | Codex | NOT STARTED | RM-200 | P3-B | Identity, reading scale, last page, and du3a acknowledgement behaviors are typed and tested. |
@@ -629,6 +629,94 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-310 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `7e91386`; task commit pending at log-update time.
+- Outcome: built the responsive member/admin shells + navigation. A generic,
+  route-type-parameterized layer under `src/components/navigation/` (`AppShell` =
+  centered content column + rail reservation; `AppNav` = the bottom-bar⇄right-rail
+  nav; `NavIcon` = `.icon-mask` span) reproduces the legacy shared `renderTabBar`
+  as MUI: on mobile a fixed full-width **bottom** bar with a top border and the
+  retained `.tab-bar` safe-area inset; at `lg` it promotes to a **physical-right
+  vertical rail** (RTL: `insetInlineStart:0` + `borderInlineEnd` inner edge;
+  `.tab-bar` drops the inset at 1024px). Tabs are real `<a href="#/…">` React
+  Router links (keyboard-accessible, drive the hash router); the active tab carries
+  `aria-current="page"` + primary teal, inactive tabs the muted color; 56px
+  (3.5rem) touch targets; icons paint `currentColor` through the mask using the
+  bundled SVG. Thin `MemberShell`/`AdminShell` supply the data-driven Arabic tab
+  lists (twins of `src/ui/{member,admin}/nav.ts`) and per-surface column
+  max-widths (member 576/672/768, admin 672/896); the shell content column is now
+  the **sole `main` landmark**, so `PreviewShell` was demoted from `<main>` to
+  `<section>`. `MemberApp`/`AdminApp` render their (unchanged) preview content,
+  including `ThemeProbe`, through the shells.
+- Files/areas changed: new `src/components/navigation/{AppShell,AppNav,NavIcon,
+  types,index}`; new `src/app/member/MemberShell.tsx` +
+  `src/app/admin/AdminShell.tsx`; edited `src/app/{member/MemberApp,admin/AdminApp}
+  .tsx` (compose the shells) and `src/app/PreviewShell.tsx` (`main`→`section`); new
+  `tests/components/navigation.test.tsx`. No new user-facing copy (existing
+  `strings.nav.*` / `strings.admin.nav*` reused); no data/domain, dependency, or
+  lockfile change; no Firebase import added. The icon-override probe is
+  deliberately left to RM-330 — `NavIcon` hosts only the default SVG.
+- Verification: `npm run typecheck` ✓; `npm run lint` ✓ (incl. react-hooks and the
+  Firebase-boundary guardrail); `npm test` ✓ — 124 pass (+7 new) with the 1 gated
+  emulator test skipped; `npm run build` ✓, still emitting only `index.html` +
+  `admin-nano.html` at unchanged sizes (member 5.28/admin 9.38 kB gzip, shared
+  153.47 kB); `npm run check:bundle-budgets` ✓ (member 315.72 kB JS / 361.83 kB
+  transfer vs 350/400; admin 315.70 / 361.81 vs 375/425 — both under; the +16 kB
+  since RM-040 is RM-300+RM-310 shared-tree growth with ample headroom). Live
+  browser preview (dev-verify, both entries): mobile = fixed bottom bar, `row`, top
+  border, teal active tab / muted rest, 56px targets, mask icons tinting to
+  currentColor; desktop 1280px = rail fixed on the **physical right** (left 1184,
+  full height, `column`, inner border on its left edge), content reserved via
+  `padding-inline-start`→physical `padding-right: 96px` and centered at the correct
+  max-width; `dir=rtl`; only the expected offline-Firestore console errors.
+- Decisions and risks: RTL physical placement was verified empirically in-browser
+  (logical `insetInlineStart`/`borderInlineEnd`/`paddingInlineStart` resolve
+  correctly under the stylis RTL cache — not double-flipped), per the task's stated
+  approach. The shell is pure chrome, NOT wired into any feature screen (Phases 4–5
+  own route content); it frames `children`. `ThemeProbe` stays inside member/admin
+  content until RM-320 swaps in real primitives. Preview-tool screenshots timed out
+  (renderer capture issue); correctness was proven via the accessibility tree plus
+  computed geometry/color/ARIA queries instead.
+- Recommended next action: RM-320 (shared MUI form/display primitives, Claude) —
+  dep RM-210 `DONE`; it replaces `ThemeProbe` and gives the feature phases their
+  buttons/cards/fields/steppers/badges/confirmation pattern. RM-330 (charts + the
+  icon-override probe that supersedes `NavIcon`'s URL resolution) and RM-340/RM-350
+  (Codex: persistence hooks, shared test harness) are also unblocked.
+
+### 2026-07-13 — Claude — RM-310 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `7e91386`.
+- Outcome: claimed RM-310 (responsive member/admin shells + navigation) after
+  confirming its dependencies RM-210 (MUI RTL theme) and RM-220 (typed hash
+  routing) are `DONE`. No broad implementation changes yet.
+- Files/areas changed: tracker claim only (RM-310 row → IN PROGRESS, Migration
+  Status phase line, and this Session Log entry).
+- Verification: confirmed branch `reactmigration`, exact HEAD `7e91386`, and a
+  clean tree; ran `npm run typecheck` ✓ as the preflight baseline; read the plan
+  top → active Phase 3 → latest Session Log handoff; confirmed both deps `DONE`;
+  inspected the current React shells (MemberApp/AdminApp → `AppProviders` +
+  `PreviewShell` + `ThemeProbe`), the typed routing (`routes.ts`/`hooks`/
+  `RouteLink`), the legacy shared tab bar + member/admin tab lists (the parity
+  source), the MUI RTL theme + stylis cache + retained `.tab-bar`/`.icon-mask`
+  global styles, UI-inventory §1.2 (responsive chrome), and theme-map §6/§7.4.
+- Decisions and risks: this builds shared Phase 3 shell/nav contracts only — it
+  must NOT wire feature screens (Phases 4–5 own that) or touch data/domain. The
+  responsive nav (bottom bar `< lg` ⇄ physical-right rail `≥ lg`), safe-area
+  inset, active `aria-current` + primary color, and Arabic labels must match the
+  legacy `renderTabBar` exactly. New copy (if any) goes through `strings.ar.ts`;
+  existing nav labels are reused. Nav icons render via the retained `.icon-mask`
+  span with the default SVG only — the PNG-over-SVG override probe stays RM-330's.
+  RTL physical placement is verified in the browser preview, not asserted from
+  reasoning.
+- Recommended next action: build a generic `AppShell`/`AppNav`/`NavIcon` under
+  `src/components/navigation/`, thin member/admin tab lists + shell wrappers under
+  `src/app/{member,admin}/`, refactor MemberApp/AdminApp onto the shell, add
+  component tests (structure/active-state/labels), run the full suite + build, and
+  verify both previews in the browser at mobile and desktop widths; then set
+  RM-310 `DONE`.
 
 ### 2026-07-13 — Claude — RM-300 → DONE
 

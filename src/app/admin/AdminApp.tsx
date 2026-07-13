@@ -2,12 +2,15 @@ import { strings } from '@/content/strings.ar';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { PreviewShell } from '@/app/PreviewShell';
 import { ThemeProbe } from '@/app/ThemeProbe';
+import { AdminShell } from '@/app/admin/AdminShell';
 import { useAdminRoute } from '@/app/routing/hooks';
 
 export function AdminApp() {
   return (
     <AppProviders>
-      <AdminPreview />
+      <AdminShell>
+        <AdminPreview />
+      </AdminShell>
     </AppProviders>
   );
 }
