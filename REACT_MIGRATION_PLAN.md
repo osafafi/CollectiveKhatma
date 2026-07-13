@@ -233,9 +233,47 @@ Record these for comparison rather than treating them as hard budgets:
 | Admin JavaScript entry | 9.55 kB |
 | Shared CSS | 4.71 kB |
 
-Vite currently reports that the uncompressed shared JavaScript chunk is above
-500 kB. RM-040 will define an informed post-migration bundle budget after a
-React/MUI production-build spike.
+The baseline build already reported that the uncompressed shared JavaScript
+chunk was above 500 kB. These figures remain the pre-migration comparison point;
+they are not the accepted React budgets below.
+
+### RM-040 React/MUI build spike and accepted budgets
+
+Measured from source commit `67491ca` with Node 24.14.0 and Vite 8.1.4. The
+explicit `npm run build:react-spike` command typechecks and builds only
+`react-preview.html` and `admin-react-preview.html` into the ignored
+`dist-react-spike/` directory with a manifest. It does not change the normal
+production inputs or make the previews deployable.
+
+The canonical figures come from `npm run check:bundle-budgets`, which traverses
+each entry's static manifest graph and recompresses emitted HTML, JavaScript, and
+CSS with Node zlib. It counts referenced emitted assets such as WOFF2 at their
+already-compressed size. Vite's reporter uses a different gzip implementation
+and displayed 302.34 kB member / 302.33 kB admin JavaScript for the same output;
+the deterministic checker below is the budget authority.
+
+| React/MUI spike | Entry JS gzip | Shared JS gzip | Initial JS gzip | Referenced assets | Conservative initial transfer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Member | 0.25 kB | 299.12 kB | 299.38 kB | 45.68 kB | 345.49 kB |
+| Admin | 0.25 kB | 299.12 kB | 299.37 kB | 45.68 kB | 345.49 kB |
+
+The conservative initial-transfer figure is the emitted HTML gzip size plus the
+entire statically imported JS/CSS graph at gzip size plus referenced emitted
+assets at raw size. It deliberately counts the Quran WOFF2 even though the
+browser may defer the font until Quran text is visible. Dynamic route chunks and
+the on-demand `public/quran/` JSON files are not initial load and are excluded.
+
+| Surface | Initial JS gzip budget | Initial transfer budget | Spike headroom |
+| --- | ---: | ---: | ---: |
+| Member | **350 kB** | **400 kB** | 50.62 kB JS / 54.51 kB transfer |
+| Admin | **375 kB** | **425 kB** | 75.63 kB JS / 79.51 kB transfer |
+
+These are hard final-cutover ceilings, not targets to consume. Member is tighter
+because it is the senior-facing, high-frequency surface; admin receives 25 kB
+more headroom for its denser management screens. New routes should be lazy where
+that keeps route-only code out of the static graph. RM-630 must run the checker,
+record final sizes against both ceilings, review route splitting and direct MUI
+imports, and explain any requested budget change instead of silently raising it.
 
 ## Scope and Non-Goals
 
@@ -280,6 +318,7 @@ conversion work.
 | AD-09 | Keep specialized CSS for Quran typography, reading scale, safe areas, and icon masks. | These are application-specific and need not be forced into MUI components. |
 | AD-10 | Target the latest Node 24 LTS patch, not Node 26 Current. | A supported LTS line is more appropriate for CI and tooling stability. Reconfirm the exact patch when RM-100 starts. |
 | AD-11 | Migrate member first, admin second, then remove Tailwind/legacy UI. | The two-entry design permits a lower-risk staged conversion. |
+| AD-12 | Enforce separate member/admin initial-load ceilings with an explicit non-deployable React spike build. | Static manifest traversal gives repeatable transfer evidence while preserving legacy-only production outputs until cutover. |
 
 ## Target Architecture
 
@@ -394,7 +433,7 @@ update the owner field. The file boundaries are more important than the names.
 | RM-010 Confirm baseline health on migration branch | Codex | DONE | RM-000 | P0-A | 2026-07-13: typecheck, lint, 66 tests, and production build passed on `reactmigration`. |
 | RM-020 Build route-by-route UI parity inventory | Claude | DONE | RM-000 | P0-A | 2026-07-13: [`REACT_MIGRATION_UI_INVENTORY.md`](REACT_MIGRATION_UI_INVENTORY.md) covers all 11 member+admin hash routes plus the identity gate and completion overlay, every action, loading/empty/error/not-found states, the 4 localStorage persistence keys, and responsive/RTL behavior; adds a parity-risk oracle (§4) and baseline-quirk list (§5). Derived from source at `d3b277d`. |
 | RM-030 Record React migration architecture addendum | Claude | DONE | RM-020, RM-260 | — | 2026-07-13: [`ARCHITECTURE.md`](ARCHITECTURE.md) gained a "React Migration Architecture (branch-only)" section documenting the implemented `src/app/` layer, preserved dependency boundary (Firebase still only in `src/data/`), provider composition, the four-slice Redux store + state-ownership model, the reference-counted Firestore→Redux subscription bridge, the 16-mutation write adapter with local operation feedback, shared hash-routing contract, and MUI RTL theme — verified against shipped code. The legacy framework-free description is retained intact and explicitly marked as what production still ships. Doc-only checks passed: `git diff --check` clean, Prettier clean, internal anchors and referenced paths resolve. |
-| RM-040 Establish bundle/performance budgets | Codex | NOT STARTED | RM-120, RM-200 | — | Baseline and React/MUI spike sizes are recorded; accepted member/admin initial-load budgets are documented. |
+| RM-040 Establish bundle/performance budgets | Codex | DONE | RM-120, RM-200 | — | 2026-07-13: reproducible non-deployable React spike records member/admin at 299.38/299.37 kB initial JS gzip and 345.49 kB conservative transfer; accepted gates are member 350/400 kB and admin 375/425 kB, enforced by `npm run check:bundle-budgets`. Production inputs remain legacy-only; lint, 104 tests, production build, and the budget gate pass. |
 
 **Phase 0 exit:** RM-000, RM-010, and RM-020 are `DONE`; no unrecorded baseline
 failure exists.
@@ -557,7 +596,7 @@ Record decisions here before dependent implementation proceeds.
 | ID | Decision needed | Needed by | Owner | Status/resolution |
 | --- | --- | --- | --- | --- |
 | OD-01 | Exact temporary preview-entry mechanism | RM-200 | Codex | RESOLVED 2026-07-13 — use `/react-preview.html` and `/admin-react-preview.html` only on the migration branch's Vite development server; keep both files out of the explicit production inputs so normal build, preview, and deploy paths publish only the legacy entries until cutover. |
-| OD-02 | Final accepted member/admin bundle budgets | RM-040/RM-630 | Project owner + Codex | OPEN |
+| OD-02 | Final accepted member/admin bundle budgets | RM-040/RM-630 | Project owner + Codex | RESOLVED 2026-07-13 — member: 350 kB initial JS gzip / 400 kB conservative initial transfer; admin: 375 kB / 425 kB. `npm run check:bundle-budgets` is the canonical gate; RM-630 records the final comparison and any justified exception. |
 | OD-03 | Exact MUI visual-parity tolerance versus intentional Material refresh | RM-115/RM-460 | Project owner + Claude | OPEN |
 | OD-04 | Final merge method (merge commit, squash, or reviewed PR policy) | RM-740 | Project owner | OPEN |
 | OD-05 | Execution mode: sequential single-writer (default) vs opt-in parallel worktrees | Before Phase 1 code | Project owner | RESOLVED 2026-07-13 — sequential single-writer is the default (owner-directed); see §Operating Mode. |
@@ -590,6 +629,53 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-040 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `67491ca`; task commit pending at log-update time.
+- Outcome: added an explicit, non-deployable React/MUI production-build spike
+  with a Vite manifest and deterministic manifest-graph budget checker. Recorded
+  member/admin initial JavaScript at 299.38/299.37 kB gzip and conservative
+  initial transfer at 345.49 kB each; accepted member ceilings are 350 kB JS /
+  400 kB transfer and admin ceilings are 375/425 kB.
+- Files/areas changed: `vite.react-spike.config.ts`; bundle-budget checker under
+  `scripts/`; package scripts; TypeScript/ESLint/generated-output configuration;
+  production-entry isolation test; README usage; this tracker (measurements,
+  AD-12, OD-02 resolution, RM-040 status, and Session Log).
+- Verification: `npm run lint` passed; `npm test` passed (18 files + 1 skipped,
+  104 tests + 1 skipped); `npm run build` passed and still emitted only the two
+  legacy HTML entries; `npm run check:bundle-budgets` passed both entries beneath
+  both accepted ceilings; `git diff --check` passed. The tooling test explicitly
+  verifies that only the separate spike config contains React build inputs.
+- Decisions and risks: OD-02 is resolved. The known Vite warning remains because
+  the current shared React chunk is 970.23 kB minified (Vite reports 302.09 kB
+  gzip); the accepted gate measures the whole static entry graph, so changing
+  chunk boundaries cannot conceal total initial-load growth. RM-630 still owns
+  route splitting, direct-import review, final measurement, and any justified
+  exception rather than a silent budget increase.
+- Recommended next action: begin Phase 3 with RM-300 (shared providers, error
+  boundary, and feedback states); RM-210 and RM-230 are `DONE`, and the new budget
+  gate should be rerun after shared-shell or dependency changes that affect the
+  initial graph.
+
+### 2026-07-13 — Codex — RM-040 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `67491ca` before this
+  tracker claim.
+- Outcome: claimed RM-040 after confirming its RM-120 and RM-200 dependencies are
+  `DONE`; implementation and budget analysis are beginning.
+- Files/areas changed: tracker claim (RM-040 row + this Session Log entry) only;
+  no broad implementation changes yet.
+- Verification: preflight `npm run build` passed; the legacy production build
+  emitted member 5.28 kB gzip, admin 9.38 kB gzip, shared JavaScript 153.36 kB
+  gzip, and shared CSS 4.92 kB gzip, with the known 500 kB uncompressed shared-
+  chunk warning.
+- Decisions and risks: OD-02 remains open until the React/MUI spike is measured
+  and informed member/admin initial-load budgets are documented.
+- Recommended next action: measure comparable legacy and React/MUI preview asset
+  graphs, define initial-load and performance budgets with reproducible evidence,
+  and resolve OD-02.
 
 ### 2026-07-13 — Claude — RM-030 → DONE
 

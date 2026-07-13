@@ -68,22 +68,26 @@ isolated React foundations at `/react-preview.html` (member) and
 `/admin-react-preview.html` (admin). These pages are development-only: the
 production input list still contains only `index.html` and `admin-nano.html`, so
 `npm run build`, `npm run preview`, and the deployment workflow cannot publish
-the React previews before the controlled cutover.
+the React previews before the controlled cutover. Use
+`npm run check:bundle-budgets` for the explicit non-deployable React build and
+the accepted member/admin initial-load checks.
 
 ## npm scripts
 
-| Script                | What it does                                                 |
-| --------------------- | ------------------------------------------------------------ |
-| `npm run dev`         | Vite dev server with hot reload                              |
-| `npm run build`       | Typecheck, then build the static site to `dist/`             |
-| `npm run preview`     | Serve the built `dist/` locally                              |
-| `npm run typecheck`   | `tsc --noEmit`                                               |
-| `npm run lint`        | ESLint (includes the layer guardrails)                       |
-| `npm run format`      | Prettier write                                               |
-| `npm test`            | Run the Vitest unit tests                                    |
-| `npm run emulators`   | Start the Firestore emulator + Emulator UI (port 4000)       |
-| `npm run seed`        | Seed roster + default du3a into the running emulator         |
-| `npm run build:quran` | (Re)generate the bundled Quran dataset under `public/quran/` |
+| Script                         | What it does                                                       |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `npm run dev`                  | Vite dev server with hot reload                                    |
+| `npm run build`                | Typecheck, then build the static site to `dist/`                   |
+| `npm run build:react-spike`    | Build only the non-deployable React entries for measurement        |
+| `npm run check:bundle-budgets` | Build the React spike and enforce member/admin initial-load limits |
+| `npm run preview`              | Serve the built `dist/` locally                                    |
+| `npm run typecheck`            | `tsc --noEmit`                                                     |
+| `npm run lint`                 | ESLint (includes the layer guardrails)                             |
+| `npm run format`               | Prettier write                                                     |
+| `npm test`                     | Run the Vitest unit tests                                          |
+| `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)             |
+| `npm run seed`                 | Seed roster + default du3a into the running emulator               |
+| `npm run build:quran`          | (Re)generate the bundled Quran dataset under `public/quran/`       |
 
 ## Firebase setup
 

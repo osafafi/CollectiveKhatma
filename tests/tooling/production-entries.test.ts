@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { UserConfig } from 'vite';
 import viteConfig, { entryFiles } from '../../vite.config';
+import reactSpikeConfig from '../../vite.react-spike.config';
 
 const root = resolve(import.meta.dirname, '../..');
 const config = viteConfig as UserConfig;
+const spikeConfig = reactSpikeConfig as UserConfig;
 
 describe('production and React preview entry isolation', () => {
   it('keeps React transformation and Fast Refresh in the Vite plugin chain', () => {
@@ -40,6 +42,15 @@ describe('production and React preview entry isolation', () => {
     for (const previewFile of Object.values(entryFiles.reactPreview)) {
       expect(productionInputs).not.toContain(resolve(root, previewFile));
     }
+  });
+
+  it('measures React entries only in the explicit non-deployable spike build', () => {
+    expect(spikeConfig.build?.outDir).toBe('dist-react-spike');
+    expect(spikeConfig.build?.manifest).toBe(true);
+    expect(spikeConfig.build?.rollupOptions?.input).toEqual({
+      member: resolve(root, entryFiles.reactPreview.member),
+      admin: resolve(root, entryFiles.reactPreview.admin),
+    });
   });
 
   it('keeps legacy and React HTML files wired to their own entry modules', async () => {
