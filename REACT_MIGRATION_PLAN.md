@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210 done) |
-| Next milestone | RM-220 / RM-230 — typed hash routing and Redux store (Codex) |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220 done) |
+| Next milestone | RM-230 — Redux store, typed hooks, and base slices (Codex) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -420,7 +420,7 @@ are documented; the legacy application still builds and passes tests.
 | --- | --- | --- | --- | --- | --- |
 | RM-200 Create React app structure and branch-only preview entries | Codex | DONE | RM-130 | P2-A | 2026-07-13: member/admin React roots render at dev-only preview URLs; entry-isolation tests and the production build prove only the two legacy HTML entries reach `dist/`. |
 | RM-210 Implement centralized MUI RTL theme | Claude | DONE | RM-115, RM-130 | P2-A | 2026-07-13: `createAppTheme` maps the theme-map §2–§6 tokens (palette + white `contrastText`, type scale, `shape` 12px, `spacing:4`, Tailwind-px breakpoints, `direction:'rtl'`); `AppThemeProvider` composes the `stylis-plugin-rtl` Emotion cache → `ThemeProvider` → `CssBaseline` → retained `GlobalStyles`, and forces `dir=rtl`/`lang=ar`. Verified in the branch preview: `dir=rtl`, primary `#0f766e`/12px/`mui-rtl` class, body `#faf7f0`, Amiri `.quran-text`, and a portalled RTL Select (into `body`). 13 new tests (token-parity vs `theme.css`, portal RTL) + full baseline suite green (typecheck, lint, 84 tests, two-entry build). |
-| RM-220 Implement typed hash routing | Codex | NOT STARTED | RM-200 | P2-B | Existing member/admin URLs and fallback behavior are preserved; route tests pass. |
+| RM-220 Implement typed hash routing | Codex | DONE | RM-200 | P2-B | 2026-07-13: one discriminated-union route contract now serves both legacy and React member/admin apps; React previews use `HashRouter`, typed hooks, typed navigation, and typed links. All established hashes and non-rewriting fallbacks remain covered (19 focused route tests; 88 full-suite tests). |
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | NOT STARTED | RM-200 | P2-B | Store contains only serializable planned state; selectors and state types have tests. |
 | RM-240 Bridge Firestore subscriptions into Redux | Codex | NOT STARTED | RM-230 | — | Roster, content, khatma, and dynamic assignment listeners dispatch updates and errors; all listeners clean up correctly, including under Strict Mode. |
 | RM-250 Integrate existing write functions and operation feedback | Codex | NOT STARTED | RM-230 | P2-C | UI-facing actions call existing data functions; pending/success/failure behavior is consistent; no Firebase import escapes `src/data/`. |
@@ -590,6 +590,48 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-220 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `ce684ae`; task commit pending at log-update time.
+- Outcome: implemented typed React hash routing for both preview roots while
+  preserving all member/admin legacy URLs and default fallback behavior.
+- Files/areas changed: added shared route contracts, path/hash builders,
+  `AppHashRouter`, typed current-route/navigation hooks, and typed link
+  components under `src/app/routing/`; wired `MemberApp` and `AdminApp` to expose
+  the parsed route on their preview surfaces; converted the legacy member/admin
+  route modules to compatibility exports backed by the same contract; added
+  focused React routing coverage and strengthened root tests.
+- Verification: `npm run typecheck` passed; `npm run lint` passed; focused route
+  suite passed (4 files / 19 tests); `npm test` passed (13 files / 88 tests);
+  `npm run build` passed and still emitted only the two production legacy HTML
+  entries (`index.html`, `admin-nano.html`).
+- Decisions and risks: unknown hashes select the established default route
+  without rewriting browser history. Route objects are discriminated unions, so
+  feature code navigates and links without assembling strings. The legacy and
+  React surfaces deliberately share pure parsers/builders during migration to
+  prevent URL drift. No dependency or lockfile change was required. The existing
+  build chunk-size warning remains tracked by RM-040; it does not block RM-220.
+- Recommended next action: take RM-230 (Redux store, typed hooks, and base
+  slices), whose RM-200 dependency is already `DONE`.
+
+### 2026-07-13 — Codex — RM-220 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at `ce684ae`; clean handoff confirmed before
+  claiming the task.
+- Outcome: claimed RM-220 to implement typed hash routing for the React member
+  and admin previews while preserving existing URLs and fallback behavior.
+- Files/areas changed: tracker claim and this Session Log entry only; no broad
+  implementation changes yet.
+- Verification: scoped pre-change baseline passed:
+  `npm test -- tests/ui/router.test.ts tests/ui/admin-routes.test.ts tests/app/react-apps.test.tsx`
+  (3 files / 15 tests).
+- Decisions and risks: `package-lock.json` is unchanged since the prior Codex
+  handoff, so `npm ci` was not required. Existing legacy route contracts and
+  fallback semantics will be inventoried before selecting the typed route API.
+- Recommended next action: implement RM-220 and add route-contract tests for
+  both React preview roots.
 
 ### 2026-07-13 — Claude — RM-210 → DONE
 

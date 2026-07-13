@@ -11,7 +11,10 @@ describe('React app roots', () => {
     expect(
       screen.getByRole('heading', { name: strings.preview.memberHeading }),
     ).toBeInTheDocument();
-    expect(container.querySelector('[data-react-surface="member"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-react-surface="member"]')).toHaveAttribute(
+      'data-route',
+      'khatmas',
+    );
     expect(screen.getByRole('status')).toHaveTextContent(strings.preview.notProduction);
   });
 
@@ -21,7 +24,10 @@ describe('React app roots', () => {
     expect(
       screen.getByRole('heading', { name: strings.preview.adminHeading }),
     ).toBeInTheDocument();
-    expect(container.querySelector('[data-react-surface="admin"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-react-surface="admin"]')).toHaveAttribute(
+      'data-route',
+      'home',
+    );
     expect(screen.getByRole('status')).toHaveTextContent(strings.preview.notProduction);
   });
 });
