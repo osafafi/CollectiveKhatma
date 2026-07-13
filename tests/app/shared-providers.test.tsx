@@ -1,0 +1,66 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it } from 'vitest';
+import { AppProviders } from '@/app/providers/AppProviders';
+import { useSnackbar } from '@/app/providers/useSnackbar';
+import { useMemberRoute } from '@/app/routing/hooks';
+import {
+  createAppStore,
+  selectRosterListener,
+  useAppSelector,
+  type FirestoreSubscriptionSources,
+} from '@/app/store';
+
+/** Inert sources: they register a cleanup but never push a snapshot. */
+const inertSources: FirestoreSubscriptionSources = {
+  roster: () => () => undefined,
+  content: () => () => undefined,
+  khatmas: () => () => undefined,
+  assignments: () => () => undefined,
+};
+
+function CompositionProbe() {
+  const route = useMemberRoute();
+  const rosterStatus = useAppSelector(selectRosterListener).status;
+  const { enqueueSnackbar } = useSnackbar();
+  return (
+    <div>
+      <output data-testid="route">{route.name}</output>
+      <output data-testid="roster-status">{rosterStatus}</output>
+      <button
+        type="button"
+        onClick={() => enqueueSnackbar('Saved', { severity: 'success' })}
+      >
+        Notify
+      </button>
+    </div>
+  );
+}
+
+afterEach(() => {
+  window.history.replaceState(null, '', '/');
+});
+
+describe('AppProviders composition (RM-300)', () => {
+  it('wires store, subscriptions, router, RTL theme, and snackbar into one tree', async () => {
+    window.history.replaceState(null, '', '/#/khatmas');
+    const user = userEvent.setup();
+
+    render(
+      <AppProviders appStore={createAppStore()} sources={inertSources}>
+        <CompositionProbe />
+      </AppProviders>,
+    );
+
+    // Store + subscription bridge started: the roster listener left `idle`.
+    expect(screen.getByTestId('roster-status')).toHaveTextContent('loading');
+    // Router resolves the current hash.
+    expect(screen.getByTestId('route')).toHaveTextContent('khatmas');
+    // Theme provider forced RTL onto the document.
+    expect(document.documentElement).toHaveAttribute('dir', 'rtl');
+
+    // Snackbar is reachable from any descendant of the composition.
+    await user.click(screen.getByRole('button', { name: 'Notify' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Saved');
+  });
+});

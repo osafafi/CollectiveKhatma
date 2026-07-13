@@ -11,6 +11,18 @@ export const strings = {
     done: 'تم',
     loading: 'جارٍ التحميل…',
   },
+  // Shared feedback-state copy for the React primitives (RM-300): loading,
+  // empty, error/retry, snackbar dismissal, and the last-resort crash fallback.
+  feedback: {
+    loading: 'جارٍ التحميل…',
+    empty: 'لا توجد عناصر لعرضها',
+    errorTitle: 'تعذّر تحميل البيانات',
+    errorBody: 'حدث خطأ أثناء الاتصال. حاول مرة أخرى.',
+    retry: 'إعادة المحاولة',
+    dismiss: 'إغلاق',
+    crashTitle: 'حدث خطأ غير متوقع',
+    crashBody: 'نعتذر، حدث خطأ غير متوقع في التطبيق. حاول مرة أخرى.',
+  },
   preview: {
     migrationLabel: 'معاينة ترحيل React',
     notProduction: 'هذه معاينة تطوير منفصلة. التطبيق الحالي المنشور لم يتغير.',

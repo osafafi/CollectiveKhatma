@@ -26,7 +26,7 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0, Phase 1, and Phase 2 complete; Phase 3 ready |
+| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300 DONE; RM-310 next) |
 | Next milestone | Phase 3 — shared React providers, shells, and primitives (RM-300…RM-350) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
@@ -472,7 +472,7 @@ updates without duplicate listeners or changes to the data/domain contract.
 
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| RM-300 Build shared providers, error boundary, and feedback states | Claude | NOT STARTED | RM-210, RM-230 | P3-A | Reusable app providers, loading, empty, error, retry, and snackbar patterns exist. |
+| RM-300 Build shared providers, error boundary, and feedback states | Claude | DONE | RM-210, RM-230 | P3-A | 2026-07-13: shared `AppProviders` composes store → MUI RTL theme → error boundary → write-operations → snackbar → hash router in one injectable place, and MemberApp/AdminApp now render through it (both duplicated provider stacks removed). New feedback primitives `LoadingState`/`EmptyState`/`ErrorState` (optional retry)/`AsyncContent` (maps `ListenerStatus`→loading/empty/error/retry) under `src/components/feedback/`; a class `ErrorBoundary` with a themed RTL fallback + reset-on-retry and a queued `SnackbarProvider`/`useSnackbar` (one toast at a time, FIFO, click-away-safe, Arabic dismiss) under `src/app/providers/`; `feedback.*` copy added to `strings.ar.ts`. Verified: typecheck ✓, lint ✓, 117 tests (+13) with 1 gated emulator test skipped ✓, two-entry production build unchanged ✓; both React previews render live through the composition with no React errors and correct RTL. |
 | RM-310 Build responsive member/admin shells and navigation | Claude | NOT STARTED | RM-210, RM-220 | P3-A | Bottom navigation on mobile, right rail on large screens, safe areas, active routes, and Arabic labels match requirements. |
 | RM-320 Build shared MUI form/display primitives | Claude | NOT STARTED | RM-210 | P3-B | Buttons, cards, fields, select, stepper, badges/chips, progress views, and confirmation pattern cover legacy use cases. |
 | RM-330 Port charts and custom icon override support | Claude | NOT STARTED | RM-210 | P3-B | Donut/segment visuals and file-based icon overrides work without legacy DOM builders. |
@@ -629,6 +629,85 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Claude — RM-300 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit `36c5dd3`;
+  task commit pending at log-update time.
+- Outcome: built the Phase 3 shared foundation. A single `AppProviders` now
+  composes the whole provider stack — Redux store + Firestore subscriptions → MUI
+  RTL theme + `CssBaseline` → error boundary → injectable write-operations →
+  app-wide snackbar → hash router — in one place, and `MemberApp`/`AdminApp` render
+  through it, deleting the two duplicated provider stacks. Added reusable feedback
+  primitives under `src/components/feedback/`: `LoadingState` (accessible
+  `role="status"` region), `EmptyState` (quiet, optional action — an empty result
+  is not an error), `ErrorState` (MUI `Alert`/`role="alert"` + optional retry), and
+  `AsyncContent`, which switches a Firestore `ListenerStatus` to loading / empty /
+  error / retry so feature routes stop re-implementing the four states. Added a
+  class `ErrorBoundary` (themed RTL fallback via `ErrorState`, reset-on-retry,
+  `onError` hook) and a queued `SnackbarProvider`/`useSnackbar` (one toast at a
+  time, FIFO, click-away-safe, RTL, Arabic dismiss label) under `src/app/providers/`,
+  plus a `providers/index.ts` barrel. Feedback/crash/dismiss copy added to
+  `strings.ar.ts` (`feedback.*`).
+- Files/areas changed: new `src/components/feedback/{LoadingState,EmptyState,
+  ErrorState,AsyncContent,index}`; new `src/app/providers/{AppProviders,ErrorBoundary,
+  SnackbarProvider,useSnackbar,snackbarContext,index}`; edited `src/app/member/
+  MemberApp.tsx` and `src/app/admin/AdminApp.tsx` (onto `AppProviders`); edited
+  `src/content/strings.ar.ts` (`feedback.*`); new tests `tests/components/
+  feedback.test.tsx` and `tests/app/{error-boundary,snackbar,shared-providers}.test.tsx`.
+  No data/domain, dependency, or lockfile change; no Firebase import escapes
+  `src/data/`.
+- Verification: `npm run typecheck` ✓; `npm run lint` ✓ (clean, incl.
+  react-hooks/react-refresh and the Firebase-boundary guardrail); `npm test` ✓ — 22
+  files / 117 tests pass (+13 new) with the 1 gated emulator test skipped; `npm run
+  build` ✓ and still emits only `index.html` + `admin-nano.html` at unchanged
+  member/admin sizes (5.28/9.38 kB gzip), the shared chunk moving 153.36→153.47 kB
+  gzip only because the legacy tree also imports the new `feedback` strings.
+  Prettier clean on changed files; `git diff --check` clean. Live smoke: `npm run
+  dev`, both `/react-preview.html` and `/admin-react-preview.html` render through
+  `AppProviders` with no React errors and correct RTL (only the expected
+  offline-Firestore connection errors appear, confirming the subscription bridge
+  runs inside the composition).
+- Decisions and risks: the primitives reuse the existing `ListenerStatus`/
+  `OperationState` vocabulary instead of a parallel one and stay purely
+  presentational (no store coupling beyond a type-only `ListenerStatus` import).
+  They are intentionally NOT wired into any member/admin feature screen — Phases 4–5
+  own that; `ThemeProbe` stays until RM-320 swaps in real primitives. `ErrorBoundary`
+  complements, not replaces, per-operation `useOperation` feedback. The snackbar
+  shows one message at a time by design (queued) to avoid stacked toasts. The 500 kB
+  shared-chunk warning is unchanged and remains RM-040/RM-630's.
+- Recommended next action: RM-310 (responsive member/admin shells + navigation,
+  Claude) — its deps RM-210/RM-220 are `DONE` and it composes directly on
+  `AppProviders` + these feedback states. RM-320 (shared form/display primitives) is
+  the natural follow-on and will replace `ThemeProbe`. RM-340/RM-350 (Codex:
+  persistence hooks, shared test harness) are also unblocked.
+
+### 2026-07-13 — Claude — RM-300 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `36c5dd3`.
+- Outcome: claimed RM-300 (shared providers, error boundary, and feedback states)
+  after confirming its dependencies RM-210 (MUI RTL theme) and RM-230 (Redux store)
+  are `DONE`. No broad implementation changes yet.
+- Files/areas changed: tracker claim (RM-300 row → IN PROGRESS, Migration Status
+  phase line, and this Session Log entry) only.
+- Verification: confirmed branch `reactmigration`, exact HEAD `36c5dd3`, and a clean
+  working tree; read the plan top → active Phase 3 → latest Session Log handoff;
+  confirmed both dependencies `DONE`; inspected the implemented provider stack
+  (`AppStoreProvider` → `AppThemeProvider` → `AppHashRouter`), the duplicated
+  MemberApp/AdminApp compositions, the local operation-feedback contract
+  (`useOperation`/`useWriteOperation`), the shared `ListenerStatus` shape, the MUI
+  RTL theme, and retained global styles. Baseline check to run before broad changes.
+- Decisions and risks: this task builds shared Phase 3 contracts only — it must not
+  wire feedback/providers into member or admin feature screens (Phases 4–5 own that)
+  and must not touch data/domain. New user-facing copy goes through
+  `src/content/strings.ar.ts` (no hardcoded strings). Error boundary, snackbar, and
+  feedback-state components must be RTL-correct and reuse the existing
+  `OperationState`/`ListenerStatus` vocabulary rather than inventing a parallel one.
+- Recommended next action: add feedback copy to `strings.ar.ts`; build reusable
+  `LoadingState`/`EmptyState`/`ErrorState` (with retry) under `src/components/`, an
+  `ErrorBoundary` and a snackbar provider/hook under `src/app/providers/`, and a
+  shared `AppProviders` composition; refactor MemberApp/AdminApp onto it; add
+  component tests; run the full suite + build; then set RM-300 `DONE`.
 
 ### 2026-07-13 — Codex — RM-040 → DONE
 

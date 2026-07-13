@@ -1,20 +1,14 @@
 import { strings } from '@/content/strings.ar';
-import { AppStoreProvider } from '@/app/providers/AppStoreProvider';
-import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
+import { AppProviders } from '@/app/providers/AppProviders';
 import { PreviewShell } from '@/app/PreviewShell';
 import { ThemeProbe } from '@/app/ThemeProbe';
-import { AppHashRouter } from '@/app/routing/AppHashRouter';
 import { useAdminRoute } from '@/app/routing/hooks';
 
 export function AdminApp() {
   return (
-    <AppStoreProvider>
-      <AppThemeProvider>
-        <AppHashRouter>
-          <AdminPreview />
-        </AppHashRouter>
-      </AppThemeProvider>
-    </AppStoreProvider>
+    <AppProviders>
+      <AdminPreview />
+    </AppProviders>
   );
 }
 
