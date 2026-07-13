@@ -11,6 +11,12 @@ export const strings = {
     done: 'تم',
     loading: 'جارٍ التحميل…',
   },
+  preview: {
+    migrationLabel: 'معاينة ترحيل React',
+    notProduction: 'هذه معاينة تطوير منفصلة. التطبيق الحالي المنشور لم يتغير.',
+    memberHeading: 'معاينة تطبيق الأعضاء',
+    adminHeading: 'معاينة لوحة التحكم',
+  },
   // Bottom tab bar / side rail (member app). Kept short to fit a tab label.
   nav: {
     khatmas: 'الختمات',

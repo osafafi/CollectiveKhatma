@@ -61,6 +61,15 @@ seeded roster live; the admin page is at `/admin-nano.html` (see
 > Without the emulator running, the app still loads — the roster simply shows
 > "no members yet" (Firestore returns an empty offline snapshot).
 
+### React migration previews
+
+On the `reactmigration` branch, the same development server also exposes the
+isolated React foundations at `/react-preview.html` (member) and
+`/admin-react-preview.html` (admin). These pages are development-only: the
+production input list still contains only `index.html` and `admin-nano.html`, so
+`npm run build`, `npm run preview`, and the deployment workflow cannot publish
+the React previews before the controlled cutover.
+
 ## npm scripts
 
 | Script                | What it does                                                 |

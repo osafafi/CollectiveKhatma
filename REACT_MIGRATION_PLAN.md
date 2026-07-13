@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 ready to start |
-| Next milestone | RM-200 — Create React app structure and branch-only preview entries |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200 done) |
+| Next milestone | RM-210 — Implement centralized MUI RTL theme |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -418,7 +418,7 @@ are documented; the legacy application still builds and passes tests.
 
 | Task | Owner | Status | Depends on | Parallel group | Deliverable / acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| RM-200 Create React app structure and branch-only preview entries | Codex | NOT STARTED | RM-130 | P2-A | Member/admin React roots render without replacing production entries; preview mechanism cannot accidentally replace production deployment. |
+| RM-200 Create React app structure and branch-only preview entries | Codex | DONE | RM-130 | P2-A | 2026-07-13: member/admin React roots render at dev-only preview URLs; entry-isolation tests and the production build prove only the two legacy HTML entries reach `dist/`. |
 | RM-210 Implement centralized MUI RTL theme | Claude | NOT STARTED | RM-115, RM-130 | P2-A | Theme maps accepted tokens; `dir=rtl`, theme direction, Emotion cache, portals, fonts, and `CssBaseline` verified. |
 | RM-220 Implement typed hash routing | Codex | NOT STARTED | RM-200 | P2-B | Existing member/admin URLs and fallback behavior are preserved; route tests pass. |
 | RM-230 Create Redux store, typed hooks, and base slices | Codex | NOT STARTED | RM-200 | P2-B | Store contains only serializable planned state; selectors and state types have tests. |
@@ -556,7 +556,7 @@ Record decisions here before dependent implementation proceeds.
 
 | ID | Decision needed | Needed by | Owner | Status/resolution |
 | --- | --- | --- | --- | --- |
-| OD-01 | Exact temporary preview-entry mechanism | RM-200 | Codex | OPEN |
+| OD-01 | Exact temporary preview-entry mechanism | RM-200 | Codex | RESOLVED 2026-07-13 — use `/react-preview.html` and `/admin-react-preview.html` only on the migration branch's Vite development server; keep both files out of the explicit production inputs so normal build, preview, and deploy paths publish only the legacy entries until cutover. |
 | OD-02 | Final accepted member/admin bundle budgets | RM-040/RM-630 | Project owner + Codex | OPEN |
 | OD-03 | Exact MUI visual-parity tolerance versus intentional Material refresh | RM-115/RM-460 | Project owner + Claude | OPEN |
 | OD-04 | Final merge method (merge commit, squash, or reviewed PR policy) | RM-740 | Project owner | OPEN |
@@ -590,6 +590,50 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-200 → DONE
+
+- Branch/commit: `reactmigration`, implemented from
+  `1a66c823f54427e90f787643d9e2db167e9da0ab`; task commit pending at log-update
+  time.
+- Outcome: created isolated member/admin React roots and development preview
+  pages without changing either production HTML entry or legacy bootstrap.
+  RM-200 acceptance criteria pass.
+- Files/areas changed: added `src/app/` roots/bootstrap/entries,
+  `react-preview.html`, `admin-react-preview.html`, root and entry-isolation
+  tests; extended centralized Arabic preview copy, Vite entry metadata, README
+  preview guidance, OD-01, and this tracker.
+- Verification on the available Node `24.14.0` runtime: typecheck and lint passed;
+  all 10 test files / 71 tests passed; both preview HTML pages and both TSX entry
+  modules returned HTTP 200 from Vite; the production build passed and emitted
+  only `index.html` and `admin-nano.html` (neither React preview was present in
+  `dist/`). Prettier passed for the implementation files, and
+  `git diff --check` passed.
+- Decisions and risks: OD-01 is resolved with dev-server-only preview HTML files
+  excluded from the explicit production input map and protected by regression
+  tests. The local shell is behind the repository's pinned Node `24.18.0`; CI and
+  deploy remain pinned to `24.18.0`, and this task changes no dependencies or
+  runtime APIs.
+- Recommended next action: hand off to Claude for RM-210; its RM-115/RM-130
+  dependencies are `DONE`, and the new roots are ready for the centralized MUI
+  RTL provider. RM-220 and RM-230 can follow after that handoff.
+
+### 2026-07-13 — Codex — RM-200 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at
+  `1a66c823f54427e90f787643d9e2db167e9da0ab`; clean working tree confirmed
+  before the tracker claim.
+- Outcome: claimed RM-200 after confirming its RM-130 dependency is `DONE`;
+  implementation has not begun at log-update time.
+- Files/areas changed: this tracker only.
+- Verification: React/jsdom component baseline passed (1 file / 1 test) on the
+  available Node `24.14.0` runtime. The repository pins Node `24.18.0`, which
+  remains required for final acceptance verification.
+- Decisions and risks: OD-01 (the exact branch-only preview-entry mechanism) is
+  still open and must be resolved as part of RM-200 without replacing the
+  production `index.html` and `admin-nano.html` entries.
+- Recommended next action: inspect the existing Vite entry/build/deploy wiring,
+  resolve OD-01, then add isolated member/admin React roots and tests.
 
 ### 2026-07-13 — Codex — RM-150 → DONE
 

@@ -11,6 +11,17 @@ import { resolve } from 'node:path';
  */
 const ADMIN_ENTRY = 'admin-nano.html';
 
+export const entryFiles = {
+  production: {
+    member: 'index.html',
+    admin: ADMIN_ENTRY,
+  },
+  reactPreview: {
+    member: 'react-preview.html',
+    admin: 'admin-react-preview.html',
+  },
+} as const;
+
 export default defineConfig({
   // Base path for GitHub Pages *project* sites (e.g. '/Ranqur/'). Set per
   // environment via the BASE_PATH env var; defaults to '/' for local dev and
@@ -28,11 +39,13 @@ export default defineConfig({
   },
 
   build: {
-    // Multi-page app: one bundle per HTML entry, sharing everything under src/.
+    // Production remains a two-entry legacy build until the controlled cutover.
+    // The React preview HTML files are intentionally absent: Vite serves them
+    // during development, but `npm run build` cannot publish them to dist/.
     rollupOptions: {
       input: {
-        member: resolve(import.meta.dirname, 'index.html'),
-        admin: resolve(import.meta.dirname, ADMIN_ENTRY),
+        member: resolve(import.meta.dirname, entryFiles.production.member),
+        admin: resolve(import.meta.dirname, entryFiles.production.admin),
       },
     },
   },
