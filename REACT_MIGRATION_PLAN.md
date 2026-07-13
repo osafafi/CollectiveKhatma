@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120, RM-130, RM-140 DONE) |
-| Next milestone | RM-150 — Verify clean toolchain installation |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 ready to start |
+| Next milestone | RM-200 — Create React app structure and branch-only preview entries |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -409,7 +409,7 @@ failure exists.
 | RM-120 Install React/MUI/Redux toolchain | Codex | DONE | RM-110 | — | 2026-07-13: installed React 19.2.7, MUI/Emotion/RTL, Redux Toolkit 2.12.0, React-Redux 9.3.0, React Router 7.18.1, Vite React plugin, types, and component-test dependencies; applied RM-110 safe refreshes; pinned reviewed install scripts; clean `npm ci` and the full baseline suite passed on Node 24.18.0. |
 | RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | DONE | RM-120 | — | 2026-07-13: enabled `react-jsx`, Vite React/Fast Refresh, Hooks/refresh lint rules, and separate Node/jsdom Vitest projects; clean install and full suite passed with 67 tests. |
 | RM-140 Update CI/deploy tooling | Codex | DONE | RM-100, RM-130 | — | 2026-07-13: CI and deploy use `.nvmrc`; both run named TS/TSX typecheck, React-aware lint, legacy + React tests, and the two-entry production build before integration/deployment. Full pinned-runtime suite passed with 67 tests. |
-| RM-150 Verify clean toolchain installation | Codex | NOT STARTED | RM-140 | — | Clean install, typecheck, lint, legacy tests, and production build pass on pinned Node. |
+| RM-150 Verify clean toolchain installation | Codex | DONE | RM-140 | — | 2026-07-13: fresh `npm ci`, dependency-tree validation, typecheck, lint, 66 legacy tests, 1 React component test, and the two-entry production build passed on Node 24.18.0; production audit is clean. |
 
 **Phase 1 exit:** one Node LTS version is used everywhere; dependency changes
 are documented; the legacy application still builds and passes tests.
@@ -544,7 +544,7 @@ Every box must be checked before RM-740:
 | MUI RTL defects in dialogs/selects/icons | Medium / Medium | RTL Emotion cache, theme direction, portal QA, directional-icon review | RM-210/RM-650 |
 | React/MUI bundle growth harms older phones | Medium / Medium | Measure early, route split, direct imports, avoid unused icon package | RM-040/RM-630 |
 | Tailwind and MUI conflict during transition | Low / Medium | Preview isolation, CssBaseline review, remove Tailwind only after both cutovers | RM-210/RM-620 |
-| Moderate npm advisories in Firebase development tooling | Low / Medium | Production audit is clean; latest `firebase-admin`/`firebase-tools` still carry nine transitive advisories and npm proposes breaking downgrades, so monitor upstream and recheck at RM-150 rather than force-fix | RM-120 documented / RM-150 recheck |
+| Moderate npm advisories in Firebase development tooling | Low / Medium | Production audit is clean; latest `firebase-admin`/`firebase-tools` still carry nine transitive advisories and npm proposes breaking downgrades, so monitor upstream rather than force-fix | RM-120 documented / RM-150 rechecked: 0 production vulnerabilities, 9 moderate development findings |
 | Two agents edit shared files concurrently | Medium / High | Lane ownership, task branches, session log, one integration committer | Ongoing |
 | Migration accidentally changes domain/data behavior | Low / High | Preserve boundaries, parity tests, separate task for any discovered defect | Ongoing |
 | `main` advances while migration is long-lived | Medium / Medium | RM-710 reconciliation, periodic awareness without partial migration merges | RM-710 |
@@ -590,6 +590,47 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-150 → DONE
+
+- Branch/commit: `reactmigration`, implemented from
+  `bfd3d4efd5a124431dd4c1593c381c21bddbfe7f`; task commit pending at log-update
+  time.
+- Outcome: the Phase 1 toolchain is reproducible from a clean install on the
+  pinned runtime, and all RM-150 acceptance gates pass. Phase 1 is complete.
+- Files/areas changed: this tracker only; application source, configuration,
+  manifests, and the lockfile are unchanged.
+- Verification on Node `24.18.0` / npm `11.16.0`: fresh `npm ci` installed 1,040
+  packages; `npm ls --depth=0`, typecheck, lint, 7 legacy test files / 66 tests,
+  1 React component test file / 1 test, the combined 8 files / 67 tests, and the
+  two-entry production build passed. Production audit reports 0 vulnerabilities.
+- Decisions and risks: full audit reproduces the nine known moderate transitive
+  findings in the current `firebase-admin`/`firebase-tools` development tree;
+  npm still proposes the breaking `firebase-tools@14.23.0` downgrade, so no
+  forced fix was applied. `npm outdated` lists only the intentional Node-types-26
+  and TypeScript-7 holds from RM-110. The existing 509.63 kB shared-chunk warning
+  remains assigned to RM-040/RM-630.
+- Recommended next action: take RM-200; RM-130 is `DONE`, so the member/admin
+  branch-only React preview entries can be created without replacing production
+  entries.
+
+### 2026-07-13 — Codex — RM-150 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at
+  `bfd3d4efd5a124431dd4c1593c381c21bddbfe7f`, with a clean working tree at
+  preflight; RM-140 is `DONE`, so the dependency is satisfied.
+- Outcome: claimed RM-150 under Codex; clean toolchain installation verification
+  is in progress.
+- Files/areas changed: this tracker only.
+- Verification: preflight confirmed the requested branch and exact HEAD;
+  `npm ls --depth=0` passed. The default shell reports Node `24.14.0` / npm
+  `11.9.0`, so RM-150 acceptance checks will run on the pinned Node `24.18.0`.
+- Decisions and risks: use the pinned runtime for all acceptance evidence and
+  recheck the nine known moderate transitive advisories in the Firebase
+  development-tooling tree.
+- Recommended next action: run a fresh install and the Phase 1 exit suite on
+  pinned Node `24.18.0`, then record the results and close RM-150 if all gates
+  pass.
 
 ### 2026-07-13 — Codex — RM-140 → DONE
 
