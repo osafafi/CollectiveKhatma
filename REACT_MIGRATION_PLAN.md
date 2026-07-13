@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220 done) |
-| Next milestone | RM-230 — Redux store, typed hooks, and base slices (Codex) |
+| Current phase | Phase 0 and Phase 1 complete; Phase 2 in progress (RM-200, RM-210, RM-220, RM-230 done) |
+| Next milestone | RM-240 — bridge Firestore subscriptions into Redux (Codex) |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -421,7 +421,7 @@ are documented; the legacy application still builds and passes tests.
 | RM-200 Create React app structure and branch-only preview entries | Codex | DONE | RM-130 | P2-A | 2026-07-13: member/admin React roots render at dev-only preview URLs; entry-isolation tests and the production build prove only the two legacy HTML entries reach `dist/`. |
 | RM-210 Implement centralized MUI RTL theme | Claude | DONE | RM-115, RM-130 | P2-A | 2026-07-13: `createAppTheme` maps the theme-map §2–§6 tokens (palette + white `contrastText`, type scale, `shape` 12px, `spacing:4`, Tailwind-px breakpoints, `direction:'rtl'`); `AppThemeProvider` composes the `stylis-plugin-rtl` Emotion cache → `ThemeProvider` → `CssBaseline` → retained `GlobalStyles`, and forces `dir=rtl`/`lang=ar`. Verified in the branch preview: `dir=rtl`, primary `#0f766e`/12px/`mui-rtl` class, body `#faf7f0`, Amiri `.quran-text`, and a portalled RTL Select (into `body`). 13 new tests (token-parity vs `theme.css`, portal RTL) + full baseline suite green (typecheck, lint, 84 tests, two-entry build). |
 | RM-220 Implement typed hash routing | Codex | DONE | RM-200 | P2-B | 2026-07-13: one discriminated-union route contract now serves both legacy and React member/admin apps; React previews use `HashRouter`, typed hooks, typed navigation, and typed links. All established hashes and non-rewriting fallbacks remain covered (19 focused route tests; 88 full-suite tests). |
-| RM-230 Create Redux store, typed hooks, and base slices | Codex | NOT STARTED | RM-200 | P2-B | Store contains only serializable planned state; selectors and state types have tests. |
+| RM-230 Create Redux store, typed hooks, and base slices | Codex | DONE | RM-200 | P2-B | 2026-07-13: normalized roster, khatma, and per-khatma assignment slices plus nullable global content use serializable listener state/actions; typed store hooks and selectors are covered by 4 focused state/type/selector/serialization tests. Full suite passes with 92 tests. |
 | RM-240 Bridge Firestore subscriptions into Redux | Codex | NOT STARTED | RM-230 | — | Roster, content, khatma, and dynamic assignment listeners dispatch updates and errors; all listeners clean up correctly, including under Strict Mode. |
 | RM-250 Integrate existing write functions and operation feedback | Codex | NOT STARTED | RM-230 | P2-C | UI-facing actions call existing data functions; pending/success/failure behavior is consistent; no Firebase import escapes `src/data/`. |
 | RM-260 Verify foundation behavior | Joint | NOT STARTED | RM-210, RM-220, RM-240, RM-250 | — | Fast Refresh, navigation, initial snapshots, remote updates, local optimistic updates, error handling, and listener cleanup are tested. |
@@ -590,6 +590,46 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-230 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `18c662d`; task commit pending at log-update time.
+- Outcome: created the Redux store foundation with typed React-Redux hooks,
+  normalized base slices, listener lifecycle state, and selectors for all
+  planned shared Firestore-backed state.
+- Files/areas changed: added `src/app/store/` with the store, typed hooks,
+  roster/khatma/content/assignment slices, shared listener state, selectors,
+  and public exports; added focused store tests; updated this tracker.
+- Verification: focused store suite passed (1 file / 4 tests); `npm run
+  typecheck` passed; `npm run lint` passed; `npm test` passed (14 files / 92
+  tests); `npm run build` passed and emitted only `index.html` and
+  `admin-nano.html` as production entries.
+- Decisions and risks: collection snapshots are normalized while preserving
+  Firestore order; assignments are isolated by khatma so RM-240 can own dynamic
+  listener lifecycles independently. Redux holds domain values, status strings,
+  and error messages only—no snapshots, references, unsubscribe functions,
+  `Error` objects, maps, sets, or browser-persistence values. No dependency or
+  lockfile change was needed. The existing build chunk-size warning remains
+  tracked by RM-040 and does not block RM-230.
+- Recommended next action: take RM-240 to connect the existing roster, content,
+  khatma, and dynamic assignment subscriptions to these slice actions; its
+  RM-230 dependency is now `DONE`.
+
+### 2026-07-13 — Codex — RM-230 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `18c662d`.
+- Outcome: claimed RM-230 to create the Redux store, typed hooks, base slices,
+  selectors, and state-type tests.
+- Files/areas changed: tracker claim and this Session Log entry only; no broad
+  implementation changes yet.
+- Verification: confirmed branch `reactmigration`, exact HEAD `18c662d`, and a
+  clean working tree; read the plan through active Phase 2 and the latest
+  Session Log handoff; confirmed dependency RM-200 is `DONE`.
+- Decisions and risks: preserve the accepted state-ownership model and keep the
+  store limited to serializable planned state; no new risk identified yet.
+- Recommended next action: run the smallest relevant baseline checks, inspect
+  existing data/domain contracts, then implement and verify RM-230.
 
 ### 2026-07-13 — Codex — RM-220 → DONE
 
