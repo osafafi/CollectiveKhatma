@@ -26,8 +26,8 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115 DONE) |
-| Next milestone | RM-120 — Install React/MUI/Redux toolchain, then RM-130 configuration |
+| Current phase | Phase 0 complete; Phase 1 in progress (RM-100, RM-110, RM-115, RM-120 DONE) |
+| Next milestone | RM-130 — Configure TypeScript, Vite, ESLint, and Vitest for React |
 | Last updated | 2026-07-13 |
 | Primary agents | Codex and Claude |
 
@@ -406,7 +406,7 @@ failure exists.
 | RM-100 Pin Node 24 LTS consistently | Codex | DONE | RM-010 | P1-A | 2026-07-13: pinned Node 24.18.0 in `.nvmrc`, package metadata, CI, deploy, and docs; aligned `@types/node` to 24.13.3; clean install and full baseline suite passed on the pinned runtime. |
 | RM-110 Audit and group existing dependency updates | Codex | DONE | RM-100 | — | 2026-07-13: [`REACT_MIGRATION_DEPENDENCY_AUDIT.md`](REACT_MIGRATION_DEPENDENCY_AUDIT.md) classifies all 15 direct packages; eight same-major refreshes grouped for RM-120, TypeScript 7 and Node 26 types rejected on compatibility grounds, and Tailwind removal deferred to RM-620. No manifest/lockfile change. |
 | RM-115 Map Tailwind tokens/components to MUI | Claude | DONE | RM-020 | P1-A | 2026-07-13: [`REACT_MIGRATION_THEME_MAP.md`](REACT_MIGRATION_THEME_MAP.md) — token table maps all 11 active colors (+1 dead) to `palette`, both fonts (Tajawal not-bundled flagged) + type scale/weights + reading scale to `typography`/retained, radii→`shape`, spacing (4px-unit reconciliation) + breakpoints (md/lg→`breakpoints.values`), every legacy component→MUI (§7), and retained CSS (§8). Derived from `theme.css`/compiled CSS + grep at `38fbe43`. |
-| RM-120 Install React/MUI/Redux toolchain | Codex | NOT STARTED | RM-110 | — | Add React, React DOM, MUI/Emotion/RTL, Redux Toolkit, React-Redux, routing, Vite React plugin, types, and test dependencies. Lockfile is reproducible. |
+| RM-120 Install React/MUI/Redux toolchain | Codex | DONE | RM-110 | — | 2026-07-13: installed React 19.2.7, MUI/Emotion/RTL, Redux Toolkit 2.12.0, React-Redux 9.3.0, React Router 7.18.1, Vite React plugin, types, and component-test dependencies; applied RM-110 safe refreshes; pinned reviewed install scripts; clean `npm ci` and the full baseline suite passed on Node 24.18.0. |
 | RM-130 Configure TypeScript, Vite, ESLint, and Vitest for React | Codex | NOT STARTED | RM-120 | — | TSX builds, Fast Refresh works, lint recognizes hooks/JSX, and component test environment runs. |
 | RM-140 Update CI/deploy tooling | Codex | NOT STARTED | RM-100, RM-130 | — | Both workflows use the pinned Node version and execute React-aware checks. |
 | RM-150 Verify clean toolchain installation | Codex | NOT STARTED | RM-140 | — | Clean install, typecheck, lint, legacy tests, and production build pass on pinned Node. |
@@ -544,6 +544,7 @@ Every box must be checked before RM-740:
 | MUI RTL defects in dialogs/selects/icons | Medium / Medium | RTL Emotion cache, theme direction, portal QA, directional-icon review | RM-210/RM-650 |
 | React/MUI bundle growth harms older phones | Medium / Medium | Measure early, route split, direct imports, avoid unused icon package | RM-040/RM-630 |
 | Tailwind and MUI conflict during transition | Low / Medium | Preview isolation, CssBaseline review, remove Tailwind only after both cutovers | RM-210/RM-620 |
+| Moderate npm advisories in Firebase development tooling | Low / Medium | Production audit is clean; latest `firebase-admin`/`firebase-tools` still carry nine transitive advisories and npm proposes breaking downgrades, so monitor upstream and recheck at RM-150 rather than force-fix | RM-120 documented / RM-150 recheck |
 | Two agents edit shared files concurrently | Medium / High | Lane ownership, task branches, session log, one integration committer | Ongoing |
 | Migration accidentally changes domain/data behavior | Low / High | Preserve boundaries, parity tests, separate task for any discovered defect | Ongoing |
 | `main` advances while migration is long-lived | Medium / Medium | RM-710 reconciliation, periodic awareness without partial migration merges | RM-710 |
@@ -589,6 +590,36 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-13 — Codex — RM-120 → DONE
+
+- Branch/commit: `reactmigration`, starting from `4b71a55` with a clean working
+  tree; RM-110 is `DONE`, so the dependency is satisfied.
+- Outcome: added React/React DOM 19.2.7; MUI and icons 9.2.0; Emotion cache,
+  React, and styled packages; Stylis plus its RTL plugin; Redux Toolkit 2.12.0;
+  React-Redux 9.3.0; React Router DOM 7.18.1; Vite's React plugin 6.0.3; React
+  declarations; Testing Library DOM/React/jest-dom/user-event; and jsdom 29.1.1.
+  Applied all eight RM-110 same-major refreshes. Tailwind remains installed for
+  coexistence, and React configuration remains scoped to RM-130.
+- Reproducibility/security: downloaded the official Node 24.18.0 Windows archive
+  to a temporary location and verified its SHA-256 against Node's published
+  `SHASUMS256.txt`; npm 11.16.0 generated the lock. Reviewed and exact-version
+  pinned the four required transitive install hooks (`@firebase/util@1.15.1`,
+  `esbuild@0.28.1`, `protobufjs@7.6.5`, `re2@1.24.1`); npm reports no unreviewed
+  scripts. A fresh pinned-runtime `npm ci` installed 1,017 packages successfully.
+- Verification on Node `24.18.0`: `npm ls --depth=0` clean; `npm run typecheck`
+  passed; `npm run lint` passed; `npm test` passed (7 files / 66 tests);
+  `npm run build` passed with the existing >500 kB chunk warning; production
+  `npm audit --omit=dev` reported 0 vulnerabilities; `npm outdated` reports only
+  the intentional Node-types-26 and TypeScript-7 holds documented by RM-110.
+- Advisory note: full `npm audit` reports nine moderate transitive findings,
+  confined to the existing `firebase-admin`/`firebase-tools` development tree.
+  Both direct packages are current and npm proposes breaking downgrades, so no
+  forced fix was applied; the Risk Register assigns a recheck to RM-150.
+- Files/areas changed: `package.json`, `package-lock.json`, and this tracker only;
+  no application source or React configuration changed.
+- Recommended next action: take RM-130 to enable TSX/Fast Refresh, React linting,
+  and jsdom component tests using the now-reproducible toolchain.
 
 ### 2026-07-13 — Codex — RM-110 → DONE
 
