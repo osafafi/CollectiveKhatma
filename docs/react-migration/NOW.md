@@ -5,20 +5,19 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                       |
-| ------------------------------------- | --------------------------------------------------- |
-| Integration branch                    | `reactmigration`                                    |
-| Branch base                           | `6992007` (`main` at migration start)               |
-| Last completed code task              | RM-410 — khatma list and landing routes             |
-| Last completed code commit            | Pending RM-410 completion commit                    |
-| Active migration task                 | None                                                |
-| Current phase                         | Phase 4 — member application migration              |
-| Next recommended task                 | RM-420 — personal and settings routes (Codex)       |
-| Open decisions affecting current work | None; OD-03 is needed by RM-460 and OD-04 by RM-740 |
-| Last updated                          | 2026-07-14                                          |
+| Field                                 | Current value                                                |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Integration branch                    | `reactmigration`                                             |
+| Branch base                           | `6992007` (`main` at migration start)                        |
+| Last completed code task              | RM-410 — khatma list and landing routes                      |
+| Last completed code commit            | `5ebed75` — `RM-410: migrate khatma list and landing routes` |
+| Active migration task                 | None                                                         |
+| Current phase                         | Phase 4 — member application migration                       |
+| Next recommended task                 | RM-420 — personal and settings routes (Codex)                |
+| Open decisions affecting current work | None; OD-03 is needed by RM-460 and OD-04 by RM-740          |
+| Last updated                          | 2026-07-14                                                   |
 
-RM-410 is complete; this file will receive its exact code hash immediately after
-the completion commit.
+RM-410 is committed at `5ebed75`; this file is the exact-hash handoff update.
 
 ## Next-session read set — RM-420
 
