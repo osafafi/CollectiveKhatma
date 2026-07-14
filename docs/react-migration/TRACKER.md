@@ -51,14 +51,14 @@ listeners or data/domain contract changes.
 
 ## Phase 3 — Shared React components and app shells
 
-| ID     | Task                                       | Owner  | Status      | Depends on     | Concise acceptance/evidence                                                           |
-| ------ | ------------------------------------------ | ------ | ----------- | -------------- | ------------------------------------------------------------------------------------- |
-| RM-300 | Providers, error boundary, feedback states | Claude | DONE        | RM-210, RM-230 | Shared provider composition, async feedback, error fallback, and snackbar tested.     |
-| RM-310 | Responsive shells and navigation           | Claude | DONE        | RM-210, RM-220 | Member/admin bottom-nav and desktop RTL rail preserve routes and accessibility.       |
-| RM-320 | Shared MUI form/display primitives         | Codex  | DONE        | RM-210         | Actions, surfaces, fields, steppers, status/progress, and confirmation tested.        |
-| RM-330 | Charts and custom icon overrides           | Claude | DONE        | RM-210         | `382ff6c`; charts and PNG-over-SVG icon store tested and live-verified.               |
-| RM-340 | Browser-persistence hooks                  | Codex  | DONE        | RM-200         | Four typed hooks preserve exact keys/fallbacks and tolerate blocked storage; 5 tests. |
-| RM-350 | Shared React test harness                  | Codex  | NOT STARTED | RM-230, RM-300 | Tests render Redux/MUI/router providers with deterministic subscription data.         |
+| ID     | Task                                       | Owner  | Status | Depends on     | Concise acceptance/evidence                                                           |
+| ------ | ------------------------------------------ | ------ | ------ | -------------- | ------------------------------------------------------------------------------------- |
+| RM-300 | Providers, error boundary, feedback states | Claude | DONE   | RM-210, RM-230 | Shared provider composition, async feedback, error fallback, and snackbar tested.     |
+| RM-310 | Responsive shells and navigation           | Claude | DONE   | RM-210, RM-220 | Member/admin bottom-nav and desktop RTL rail preserve routes and accessibility.       |
+| RM-320 | Shared MUI form/display primitives         | Codex  | DONE   | RM-210         | Actions, surfaces, fields, steppers, status/progress, and confirmation tested.        |
+| RM-330 | Charts and custom icon overrides           | Claude | DONE   | RM-210         | `382ff6c`; charts and PNG-over-SVG icon store tested and live-verified.               |
+| RM-340 | Browser-persistence hooks                  | Codex  | DONE   | RM-200         | Four typed hooks preserve exact keys/fallbacks and tolerate blocked storage; 5 tests. |
+| RM-350 | Shared React test harness                  | Codex  | DONE   | RM-230, RM-300 | Shared provider render, seeded publishers, routing, cleanup, and isolation; 3 tests.  |
 
 Phase exit: feature work can compose stable shared contracts without duplicating
 provider setup or editing legacy DOM helpers.
