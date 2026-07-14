@@ -59,7 +59,7 @@ describe('Member shell navigation (RM-310)', () => {
     }
   });
 
-  it('hosts every tab icon as an aria-hidden mask span (default SVG only)', () => {
+  it('hosts every tab icon as an aria-hidden mask span (override-aware since RM-330)', () => {
     const { container } = renderMember();
     const icons = container.querySelectorAll('nav .icon-mask');
     expect(icons).toHaveLength(4);

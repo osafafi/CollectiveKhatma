@@ -1,4 +1,5 @@
 import { strings } from '@/content/strings.ar';
+import { ChartsPreview } from '@/app/ChartsPreview';
 import { PrimitivesPreview } from '@/app/PrimitivesPreview';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { PreviewShell } from '@/app/PreviewShell';
@@ -27,6 +28,7 @@ function MemberPreview() {
         description={strings.member.tagline}
       />
       <PrimitivesPreview />
+      <ChartsPreview />
     </>
   );
 }

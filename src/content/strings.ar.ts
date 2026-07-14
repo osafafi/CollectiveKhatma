@@ -34,6 +34,7 @@ export const strings = {
     memberHeading: 'معاينة تطبيق الأعضاء',
     adminHeading: 'معاينة لوحة التحكم',
     primitivesHeading: 'المكوّنات المشتركة',
+    chartsHeading: 'مخططات التقدّم',
   },
   // Bottom tab bar / side rail (member app). Kept short to fit a tab label.
   nav: {

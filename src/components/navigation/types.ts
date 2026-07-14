@@ -1,4 +1,4 @@
-import type { IconName } from '@/ui/shared/icons';
+import type { IconName } from '@/components/icons';
 
 /**
  * One navigation destination in the responsive shell (RM-310).

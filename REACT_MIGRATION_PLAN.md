@@ -26,7 +26,7 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300–RM-320 DONE; RM-330/RM-340/RM-350 next) |
+| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300–RM-330 DONE; RM-340/RM-350 next) |
 | Next milestone | Phase 3 — shared React providers, shells, and primitives (RM-300…RM-350) |
 | Last updated | 2026-07-14 |
 | Primary agents | Codex and Claude |
@@ -475,7 +475,7 @@ updates without duplicate listeners or changes to the data/domain contract.
 | RM-300 Build shared providers, error boundary, and feedback states | Claude | DONE | RM-210, RM-230 | P3-A | 2026-07-13: shared `AppProviders` composes store → MUI RTL theme → error boundary → write-operations → snackbar → hash router in one injectable place, and MemberApp/AdminApp now render through it (both duplicated provider stacks removed). New feedback primitives `LoadingState`/`EmptyState`/`ErrorState` (optional retry)/`AsyncContent` (maps `ListenerStatus`→loading/empty/error/retry) under `src/components/feedback/`; a class `ErrorBoundary` with a themed RTL fallback + reset-on-retry and a queued `SnackbarProvider`/`useSnackbar` (one toast at a time, FIFO, click-away-safe, Arabic dismiss) under `src/app/providers/`; `feedback.*` copy added to `strings.ar.ts`. Verified: typecheck ✓, lint ✓, 117 tests (+13) with 1 gated emulator test skipped ✓, two-entry production build unchanged ✓; both React previews render live through the composition with no React errors and correct RTL. |
 | RM-310 Build responsive member/admin shells and navigation | Claude | DONE | RM-210, RM-220 | P3-A | 2026-07-13: generic route-typed `AppShell`/`AppNav`/`NavIcon` (`src/components/navigation/`) reproduce the legacy shared tab bar as MUI — fixed bottom bar `< lg` promoting to a physical-right vertical rail `≥ lg` (RTL `insetInlineStart:0` + `borderInlineEnd` inner edge), retained `.tab-bar` safe-area inset + `.icon-mask` currentColor icons (default SVG; override probe stays RM-330), `aria-current` active tab in primary teal, 56px touch targets, Arabic labels. Thin `MemberShell`/`AdminShell` supply the data-driven tab lists + per-surface column max-widths and own the sole `main` landmark (`MemberApp`/`AdminApp` compose them; `PreviewShell`→`section`). Verified: typecheck ✓, lint ✓, 124 tests (+7) ✓, two-entry build unchanged (member 5.28/admin 9.38 kB gzip) ✓, bundle-budget gate ✓ (member 315.72/350, admin 315.70/375 kB JS); live preview confirms mobile bottom bar + desktop physical-right rail with correct RTL, active state, and 96px content reservation for both apps. |
 | RM-320 Build shared MUI form/display primitives | Codex | DONE | RM-210 | P3-B | 2026-07-14: `src/components/primitives/` now covers compact/outlined/quiet/destructive/hash/hero actions; titled, untitled, nested, and clickable cards; controlled text/search/number/date/multiline fields, portalled select, checkbox, and slider; Arabic-digit bounded stepper; semantic chips/notices; labelled/clamped progress; and a controlled confirmation dialog. A FIFO `ConfirmationProvider`/`useConfirmation` supplies the app-wide async replacement for native confirms. Central MUI overrides own 12px control/16px card radii, disabled state, field/surface styling, and 8px progress bars. `ThemeProbe` was removed and both previews compose the real primitives. Verified: typecheck ✓, lint ✓, 133 tests (+9) ✓, two-entry production build ✓, bundle budgets ✓ (member 321.69/367.80 kB; admin 321.68/367.78 kB), and live mobile/desktop RTL + portal checks in both previews ✓. |
-| RM-330 Port charts and custom icon override support | Claude | NOT STARTED | RM-210 | P3-B | Donut/segment visuals and file-based icon overrides work without legacy DOM builders. |
+| RM-330 Port charts and custom icon override support | Claude | DONE | RM-210 | P3-B | 2026-07-14: `src/components/charts/` delivers `DonutChart` (legacy 96-viewBox ring geometry, Arabic-Indic hero label, track-only at 0%, clamped 0–100, 112/88px sizes) and `SegmentBar` (value-proportional fills with 2px gaps; zero-value segments drop from the bar but stay in the full text legend), colors resolved from the MUI palette via a semantic `primary\|accent\|neutral` union because the React tree loads no `--color-*` vars. `src/components/icons/` re-expresses the BASE_URL icon URLs + one-shot PNG-over-SVG HEAD probe as a subscribable store + `useIconUrl`; `NavIcon` consumes it (superseding RM-310's hardcoded SVG URL) and both React entries start the probe. The probe additionally requires an image content-type — Vite's dev server answers missing PNGs with its 200 `text/html` SPA fallback, which false-positives the legacy `ok`-only probe (pre-existing dev-only defect; production 404s correctly). Verified: typecheck ✓, lint ✓, 149 tests (+16) ✓, two-entry build unchanged ✓, budgets ✓ (member 322.52/350, admin 322.50/375 kB JS); live previews show RTL charts at mobile+desktop in both apps, and a dropped-in `personal.png` overrode both navs live, reverting on delete. |
 | RM-340 Port browser-persistence hooks | Codex | NOT STARTED | RM-200 | P3-B | Identity, reading scale, last page, and du3a acknowledgement behaviors are typed and tested. |
 | RM-350 Build shared React test harness | Codex | NOT STARTED | RM-230, RM-300 | — | Tests can render with Redux/MUI/router providers and deterministic fake subscription data. |
 
@@ -629,6 +629,102 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-14 — Claude — RM-330 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean handoff commit
+  `4cae693`; task commit pending at log-update time.
+- Outcome: ported both legacy chart builders and the icon-override system to
+  React. `DonutChart` reproduces the legacy ring exactly (96 viewBox, stroke 10,
+  radius 41, 12-o'clock start, track-only at 0%, clamped 0–100, default 112px /
+  metrics 88px) with the Arabic-Indic hero percentage centered over it;
+  `SegmentBar` reproduces the breakdown bar (2px gaps, zero-value fills hidden,
+  12px radius, legacy h-3 height) above a full text legend (`label: count` in
+  Arabic-Indic digits), so identity is never color-alone. Colors resolve from
+  the MUI palette through a semantic `primary|accent|neutral` union — the
+  legacy `var(--color-…)` strings would silently fail because the React tree
+  never loads `theme.css`. The icon system became a subscribable module store:
+  BASE_URL-derived SVG defaults, a one-shot idempotent HEAD probe upgrading to
+  dropped-in PNGs, and `useIconUrl` re-rendering exactly the icons whose
+  override lands (the legacy tree relied on route-change re-renders instead).
+  `NavIcon` now consumes the store, superseding its RM-310 hardcoded SVG URL;
+  both React entries start the probe like the legacy entries do.
+- Files/areas changed: new `src/components/charts/{DonutChart,SegmentBar,index}`
+  and `src/components/icons/{iconSource,useIconUrl,index}`; edited
+  `src/components/navigation/{NavIcon,types}` (override-aware URL; `IconName`
+  now from `@/components/icons`, removing the React tree's last legacy-icons
+  type import); new `src/app/ChartsPreview.tsx` composed into
+  `MemberApp`/`AdminApp`; `src/app/entries/{member,admin}.tsx` call
+  `resolveIconOverrides()`; `strings.ar.ts` gained `preview.chartsHeading`; new
+  `tests/components/{charts,icons}.test.tsx` (+16 tests) and a stale wording fix
+  in `tests/components/navigation.test.tsx`. Legacy `src/ui/shared/charts.ts` +
+  `src/ui/shared/icons.ts` and all production inputs untouched; no data/domain,
+  dependency, or lockfile change.
+- Verification: `npm run typecheck` ✓; `npm run lint` ✓; `npm test` ✓ — 27 files
+  / 149 tests (+16) with the gated emulator test skipped; `npm run build` ✓ still
+  emits only `index.html` + `admin-nano.html` (member 5.28 / admin 9.38 / shared
+  153.54 kB gzip — +0.02 kB from the new preview string, same pattern as RM-300);
+  `npm run check:bundle-budgets` ✓ — member 322.52 kB JS / 368.63 kB transfer vs
+  350/400, admin 322.50 / 368.61 vs 375/425; Prettier clean on changed files;
+  `git diff --check` clean. Live dev-server verification (both previews, RTL):
+  three donuts (٠٪/٥٧٪/١٠٠٪ accessible names, track-only at 0%, `#0f766e` fill,
+  88px), segment bar 12px high with 2px gaps and value-proportional
+  `flex-grow: 342/48/214` fills, full Arabic legend; mobile 375px keeps the card
+  inside the column above the bottom bar, desktop 1280px keeps it clear of the
+  physical-right 96px rail. The override was proven end-to-end: a temporary real
+  `public/icons/personal.png` flipped the personal mask to `.png` live in BOTH
+  apps' navs, and deleting it reverted every mask to `.svg`; console shows only
+  the expected offline-Firestore errors. (Preview screenshots still time out
+  environmentally, as in RM-310 — computed-geometry/a11y queries are the
+  evidence.)
+- Decisions and risks: (1) **Probe hardening — intentional delta from legacy.**
+  Vite's dev server answers a missing `icons/<name>.png` HEAD with its SPA HTML
+  fallback (200 `text/html`), so an `ok`-only probe false-positives every icon
+  in dev and points masks at an HTML document (observed live before the fix;
+  the legacy probe has this dev-only defect today, while production hosting
+  404s correctly). The React probe therefore also requires an `image/*`
+  content-type — truthful in dev, a no-op in production — with a regression
+  test; the legacy module stays untouched and its quirk dies with it at RM-620.
+  (2) The donut's *accessible name* uses Arabic-Indic digits via the shared
+  `formatPercent` (the legacy aria-label used Western digits); the visible
+  label is unchanged and `khatmaPercent` is already whole-number, so this only
+  aligns AT output with RM-320's `ProgressBar`. The hero span is `aria-hidden`
+  so AT hears the value once (legacy exposed it twice). (3) Chart colors are a
+  closed semantic union resolved from the palette, not free-form strings, so
+  Phase 5 callers cannot reintroduce CSS-var drift. (4) Charts remain purely
+  presentational — RM-500/RM-530 own real-data wiring (admin Home/detail use
+  `DonutChart` at 88px + `SegmentBar` with done/pending/remaining).
+- Recommended next action: hand to Codex for RM-340 (browser-persistence hooks)
+  and RM-350 (shared React test harness) — both unblocked (deps RM-200/RM-230/
+  RM-300 are `DONE`) and they complete Phase 3. Phase 4 member feature work then
+  has every shared contract it needs.
+
+### 2026-07-14 — Claude — RM-330 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `4cae693` (`RM-320:
+  build shared MUI form and display primitives`).
+- Outcome: claimed RM-330 (port charts + custom icon override support) after
+  confirming its dependency RM-210 (MUI RTL theme) is `DONE`. No broad
+  implementation changes yet.
+- Files/areas changed: tracker claim only (RM-330 row → IN PROGRESS, Migration
+  Status phase line, and this Session Log entry).
+- Verification: confirmed branch `reactmigration`, exact HEAD `4cae693`, and a
+  clean working tree per the handoff block; read the plan top → active Phase 3 →
+  latest Session Log; `npm run typecheck` ✓ as the preflight baseline.
+  `package-lock.json` is unchanged since RM-130, so no fresh install is
+  required.
+- Decisions and risks: scope is re-expressing `src/ui/shared/charts.ts` (donut +
+  segment bar; theme-token colors; Arabic-digit text so identity is never
+  color-alone) and `src/ui/shared/icons.ts` (BASE_URL icon URLs + one-shot
+  PNG-over-SVG HEAD probe feeding `.icon-mask` spans) as shared React
+  components. RM-310's `NavIcon` currently hardcodes the default SVG URL; this
+  task supersedes that URL resolution with the override-aware source. Legacy
+  modules stay untouched (production path unchanged), no data/domain changes,
+  and any new user-facing copy goes through `strings.ar.ts`.
+- Recommended next action: build chart + icon components under
+  `src/components/` with focused tests, wire them into both branch previews,
+  then run the shared-component verification matrix (typecheck, lint, tests,
+  build, bundle budgets, live RTL preview check) and set RM-330 `DONE`.
 
 ### 2026-07-14 — Codex — RM-320 → DONE
 

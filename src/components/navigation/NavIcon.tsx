@@ -1,21 +1,14 @@
-import type { IconName } from '@/ui/shared/icons';
+import { useIconUrl, type IconName } from '@/components/icons';
 
 /**
- * Minimal navigation icon (RM-310): a `.icon-mask` span (retained global style,
- * RM-210 §8) painted with `currentColor`, so it inherits the active/inactive tab
- * color set by {@link AppNav}. Only the source image's alpha matters.
+ * Navigation icon: a `.icon-mask` span (retained global style, RM-210 §8)
+ * painted with `currentColor`, so it inherits the active/inactive tab color set
+ * by {@link AppNav}. Only the source image's alpha matters.
  *
- * Scope boundary: RM-310 only "hosts the span" with the default bundled SVG
- * (theme-map §7.4). The PNG-over-SVG startup override probe from the legacy
- * [`src/ui/shared/icons.ts`](../../ui/shared/icons.ts) is RM-330's deliverable and
- * will replace this component's URL resolution — kept out of here on purpose so
- * the shell task does not claim the icon-override system.
+ * The mask URL comes from the override-aware icon source (RM-330): the bundled
+ * `icons/<name>.svg` by default, upgraded live to a dropped-in `icons/<name>.png`
+ * when the startup probe finds one.
  */
-function iconUrl(name: IconName): string {
-  const base = import.meta.env.BASE_URL;
-  return `${base.endsWith('/') ? base : `${base}/`}icons/${name}.svg`;
-}
-
 interface NavIconProps {
   readonly name: IconName;
   /** Square edge length in px (legacy `h-6 w-6` = 24). */
@@ -23,7 +16,8 @@ interface NavIconProps {
 }
 
 export function NavIcon({ name, size = 24 }: NavIconProps) {
-  const mask = `url("${iconUrl(name)}")`;
+  const url = useIconUrl(name);
+  const mask = `url("${url}")`;
   return (
     <span
       className="icon-mask"
