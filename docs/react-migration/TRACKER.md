@@ -82,7 +82,7 @@ do not reset reader state.
 
 | ID     | Task                              | Owner  | Status      | Depends on                             | Concise acceptance/evidence                                                             |
 | ------ | --------------------------------- | ------ | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
-| RM-500 | Admin shell and Home dashboard    | Claude | NOT STARTED | RM-240, RM-250, RM-310, RM-320         | Metrics, warnings, distribution actions, confirmation, rules, and errors match.         |
+| RM-500 | Admin shell and Home dashboard    | Claude | DONE        | RM-240, RM-250, RM-310, RM-320         | Metrics, warnings, distribute/redistribute, same-day guard, and status outcomes match (RM-500). |
 | RM-510 | Roster route                      | Claude | NOT STARTED | RM-250, RM-320                         | Search, CRUD, capacity, enablement, uniqueness, and confirmation work.                  |
 | RM-520 | Khatmas list/create/continue      | Claude | NOT STARTED | RM-250, RM-320                         | Scope, continuation, members, capacities, validation, and drafts work.                  |
 | RM-530 | Khatma detail route               | Claude | NOT STARTED | RM-250, RM-320                         | Progress, assignments, edits, releases, warnings, completion, delete, and history work. |

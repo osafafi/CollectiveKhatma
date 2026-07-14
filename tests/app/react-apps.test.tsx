@@ -32,22 +32,28 @@ describe('React app roots', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders the isolated admin preview root', () => {
+  it('renders the admin experience shell with the Home dashboard as default', () => {
     const { container } = render(<AdminApp />);
 
+    // Persistent admin chrome: the title header and the responsive nav landmark.
+    expect(screen.getByText(strings.admin.heading)).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: strings.preview.adminHeading }),
+      screen.getByRole('navigation', { name: strings.admin.heading }),
     ).toBeInTheDocument();
+
+    // Home is the default route; with no seeded khatmas it shows the empty state.
+    expect(
+      screen.getByRole('heading', { name: strings.admin.homeHeading }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(strings.admin.noActive)).toBeInTheDocument();
     expect(container.querySelector('[data-react-surface="admin"]')).toHaveAttribute(
       'data-route',
       'home',
     );
-    expect(screen.getByText(strings.preview.notProduction)).toHaveAttribute(
-      'role',
-      'status',
-    );
+
+    // The Phase 3 preview scaffold is gone.
     expect(
-      screen.getByRole('heading', { name: strings.preview.primitivesHeading }),
-    ).toBeInTheDocument();
+      screen.queryByRole('heading', { name: strings.preview.adminHeading }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -9,66 +9,68 @@
 | ------------------------------------- | ---------------------------------------------------------- |
 | Integration branch                    | `reactmigration`                                           |
 | Branch base                           | `6992007` (`main` at migration start)                      |
-| Last completed code task              | RM-460 — member parity review + OD-03 refresh              |
-| Last completed code commit            | `f34de3c` — `RM-460: member parity review + OD-03 refresh` |
+| Last completed code task              | RM-500 — admin shell + Home dashboard                      |
+| Last completed code commit            | _recorded in the follow-up `docs: record RM-500 handoff hash`_ |
 | Active migration task                 | None                                                       |
-| Current phase                         | Phase 4 done → Phase 5 — admin application migration       |
-| Next recommended task                 | RM-500 — admin shell and Home dashboard                    |
+| Current phase                         | Phase 5 — admin application migration                      |
+| Next recommended task                 | RM-510 — Roster route                                      |
 | Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740      |
 | Last updated                          | 2026-07-14                                                 |
 
-Phase 4 exit is met: the React member preview has functional + RTL parity and the
-OD-03 visual refresh is applied (approved deltas recorded). Realtime updates do
-not reset reader state (P1, covered by RM-440/RM-450).
+Phase 5 has begun. RM-500 turned the admin React entry into the real admin shell
+(persistent header + nav + routed content + active∪open assignment subscriptions)
+and migrated the Home dashboard. The Home distribute/redistribute flow (same-day
+guard P7, busy-disable P8) is verified emulator-backed. RM-500 inherits the OD-03
+theme refresh via the shared theme.
 
-## Handoff from RM-460
+## Handoff from RM-500
 
-- **OD-03 resolved** toward an intentional refresh (owner: fresh, modern,
-  senior-friendly UI, reading-comfortable colors). Applied entirely at the theme
-  level — no functional/data/domain/routing/listener change.
-- Refreshed `src/theme/muiTheme.ts` (warm low-glare palette, calm emerald
-  primary, distinct gold accent w/ dark text, higher contrast, softer card
-  radius 18 + warm layered shadow, roomier line-heights) and
-  `src/theme/globalStyles.ts` (keyboard `:focus-visible` ring). The React MUI
-  palette now **intentionally diverges** from legacy `theme.css` (untouched;
-  production until RM-600, deleted at RM-620).
-- `tests/theme/mui-theme.test.ts` updated: pins refreshed values, asserts the
-  accent/warn split (R3) and the intentional legacy divergence (+1 test).
-- Member checklist walked emulator-backed on mobile + desktop RTL; all boxes
-  confirmed. WCAG-AA contrast measured for every pair. Verification detail and
-  the full approved-delta list: [`tasks/RM-460.md`](tasks/RM-460.md).
-- Gates: typecheck, lint, `npm test` (34 files / **190** tests +1 / 1 skipped),
-  console clean. Screenshots unavailable in the preview pane (raster capture
-  times out) — verified via exact computed styles instead.
+- New React admin sources under `src/app/admin/`: `AdminApp` (composition +
+  route content), `AdminShell` (persistent `admin.heading` header),
+  `AdminAssignmentsSubscriptions` (active ∪ open-detail listeners, **P9**),
+  `pages/HomePage` (metrics + pending readers + warnings + distribute),
+  `useQuranScopeMaps` (surah/juz maps for distribution), `todayIso` (React-owned
+  local "today" — React must not import the legacy `src/ui` layer).
+- Non-home admin routes (roster/khatmas/khatma/settings) render a navigable
+  placeholder until RM-510–540 migrate them.
+- Removed the orphaned Phase-3 admin preview scaffold (`PreviewShell`,
+  `PrimitivesPreview`, `ChartsPreview`).
+- Intentional deltas (recorded in [`tasks/RM-500.md`](tasks/RM-500.md)):
+  distribution errors use an error tone + `role="alert"` (not the legacy uniform
+  green); one `h1` per route (persistent title is a non-heading label).
+- Gates: typecheck, lint, `npm test` (35 files / **197** tests, +7 / 1 skipped),
+  console clean across the live admin walk.
 
-## Next-session read set — RM-500
+## Next-session read set — RM-510 (Roster)
 
-Read only after the RM-460 exact-hash handoff commit:
+Read only after the RM-500 exact-hash handoff commit:
 
 1. This file.
 2. The Phase 5 table in
    [`TRACKER.md`](TRACKER.md#phase-5--admin-application-migration).
-3. Create `tasks/RM-500.md` while claiming, using its tracker acceptance.
-4. The **admin** checklist in
+3. Create `tasks/RM-510.md` while claiming, using its tracker acceptance.
+4. The **admin Roster** checklist in
    [`REACT_MIGRATION_UI_INVENTORY.md`](../../REACT_MIGRATION_UI_INVENTORY.md)
-   §1, §3.1 (Home) and §4/§5 risks (P2/P3/P7/P8/P9), plus the admin React sources
-   under `src/app/admin/` and the admin preview entry (`admin-react-preview.html`).
+   §3.2, plus §4 **P4** (search caret/focus) and §5 quirk 5 (fire-and-forget
+   mutations); legacy [`src/ui/admin/pages/roster.ts`](../../src/ui/admin/pages/roster.ts)
+   and the React admin sources under `src/app/admin/`.
 
-RM-500 (admin shell + Home dashboard) inherits the OD-03 refresh automatically
-via the shared theme — no re-decision needed; keep the same senior-friendly,
-reading-comfortable standard. Do not load member sources or the full historical
-plan for RM-500.
+RM-510 (Roster) reuses the RM-500 shell and the shared form primitives
+(`NumberStepper`, `Fields`, `AppButton`, confirmation). Keep the same
+senior-friendly OD-03 standard. Do not load member sources or the full plan.
 
 ## Risks / notes for next task
 
-- Admin drafts must survive unrelated snapshots (P2) and the same-day distribute
-  guard (P7) / busy-disable (P8) must hold — these are RM-500/RM-550 concerns.
-- The refreshed theme is shared; admin surfaces get the new look for free. Verify
-  admin still passes its own contrast/RTL when RM-570 reviews it.
+- Search must preserve caret/focus across the keystroke re-render (**P4**) — a
+  controlled MUI field handles this; the full draft-stability proof is RM-550.
+- Match the legacy feedback granularity (§5 quirk 5): stepper/enable-disable/add
+  are fire-and-forget; only create/edit-save show status. Flag if improved.
+- The admin assignment-subscription set (active ∪ open detail, **P9**) lives in
+  the RM-500 shell; RM-530 relies on the "open detail" half.
 
 ## Claim protocol
 
-Before RM-500 implementation, confirm this clean handoff, change only its tracker
+Before RM-510 implementation, confirm this clean handoff, change only its tracker
 row to `IN PROGRESS`, create its task record, rewrite this file with active
 scope/read set/risks, and run the smallest useful baseline check. Do not append a
 chronological session log here.

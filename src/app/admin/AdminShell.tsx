@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Box, Typography } from '@mui/material';
 import { AppShell, type ShellTab } from '@/components/navigation';
 import { adminRoutePath, type AdminRoute } from '@/app/routing/routes';
 import { useAdminRoute } from '@/app/routing/hooks';
@@ -50,7 +51,24 @@ export function AdminShell({ children }: { children: ReactNode }) {
       navLabel={strings.admin.heading}
       contentMaxWidth={ADMIN_CONTENT_MAX_WIDTH}
     >
+      <AdminHeader />
       {children}
     </AppShell>
+  );
+}
+
+/**
+ * The persistent admin title shown on every admin page (inventory §3), mirroring
+ * the legacy `header()` in [`src/ui/admin/render.ts`](../../ui/admin/render.ts).
+ * Rendered as a non-heading label so each route keeps a single `h1` (its own page
+ * heading) rather than duplicating the legacy's two-`h1` structure.
+ */
+function AdminHeader() {
+  return (
+    <Box component="header" sx={{ textAlign: 'center', mb: 4 }}>
+      <Typography color="primary.main" sx={{ fontWeight: 700, fontSize: '1.25rem' }}>
+        {strings.admin.heading}
+      </Typography>
+    </Box>
   );
 }
