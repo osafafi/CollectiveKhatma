@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                           |
 | Branch base                           | `6992007` (`main` at migration start)                      |
 | Last completed code task              | RM-530 — Khatma detail route (with RM-520)                 |
-| Last completed code commit            | `b0b73c3` — `RM-510: admin Roster route`                   |
+| Last completed code commit            | `907e35d` — `RM-520 + RM-530: admin Khatmas routes`        |
 | Active migration task                 | None                                                       |
 | Current phase                         | Phase 5 — admin application migration                      |
 | Next recommended task                 | RM-540 — Admin Settings route                              |
