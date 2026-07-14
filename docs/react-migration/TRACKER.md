@@ -65,15 +65,15 @@ provider setup or editing legacy DOM helpers.
 
 ## Phase 4 — Member application migration
 
-| ID     | Task                               | Owner  | Status      | Depends on                             | Concise acceptance/evidence                                                              |
-| ------ | ---------------------------------- | ------ | ----------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| RM-400 | Identity gate and member switching | Codex  | DONE        | RM-240, RM-310, RM-340                 | Live roster gate, persistence, switching, cleanup tests, and RTL QA pass.                |
-| RM-410 | Khatma list and landing routes     | Codex  | DONE        | RM-240, RM-310, RM-320                 | Relevant khatmas, progress, assignments, warnings, history, and errors match baseline.   |
-| RM-420 | Personal and settings routes       | Codex  | DONE        | RM-310, RM-340                         | Personal insight, scale, navigation, and remembered settings match baseline.             |
-| RM-430 | Completion/du3a flow               | Codex  | DONE        | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |
-| RM-440 | Quran reader                       | Claude | DONE        | RM-220, RM-250, RM-320, RM-340         | Browse/assigned reading, navigation, scale, finish, errors, and stable scroll/page work. |
-| RM-450 | Member component/integration tests | Claude | DONE        | RM-400, RM-410, RM-420, RM-430, RM-440 | Critical route, realtime, identity, completion, and reader behavior automated.           |
-| RM-460 | Member parity review               | Joint  | NOT STARTED | RM-450                                 | Root inventory member checklist passes mobile/desktop RTL or differences are approved.   |
+| ID     | Task                               | Owner  | Status | Depends on                             | Concise acceptance/evidence                                                              |
+| ------ | ---------------------------------- | ------ | ------ | -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| RM-400 | Identity gate and member switching | Codex  | DONE   | RM-240, RM-310, RM-340                 | Live roster gate, persistence, switching, cleanup tests, and RTL QA pass.                |
+| RM-410 | Khatma list and landing routes     | Codex  | DONE   | RM-240, RM-310, RM-320                 | Relevant khatmas, progress, assignments, warnings, history, and errors match baseline.   |
+| RM-420 | Personal and settings routes       | Codex  | DONE   | RM-310, RM-340                         | Personal insight, scale, navigation, and remembered settings match baseline.             |
+| RM-430 | Completion/du3a flow               | Codex  | DONE   | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |
+| RM-440 | Quran reader                       | Claude | DONE   | RM-220, RM-250, RM-320, RM-340         | Browse/assigned reading, navigation, scale, finish, errors, and stable scroll/page work. |
+| RM-450 | Member component/integration tests | Claude | DONE   | RM-400, RM-410, RM-420, RM-430, RM-440 | Critical route, realtime, identity, completion, and reader behavior automated.           |
+| RM-460 | Member parity review               | Joint  | DONE   | RM-450                                 | Member checklist walked on mobile/desktop RTL; OD-03 refresh applied as approved deltas. |
 
 Phase exit: the React member preview has functional parity and realtime updates
 do not reset reader state.

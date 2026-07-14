@@ -1,39 +1,47 @@
 import { createTheme, type Theme } from '@mui/material/styles';
 
 /**
- * Centralized MUI theme (RM-210) — the React-side twin of the Tailwind `@theme`
- * block in [`theme.css`](./theme.css). Built to the token contract in
- * `REACT_MIGRATION_THEME_MAP.md` §2–§6.
+ * Centralized MUI theme (RM-210), refreshed under OD-03 (RM-460).
  *
- * During the migration the palette lives in TWO places: this file (for the React
- * tree) and `theme.css`'s `@theme` (for the still-legacy tree). They are two
- * copies of one palette and MUST hold the same hex values — the accepted R1
- * transition pattern. `tests/theme/mui-theme.test.ts` guards that they stay in
- * sync; the duplication is removed when Tailwind goes at RM-620.
+ * The owner resolved OD-03 toward an **intentional visual refresh** — a fresh,
+ * modern, senior-friendly look with reading-comfortable colors — rather than
+ * pixel-parity with the legacy Tailwind UI. So this palette now **intentionally
+ * diverges** from the Tailwind `@theme` block in [`theme.css`](./theme.css):
+ *
+ * - `theme.css` still carries the OLD palette because it styles the legacy tree,
+ *   which stays in production until the RM-600 cutover and is deleted at RM-620.
+ * - This file carries the REFRESHED palette that becomes production at cutover.
+ *
+ * `tests/theme/mui-theme.test.ts` therefore no longer asserts equality with
+ * `theme.css`; it pins these refreshed values and asserts the divergence is
+ * intentional (so neither copy drifts silently). Design intent and the WCAG-AA
+ * contrast evidence are recorded in `docs/react-migration/tasks/RM-460.md`.
  */
 
 /**
- * Design tokens, mirrored verbatim from `theme.css` `@theme`. Keep this in sync
- * with that file until RM-620 removes the Tailwind copy.
+ * Refreshed design tokens (OD-03 / RM-460). Warm low-glare paper, a calm emerald
+ * "Quran green" primary, a distinct gold accent (dark text), and higher-contrast
+ * ink/muted for extended reading. See the RM-460 record for the contrast matrix.
+ * These deliberately differ from `theme.css` `@theme` (see the file header).
  */
 export const tokens = {
   color: {
-    bg: '#faf7f0',
-    surface: '#ffffff',
-    ink: '#1f2a24',
-    muted: '#6b7280',
-    primary: '#0f766e',
-    primaryStrong: '#115e59',
-    accent: '#b45309',
-    success: '#15803d',
-    warn: '#b45309',
-    danger: '#b91c1c',
-    border: '#e7e2d6',
+    bg: '#f6f1e7', // warm ivory paper — softer, lower glare for long reading
+    surface: '#fffdf7', // soft warm white — cards don't glare against the cream
+    ink: '#26312b', // deep warm charcoal-green — ~13:1 on surface
+    muted: '#5c6b62', // warm sage gray — AA (5.5:1) on surface
+    primary: '#0e6f61', // calm emerald "Quran green"
+    primaryStrong: '#0a5348', // hover/press dark tone
+    accent: '#c9a24a', // gold highlight (dua/reciter, chart "pending"); dark text
+    success: '#2f7d55', // natural leaf green
+    warn: '#b45309', // amber caution — kept distinct from the red danger tone
+    danger: '#b23a2e', // warm brick red — clear but less alarming
+    border: '#e5ddcb', // warm sand hairline
     white: '#ffffff',
   },
   radius: {
     button: 12, // 0.75rem — buttons, fields, chips, badges, pills, bars
-    card: 16, // 1rem — cards/sections (applied per-component in RM-320)
+    card: 18, // softer 1.125rem — cards/sections/dialogs (RM-460 refresh)
   },
   font: {
     // Same stacks as theme.css `@theme`; exposed as CSS vars in globalStyles.ts
@@ -61,10 +69,13 @@ export function createAppTheme(): Theme {
         dark: tokens.color.primaryStrong,
         contrastText: tokens.color.white,
       },
-      // Amber `--color-accent`; used today only as the chart "pending" color.
+      // Gold `--color-accent` (dua/reciter highlight, chart "pending"). It reads
+      // as a bright gold, so filled secondary surfaces carry DARK ink text
+      // rather than white (legible + premium) — the one semantic color that does
+      // not use white contrast (RM-460 refresh; guarded in the theme test).
       secondary: {
         main: tokens.color.accent,
-        contrastText: tokens.color.white,
+        contrastText: tokens.color.ink,
       },
       success: { main: tokens.color.success, contrastText: tokens.color.white },
       // NOTE (theme-map R3): warn shares its hex with accent by design today.
@@ -95,9 +106,11 @@ export function createAppTheme(): Theme {
       h2: { fontSize: '1.5rem', lineHeight: 1.3333, fontWeight: 700 }, // text-2xl (route h1)
       h3: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 }, // text-xl (card/surah header)
       subtitle1: { fontSize: '1.125rem', lineHeight: 1.5556, fontWeight: 600 }, // text-lg (emphasis)
-      body1: { fontSize: '1rem', lineHeight: 1.5 }, // text-base
-      body2: { fontSize: '0.875rem', lineHeight: 1.4286 }, // text-sm (rows, chips)
-      caption: { fontSize: '0.75rem', lineHeight: 1.3333 }, // text-xs (badges, legends)
+      // Roomier line-heights than the Tailwind defaults for senior reading
+      // comfort (RM-460); font sizes are unchanged so layouts do not shift.
+      body1: { fontSize: '1rem', lineHeight: 1.65 }, // text-base
+      body2: { fontSize: '0.875rem', lineHeight: 1.55 }, // text-sm (rows, chips)
+      caption: { fontSize: '0.75rem', lineHeight: 1.4 }, // text-xs (badges, legends)
     },
 
     // Common radius = the button radius (12px). Cards/pills that differ (16px /
@@ -139,7 +152,9 @@ export function createAppTheme(): Theme {
           root: {
             borderColor: tokens.color.border,
             borderRadius: tokens.radius.card,
-            boxShadow: '0 1px 2px rgb(31 42 36 / 8%)',
+            // Softer, warmer layered shadow (RM-460) — gentle depth that reads
+            // modern and calm rather than the flat legacy 1px hairline.
+            boxShadow: '0 1px 2px rgb(38 49 43 / 4%), 0 6px 20px rgb(38 49 43 / 5%)',
           },
         },
       },

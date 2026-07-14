@@ -207,7 +207,7 @@ Watch-outs: <short list or none>
 | ----- | --------------------------------------------------------------- | --------------------- | --------------------------------------- |
 | OD-01 | Dev-only React preview entries, excluded from production inputs | RM-200                | RESOLVED                                |
 | OD-02 | Member 350/400 kB and admin 375/425 kB budgets                  | RM-040/RM-630         | RESOLVED                                |
-| OD-03 | Visual-parity tolerance versus intentional Material refresh     | RM-460                | OPEN                                    |
+| OD-03 | Visual-parity tolerance versus intentional Material refresh     | RM-460                | RESOLVED — intentional refresh (RM-460) |
 | OD-04 | Final merge method: merge commit, squash, or reviewed PR        | RM-740                | OPEN                                    |
 | OD-05 | Sequential single-writer versus parallel worktrees              | Before implementation | RESOLVED — sequential default           |
 | OD-06 | Shared-tree commits versus per-task branches                    | Before implementation | RESOLVED — shared `reactmigration` tree |

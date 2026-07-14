@@ -5,9 +5,11 @@ import { appTheme, createAppTheme, tokens } from '@/theme/muiTheme';
 
 /**
  * Extract the `--color-*` hex values from the `@theme` block of theme.css — the
- * still-legacy Tailwind copy of the palette. RM-210 keeps a second copy in
- * muiTheme.ts; this parses the source so the parity test below fails loudly if
- * the two ever drift before RM-620 removes the Tailwind copy.
+ * still-legacy Tailwind palette. Through RM-450 the React palette was kept equal
+ * to this copy (the R1 pattern). RM-460 refreshed the React palette under OD-03,
+ * so the two now **intentionally diverge**: theme.css keeps the OLD palette (it
+ * styles the legacy tree until RM-620), and muiTheme.ts carries the refreshed
+ * one. This helper is now used to assert that divergence, not equality.
  */
 function readThemeCssColors(): Record<string, string> {
   const css = readFileSync(
@@ -26,44 +28,56 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(appTheme.direction).toBe('rtl');
   });
 
-  it('maps every theme.css color token onto the palette', () => {
-    const css = readThemeCssColors();
+  it('applies the refreshed OD-03 palette onto the MUI palette (RM-460)', () => {
+    // Pinned refreshed values — fresh, senior-friendly, reading-comfortable.
+    // WCAG-AA contrast evidence is in docs/react-migration/tasks/RM-460.md.
+    expect(appTheme.palette.background.default).toBe('#f6f1e7');
+    expect(appTheme.palette.background.paper).toBe('#fffdf7');
+    expect(appTheme.palette.text.primary).toBe('#26312b');
+    expect(appTheme.palette.text.secondary).toBe('#5c6b62');
+    expect(appTheme.palette.primary.main).toBe('#0e6f61');
+    expect(appTheme.palette.primary.dark).toBe('#0a5348');
+    expect(appTheme.palette.secondary.main).toBe('#c9a24a');
+    expect(appTheme.palette.success.main).toBe('#2f7d55');
+    expect(appTheme.palette.warning.main).toBe('#b45309');
+    expect(appTheme.palette.error.main).toBe('#b23a2e');
+    expect(appTheme.palette.divider).toBe('#e5ddcb');
+  });
 
-    // Sanity: the parse actually found the @theme colors.
-    expect(css.primary).toBe('#0f766e');
+  it('pins the refreshed muiTheme tokens and splits accent from warn (R3)', () => {
+    expect(tokens.color.bg).toBe('#f6f1e7');
+    expect(tokens.color.surface).toBe('#fffdf7');
+    expect(tokens.color.ink).toBe('#26312b');
+    expect(tokens.color.muted).toBe('#5c6b62');
+    expect(tokens.color.primary).toBe('#0e6f61');
+    expect(tokens.color.primaryStrong).toBe('#0a5348');
+    expect(tokens.color.accent).toBe('#c9a24a');
+    expect(tokens.color.success).toBe('#2f7d55');
+    expect(tokens.color.warn).toBe('#b45309');
+    expect(tokens.color.danger).toBe('#b23a2e');
+    expect(tokens.color.border).toBe('#e5ddcb');
+    // Theme-map R3 resolved: the gold accent and the amber warn are now distinct.
+    expect(tokens.color.accent).not.toBe(tokens.color.warn);
+  });
+
+  it('intentionally diverges from the legacy Tailwind palette (OD-03 refresh)', () => {
+    // theme.css keeps the OLD palette (legacy tree until RM-620); the React
+    // theme carries the refreshed one. Assert they DIFFER so neither copy is
+    // silently synced back — this replaces the pre-RM-460 equality guard.
+    const css = readThemeCssColors();
+    expect(css.primary).toBe('#0f766e'); // legacy value, unchanged
     expect(Object.keys(css).length).toBeGreaterThanOrEqual(11);
-
-    expect(appTheme.palette.background.default).toBe(css.bg);
-    expect(appTheme.palette.background.paper).toBe(css.surface);
-    expect(appTheme.palette.text.primary).toBe(css.ink);
-    expect(appTheme.palette.text.secondary).toBe(css.muted);
-    expect(appTheme.palette.primary.main).toBe(css.primary);
-    expect(appTheme.palette.primary.dark).toBe(css['primary-strong']);
-    expect(appTheme.palette.secondary.main).toBe(css.accent);
-    expect(appTheme.palette.success.main).toBe(css.success);
-    expect(appTheme.palette.warning.main).toBe(css.warn);
-    expect(appTheme.palette.error.main).toBe(css.danger);
-    expect(appTheme.palette.divider).toBe(css.border);
+    expect(appTheme.palette.primary.main).not.toBe(css.primary);
+    expect(appTheme.palette.background.default).not.toBe(css.bg);
+    expect(tokens.color.bg).not.toBe(css.bg);
+    expect(tokens.color.primary).not.toBe(css.primary);
+    expect(tokens.color.accent).not.toBe(css.accent);
   });
 
-  it('keeps the muiTheme tokens in sync with theme.css', () => {
-    const css = readThemeCssColors();
-    expect(tokens.color.bg).toBe(css.bg);
-    expect(tokens.color.surface).toBe(css.surface);
-    expect(tokens.color.ink).toBe(css.ink);
-    expect(tokens.color.muted).toBe(css.muted);
-    expect(tokens.color.primary).toBe(css.primary);
-    expect(tokens.color.primaryStrong).toBe(css['primary-strong']);
-    expect(tokens.color.accent).toBe(css.accent);
-    expect(tokens.color.success).toBe(css.success);
-    expect(tokens.color.warn).toBe(css.warn);
-    expect(tokens.color.danger).toBe(css.danger);
-    expect(tokens.color.border).toBe(css.border);
-  });
-
-  it('sets white contrastText on filled semantic colors', () => {
+  it('sets white contrastText on filled semantics, dark ink on the gold accent', () => {
     expect(appTheme.palette.primary.contrastText).toBe('#ffffff');
-    expect(appTheme.palette.secondary.contrastText).toBe('#ffffff');
+    // Gold accent is light → dark ink text for legibility (RM-460).
+    expect(appTheme.palette.secondary.contrastText).toBe('#26312b');
     expect(appTheme.palette.success.contrastText).toBe('#ffffff');
     expect(appTheme.palette.warning.contrastText).toBe('#ffffff');
     expect(appTheme.palette.error.contrastText).toBe('#ffffff');
@@ -116,7 +130,7 @@ describe('MUI theme — token mapping (RM-210)', () => {
       minHeight: 56,
     });
     expect(appTheme.components?.MuiCard?.styleOverrides?.root).toMatchObject({
-      borderRadius: 16,
+      borderRadius: 18,
       borderColor: tokens.color.border,
     });
     expect(appTheme.components?.MuiChip?.styleOverrides?.root).toMatchObject({

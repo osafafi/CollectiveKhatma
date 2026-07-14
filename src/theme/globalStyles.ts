@@ -35,6 +35,17 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
     '--reading-scale': '1',
   },
 
+  // Visible keyboard focus ring (RM-460 accessibility refresh). `:focus-visible`
+  // only fires for keyboard/AT navigation, so pointer users see no outline while
+  // keyboard users get a clear, high-contrast emerald ring. The color is the
+  // refreshed primary (#0e6f61) at 55% alpha; kept literal here so this stays a
+  // theme-free stylesheet.
+  ':focus-visible': {
+    outline: '3px solid rgba(14, 111, 97, 0.55)',
+    outlineOffset: '2px',
+    borderRadius: '4px',
+  },
+
   // Reading font-size scale — 5 discrete levels driven by `data-reading-scale`
   // on <html> (RM-340 owns the React control). Senior-audience feature.
   "html[data-reading-scale='1']": { '--reading-scale': '0.9' },

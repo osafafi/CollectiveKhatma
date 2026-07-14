@@ -5,69 +5,70 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                       |
-| ------------------------------------- | --------------------------------------------------- |
-| Integration branch                    | `reactmigration`                                    |
-| Branch base                           | `6992007` (`main` at migration start)               |
-| Last completed code task              | RM-450 — member component/integration tests         |
-| Last completed code commit            | `42a4bad` — `RM-450: add member integration tests`  |
-| Active migration task                 | None                                                |
-| Current phase                         | Phase 4 — member application migration              |
-| Next recommended task                 | RM-460 — member parity review                       |
-| Open decisions affecting current work | OD-03 is needed by RM-460; OD-04 by RM-740          |
-| Last updated                          | 2026-07-14                                          |
+| Field                                 | Current value                                             |
+| ------------------------------------- | --------------------------------------------------------- |
+| Integration branch                    | `reactmigration`                                          |
+| Branch base                           | `6992007` (`main` at migration start)                     |
+| Last completed code task              | RM-460 — member parity review + OD-03 refresh             |
+| Last completed code commit            | _record the RM-460 commit hash via the `docs:` follow-up_ |
+| Active migration task                 | None                                                      |
+| Current phase                         | Phase 4 done → Phase 5 — admin application migration      |
+| Next recommended task                 | RM-500 — admin shell and Home dashboard                   |
+| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740     |
+| Last updated                          | 2026-07-14                                                |
 
-RM-450 was owned by Claude (tracker owner reassigned from Codex at owner
-request). The exact-hash handoff is recorded by the follow-up `docs:` commit.
+Phase 4 exit is met: the React member preview has functional + RTL parity and the
+OD-03 visual refresh is applied (approved deltas recorded). Realtime updates do
+not reset reader state (P1, covered by RM-440/RM-450).
 
-## Next-session read set — RM-460
+## Handoff from RM-460
 
-Read only after this exact-hash handoff commit:
+- **OD-03 resolved** toward an intentional refresh (owner: fresh, modern,
+  senior-friendly UI, reading-comfortable colors). Applied entirely at the theme
+  level — no functional/data/domain/routing/listener change.
+- Refreshed `src/theme/muiTheme.ts` (warm low-glare palette, calm emerald
+  primary, distinct gold accent w/ dark text, higher contrast, softer card
+  radius 18 + warm layered shadow, roomier line-heights) and
+  `src/theme/globalStyles.ts` (keyboard `:focus-visible` ring). The React MUI
+  palette now **intentionally diverges** from legacy `theme.css` (untouched;
+  production until RM-600, deleted at RM-620).
+- `tests/theme/mui-theme.test.ts` updated: pins refreshed values, asserts the
+  accent/warn split (R3) and the intentional legacy divergence (+1 test).
+- Member checklist walked emulator-backed on mobile + desktop RTL; all boxes
+  confirmed. WCAG-AA contrast measured for every pair. Verification detail and
+  the full approved-delta list: [`tasks/RM-460.md`](tasks/RM-460.md).
+- Gates: typecheck, lint, `npm test` (34 files / **190** tests +1 / 1 skipped),
+  console clean. Screenshots unavailable in the preview pane (raster capture
+  times out) — verified via exact computed styles instead.
+
+## Next-session read set — RM-500
+
+Read only after the RM-460 exact-hash handoff commit:
 
 1. This file.
-2. The Phase 4 table in
-   [`TRACKER.md`](TRACKER.md#phase-4--member-application-migration).
-3. Create `tasks/RM-460.md` while claiming the task, using its tracker
-   acceptance and OD-03.
-4. The root UI parity inventory's member checklist and the composed member app
-   (`MemberApp`/`MemberExperience` and its routes under `src/app/member/`), then
-   run the member preview against the emulator for mobile/desktop RTL parity.
+2. The Phase 5 table in
+   [`TRACKER.md`](TRACKER.md#phase-5--admin-application-migration).
+3. Create `tasks/RM-500.md` while claiming, using its tracker acceptance.
+4. The **admin** checklist in
+   [`REACT_MIGRATION_UI_INVENTORY.md`](../../REACT_MIGRATION_UI_INVENTORY.md)
+   §1, §3.1 (Home) and §4/§5 risks (P2/P3/P7/P8/P9), plus the admin React sources
+   under `src/app/admin/` and the admin preview entry (`admin-react-preview.html`).
 
-RM-460 is a **Joint** parity review (mobile/desktop RTL) that depends on OD-03;
-confirm that open decision before starting. Do not load the full historical
-migration plan, completed task evidence, theme map, dependency audit, or admin
-sources for RM-460.
+RM-500 (admin shell + Home dashboard) inherits the OD-03 refresh automatically
+via the shared theme — no re-decision needed; keep the same senior-friendly,
+reading-comfortable standard. Do not load member sources or the full historical
+plan for RM-500.
 
-## Handoff from RM-450
+## Risks / notes for next task
 
-- Added `tests/app/member-integration.test.tsx` (4 scenarios) — the dedicated
-  member **integration** layer above the per-feature RM-400..440 suites. It
-  drives the composed member tree
-  (`MemberIdentityBoundary` → `MemberExperience`) across continuous,
-  cross-feature journeys the per-task suites do not:
-  1. Gate → khatmas list → khatma landing → assigned reader → finish round.
-  2. A realtime assignment tick received on `/personal` is reflected after
-     navigating to the list, with the assignment listener still single
-     (`starts:1, stops:0, active:1`).
-  3. Switch person from the shell → gate returns and the previous member's
-     assignment listener drops; picking another member subscribes only theirs.
-  4. An unacknowledged completed khatma overlays the assigned reader route;
-     acknowledgement restores the reader page, indicator, and chrome.
-- The Quran loader (`@/content/quran/loader`) is mocked exactly as in
-  `member-reader.test.tsx`, keeping reader routes deterministic and offline.
-- Verification: typecheck, lint, `npm test` (34 files, 189 tests +4, 1 skipped),
-  Prettier on the new file and changed docs, and `git diff --check` — all clean.
-- No product source, data, domain, admin, production-entry, build-input, or
-  Firebase/rules changes; bundle budgets and builds are unaffected and were not
-  re-run.
-
-Detailed evidence is in [`tasks/RM-450.md`](tasks/RM-450.md). Earlier history is
-retrievable through [`archive/README.md`](archive/README.md) and is not startup
-context.
+- Admin drafts must survive unrelated snapshots (P2) and the same-day distribute
+  guard (P7) / busy-disable (P8) must hold — these are RM-500/RM-550 concerns.
+- The refreshed theme is shared; admin surfaces get the new look for free. Verify
+  admin still passes its own contrast/RTL when RM-570 reviews it.
 
 ## Claim protocol
 
-Before RM-460 implementation, confirm the clean handoff and OD-03, then change
-only its tracker row to `IN PROGRESS`, create its task record, rewrite this file
-with active scope/read set/risks, and run the smallest useful baseline check. Do
-not append a chronological session log here.
+Before RM-500 implementation, confirm this clean handoff, change only its tracker
+row to `IN PROGRESS`, create its task record, rewrite this file with active
+scope/read set/risks, and run the smallest useful baseline check. Do not append a
+chronological session log here.
