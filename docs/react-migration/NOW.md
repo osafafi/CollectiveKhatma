@@ -9,68 +9,70 @@
 | ------------------------------------- | ---------------------------------------------------------- |
 | Integration branch                    | `reactmigration`                                           |
 | Branch base                           | `6992007` (`main` at migration start)                      |
-| Last completed code task              | RM-500 — admin shell + Home dashboard                      |
-| Last completed code commit            | `f11b8bf` — `RM-500: admin shell and Home dashboard`       |
+| Last completed code task              | RM-510 — Roster route                                      |
+| Last completed code commit            | `b0b73c3` — `RM-510: admin Roster route`                   |
 | Active migration task                 | None                                                       |
 | Current phase                         | Phase 5 — admin application migration                      |
-| Next recommended task                 | RM-510 — Roster route                                      |
+| Next recommended task                 | RM-520 — Khatmas list/create                               |
 | Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740      |
 | Last updated                          | 2026-07-14                                                 |
 
-Phase 5 has begun. RM-500 turned the admin React entry into the real admin shell
-(persistent header + nav + routed content + active∪open assignment subscriptions)
-and migrated the Home dashboard. The Home distribute/redistribute flow (same-day
-guard P7, busy-disable P8) is verified emulator-backed. RM-500 inherits the OD-03
-theme refresh via the shared theme.
+RM-510 migrated the admin **Roster** route (`#/roster`) into the RM-500 admin
+shell: search-as-you-type (caret/focus preserved, **P4**), per-person row
+(muted+badged when disabled, min-1 pages/round stepper, enable/disable,
+remove-with-confirm), the add form (name/note/pages with
+`nameRequired`/`nameTaken` validation), and empty/no-match states — all
+emulator-verified. RM-510 inherits the OD-03 theme via the shared theme.
 
-## Handoff from RM-500
+## Handoff from RM-510
 
-- New React admin sources under `src/app/admin/`: `AdminApp` (composition +
-  route content), `AdminShell` (persistent `admin.heading` header),
-  `AdminAssignmentsSubscriptions` (active ∪ open-detail listeners, **P9**),
-  `pages/HomePage` (metrics + pending readers + warnings + distribute),
-  `useQuranScopeMaps` (surah/juz maps for distribution), `todayIso` (React-owned
-  local "today" — React must not import the legacy `src/ui` layer).
-- Non-home admin routes (roster/khatmas/khatma/settings) render a navigable
-  placeholder until RM-510–540 migrate them.
-- Removed the orphaned Phase-3 admin preview scaffold (`PreviewShell`,
-  `PrimitivesPreview`, `ChartsPreview`).
-- Intentional deltas (recorded in [`tasks/RM-500.md`](tasks/RM-500.md)):
-  distribution errors use an error tone + `role="alert"` (not the legacy uniform
-  green); one `h1` per route (persistent title is a non-heading label).
-- Gates: typecheck, lint, `npm test` (35 files / **197** tests, +7 / 1 skipped),
-  console clean across the live admin walk.
+- New `src/app/admin/pages/RosterPage.tsx` (`AdminRosterPage`); `AdminApp`'s
+  `AdminRouteContent` now routes `roster` → it. The placeholder covers only
+  `khatmas`/`khatma`/`settings` until RM-520–540.
+- Drafts (search text + add-form fields) are component-local `useState`; they
+  survive live-snapshot re-renders (the P2/P4 parity case). The controlled search
+  field keeps caret/focus without the legacy manual re-focus hack.
+- Feedback granularity matches the legacy (§5 quirk 5): stepper/enable-disable/add
+  writes are fire-and-forget; only the client-side add validation is surfaced.
+- Intentional deltas (recorded in [`tasks/RM-510.md`](tasks/RM-510.md)): add
+  validation carries `role="alert"` + error tone; remove uses the shared
+  confirmation dialog on a danger tone; drafts are route-scoped (RM-550 formalizes
+  the cross-form model).
+- Gates: typecheck, lint, `npm test` (36 files / **205** tests, +8 / 1 skipped),
+  console clean across the live admin roster walk.
 
-## Next-session read set — RM-510 (Roster)
+## Next-session read set — RM-520 (Khatmas list/create)
 
-Read only after the RM-500 exact-hash handoff commit:
+Read only after the RM-510 exact-hash handoff commit:
 
 1. This file.
 2. The Phase 5 table in
    [`TRACKER.md`](TRACKER.md#phase-5--admin-application-migration).
-3. Create `tasks/RM-510.md` while claiming, using its tracker acceptance.
-4. The **admin Roster** checklist in
+3. Create `tasks/RM-520.md` while claiming, using its tracker acceptance.
+4. The **admin Khatmas list + create** checklist in
    [`REACT_MIGRATION_UI_INVENTORY.md`](../../REACT_MIGRATION_UI_INVENTORY.md)
-   §3.2, plus §4 **P4** (search caret/focus) and §5 quirk 5 (fire-and-forget
-   mutations); legacy [`src/ui/admin/pages/roster.ts`](../../src/ui/admin/pages/roster.ts)
-   and the React admin sources under `src/app/admin/`.
+   §3.3, plus §4 **P2** (draft survival) and §5 quirk 4 (unused strings);
+   legacy [`src/ui/admin/pages/khatmas.ts`](../../src/ui/admin/pages/khatmas.ts)
+   and the React admin sources under `src/app/admin/` (`AdminApp`, `pages/`), the
+   shared primitives under `src/components/primitives/`, and the `useQuranScopeMaps`
+   / series helpers already used by Home.
 
-RM-510 (Roster) reuses the RM-500 shell and the shared form primitives
-(`NumberStepper`, `Fields`, `AppButton`, confirmation). Keep the same
-senior-friendly OD-03 standard. Do not load member sources or the full plan.
+RM-520 reuses the RM-500 shell and shared primitives and adds the draft-heavy
+create form (scope select, member picker, per-member capacity, reciter, backfill,
+series-continuation). Do not load member sources or the full plan.
 
 ## Risks / notes for next task
 
-- Search must preserve caret/focus across the keystroke re-render (**P4**) — a
-  controlled MUI field handles this; the full draft-stability proof is RM-550.
-- Match the legacy feedback granularity (§5 quirk 5): stepper/enable-disable/add
-  are fire-and-forget; only create/edit-save show status. Flag if improved.
-- The admin assignment-subscription set (active ∪ open detail, **P9**) lives in
-  the RM-500 shell; RM-530 relies on the "open detail" half.
+- The create form is the biggest admin draft (P2): scope/member/capacity/reciter
+  state must survive unrelated snapshots — component-local state kept mounted does
+  this; the full proof is RM-550.
+- Series continuation (`findSeriesByName`/`nextSeriesNumber`) and the surah-name
+  scope checklist need the surah maps (`useQuranScopeMaps`, already built for Home).
+- Do not resurrect the §5-quirk-4 unused strings as "parity".
 
 ## Claim protocol
 
-Before RM-510 implementation, confirm this clean handoff, change only its tracker
+Before RM-520 implementation, confirm this clean handoff, change only its tracker
 row to `IN PROGRESS`, create its task record, rewrite this file with active
 scope/read set/risks, and run the smallest useful baseline check. Do not append a
 chronological session log here.
