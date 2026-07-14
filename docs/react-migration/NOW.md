@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                    |
 | Branch base                           | `6992007` (`main` at migration start)               |
 | Last completed code task              | RM-440 — Quran reader                               |
-| Last completed code commit            | Pending exact-hash handoff commit (see below)       |
+| Last completed code commit            | `8f644b7` — `RM-440: migrate the Quran reader`      |
 | Active migration task                 | None                                                |
 | Current phase                         | Phase 4 — member application migration              |
 | Next recommended task                 | RM-450 — member component/integration tests         |
@@ -18,11 +18,12 @@
 | Last updated                          | 2026-07-14                                          |
 
 RM-440 was owned by Claude (tracker owner reassigned from Codex at owner
-request). The exact-hash handoff commit follows this rewrite.
+request) and is committed at `8f644b7`; this file is the exact-hash handoff
+update.
 
 ## Next-session read set — RM-450
 
-Read only after the exact-hash handoff commit:
+Read only after this exact-hash handoff commit:
 
 1. This file.
 2. The Phase 4 table in
