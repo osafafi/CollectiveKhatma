@@ -5,56 +5,59 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                 |
-| ------------------------------------- | --------------------------------------------- |
-| Integration branch                    | `reactmigration`                              |
-| Branch base                           | `6992007` (`main` at migration start)         |
-| Last completed code task              | RM-410 — khatma list and landing routes       |
-| Last completed code commit            | `5ebed75` — RM-410 implementation             |
-| Exact handoff commit                  | `11b955f` — RM-410 documentation handoff      |
-| Active migration task                 | RM-420 — personal and settings routes (Codex) |
-| Current phase                         | Phase 4 — member application migration        |
-| Next recommended task                 | None while RM-420 is active                   |
-| Open decisions affecting current work | None                                          |
-| Last updated                          | 2026-07-14                                    |
+| Field                                 | Current value                                              |
+| ------------------------------------- | ---------------------------------------------------------- |
+| Integration branch                    | `reactmigration`                                           |
+| Branch base                           | `6992007` (`main` at migration start)                      |
+| Last completed code task              | RM-420 — personal and settings routes                      |
+| Last completed code commit            | `5af9404` — `RM-420: migrate personal and settings routes` |
+| Active migration task                 | None                                                       |
+| Current phase                         | Phase 4 — member application migration                     |
+| Next recommended task                 | RM-430 — completion/du3a flow (Codex)                      |
+| Open decisions affecting current work | None; OD-03 is needed by RM-460 and OD-04 by RM-740        |
+| Last updated                          | 2026-07-14                                                 |
 
-RM-420 was claimed from a clean `reactmigration` worktree at exact handoff
-commit `11b955f`. Dependencies RM-310 and RM-340 are complete.
+RM-420 is committed at `5af9404`; this file is the exact-hash handoff update.
 
-## Active scope — RM-420
+## Next-session read set — RM-430
 
-- Implement the React `#/personal` route with selected-member identity,
-  lifetime completed-page insight, percentage/progress, and switch-person action.
-- Implement the React `#/settings` route with the compatible 1–5 reading-scale
-  control, live application, sample text, and remembered value.
-- Preserve existing member navigation and browser-local persistence semantics.
-- Add focused integration coverage for live personal data, settings persistence,
-  scale application, and navigation.
+Read only after the exact-hash handoff commit:
 
-## Read set
+1. This file.
+2. The Phase 4 table in
+   [`TRACKER.md`](TRACKER.md#phase-4--member-application-migration).
+3. Create `tasks/RM-430.md` while claiming the task, using its tracker
+   acceptance and discovered context.
+4. Member UI-inventory section 2.8 plus directly relevant member app, completion
+   state/content subscriptions, identity/roster context, du3a acknowledgement
+   persistence, shared feedback/navigation primitives, legacy completion views,
+   and test harness/tests.
 
-1. This file and [`tasks/RM-420.md`](tasks/RM-420.md).
-2. The Phase 4 row in [`TRACKER.md`](TRACKER.md#phase-4--member-application-migration).
-3. Member UI-inventory [§2.6](../../REACT_MIGRATION_UI_INVENTORY.md#26-personal-صفحتي--personal)
-   and [§2.7](../../REACT_MIGRATION_UI_INVENTORY.md#27-settings-الإعدادات--settings).
-4. Directly relevant React member app/shell/identity/navigation, roster state,
-   persistence, shared primitives, legacy personal/settings views, and tests.
+Do not load the full historical migration plan, completed task evidence, theme
+map, dependency audit, khatma/reader/personal/settings flows, or admin sources
+for RM-430.
 
-Do not load the historical migration plan, completed-task evidence, theme map,
-dependency audit, reader/completion flows, admin sources, or unrelated routes.
+## Handoff from RM-420
 
-## Boundaries and risks
+- Added React personal insight with live member identity, Arabic lifetime page
+  count/percentage, 604-page progress, zero behavior, and switch-person action.
+- Added the React settings route with a persisted 1–5 reading-scale slider,
+  visibly scaling Quran sample, and disclosure state preserved across routes.
+- Added 3 focused scenarios. Full verification passed: lint, 171 tests (1
+  skipped), production build, React bundle budgets, changed-file formatting,
+  and diff checks. Browser QA passed at phone/desktop RTL with no overflow or
+  console errors. Detailed evidence is in [`tasks/RM-420.md`](tasks/RM-420.md).
+- Reading scale remains browser-local and adds no Redux state or Firestore
+  listeners.
+- No dependency, lockfile, Firebase/data/domain, legacy UI, admin, reader/
+  completion, or production-entry changes.
 
-- Keep reading scale in browser persistence, not Redux or Firestore.
-- Reuse the shared roster subscription and identity context; add no route-local
-  realtime subscriptions.
-- Preserve the legacy 604-page lifetime percentage and empty/zero behavior.
-- Apply reading scale without pulling Quran-reader migration into RM-420.
-- Do not change legacy UI, production entries, dependencies/lockfile, Firebase
-  schema/rules, admin behavior, or unrelated member routes.
+Earlier history is retrievable through [`archive/README.md`](archive/README.md)
+and is not startup context.
 
-## Exit protocol
+## Claim protocol
 
-Complete focused and full verification, update `tasks/RM-420.md` with evidence,
-mark only the RM-420 tracker row `DONE`, commit implementation, then replace this
-file with the exact-hash handoff and next recommended task.
+Before RM-430 implementation, confirm the clean handoff hash and dependencies,
+then change only its tracker row to `IN PROGRESS`, create its task record,
+rewrite this file with active scope/read set/risks, and run the smallest useful
+baseline check. Do not append a chronological session log here.
