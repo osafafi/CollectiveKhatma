@@ -72,7 +72,7 @@ provider setup or editing legacy DOM helpers.
 | RM-420 | Personal and settings routes       | Codex  | DONE        | RM-310, RM-340                         | Personal insight, scale, navigation, and remembered settings match baseline.             |
 | RM-430 | Completion/du3a flow               | Codex  | DONE        | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |
 | RM-440 | Quran reader                       | Claude | DONE        | RM-220, RM-250, RM-320, RM-340         | Browse/assigned reading, navigation, scale, finish, errors, and stable scroll/page work. |
-| RM-450 | Member component/integration tests | Codex  | NOT STARTED | RM-400, RM-410, RM-420, RM-430, RM-440 | Critical route, realtime, identity, completion, and reader behavior automated.           |
+| RM-450 | Member component/integration tests | Claude | DONE        | RM-400, RM-410, RM-420, RM-430, RM-440 | Critical route, realtime, identity, completion, and reader behavior automated.           |
 | RM-460 | Member parity review               | Joint  | NOT STARTED | RM-450                                 | Root inventory member checklist passes mobile/desktop RTL or differences are approved.   |
 
 Phase exit: the React member preview has functional parity and realtime updates
