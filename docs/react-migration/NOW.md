@@ -5,17 +5,17 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                             |
-| ------------------------------------- | --------------------------------------------------------- |
-| Integration branch                    | `reactmigration`                                          |
-| Branch base                           | `6992007` (`main` at migration start)                     |
-| Last completed code task              | RM-460 — member parity review + OD-03 refresh             |
-| Last completed code commit            | _record the RM-460 commit hash via the `docs:` follow-up_ |
-| Active migration task                 | None                                                      |
-| Current phase                         | Phase 4 done → Phase 5 — admin application migration      |
-| Next recommended task                 | RM-500 — admin shell and Home dashboard                   |
-| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740     |
-| Last updated                          | 2026-07-14                                                |
+| Field                                 | Current value                                              |
+| ------------------------------------- | ---------------------------------------------------------- |
+| Integration branch                    | `reactmigration`                                           |
+| Branch base                           | `6992007` (`main` at migration start)                      |
+| Last completed code task              | RM-460 — member parity review + OD-03 refresh              |
+| Last completed code commit            | `f34de3c` — `RM-460: member parity review + OD-03 refresh` |
+| Active migration task                 | None                                                       |
+| Current phase                         | Phase 4 done → Phase 5 — admin application migration       |
+| Next recommended task                 | RM-500 — admin shell and Home dashboard                    |
+| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740      |
+| Last updated                          | 2026-07-14                                                 |
 
 Phase 4 exit is met: the React member preview has functional + RTL parity and the
 OD-03 visual refresh is applied (approved deltas recorded). Realtime updates do
