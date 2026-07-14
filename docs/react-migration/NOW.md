@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                    |
 | Branch base                           | `6992007` (`main` at migration start)               |
 | Last completed code task              | RM-450 — member component/integration tests         |
-| Last completed code commit            | `PENDING` — `RM-450: add member integration tests`  |
+| Last completed code commit            | `42a4bad` — `RM-450: add member integration tests`  |
 | Active migration task                 | None                                                |
 | Current phase                         | Phase 4 — member application migration              |
 | Next recommended task                 | RM-460 — member parity review                       |
