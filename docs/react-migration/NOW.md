@@ -9,50 +9,46 @@
 | ------------------------------------- | --------------------------------------------------- |
 | Integration branch                    | `reactmigration`                                    |
 | Branch base                           | `6992007` (`main` at migration start)               |
-| Last completed code task              | RM-330 — charts and custom icon overrides           |
-| Last completed code commit            | `382ff6c` — pushed to `origin/reactmigration`       |
+| Last completed code task              | RM-340 — browser-persistence hooks                  |
+| Last completed code commit            | Pending; working tree is based on `cb18dae`         |
 | Active migration task                 | None                                                |
-| Current phase                         | Phase 3; RM-300 through RM-330 are `DONE`           |
-| Next recommended task                 | RM-340 — browser-persistence hooks (Codex)          |
-| Then                                  | RM-350 — shared React test harness (Codex)          |
+| Current phase                         | Phase 3; RM-300 through RM-340 are `DONE`           |
+| Next recommended task                 | RM-350 — shared React test harness (Codex)          |
 | Open decisions affecting current work | None; OD-03 is needed by RM-460 and OD-04 by RM-740 |
 | Last updated                          | 2026-07-14                                          |
 
-The documentation compaction is based on the clean, pushed RM-330 handoff at
-`382ff6c`. Until the compaction itself is committed, documentation files are the
-only expected changes after that code commit.
+The working tree contains the completed RM-340 implementation, tests, and
+migration evidence on top of clean commit `cb18dae`.
 
-## Next-session read set — RM-340
+## Next-session read set — RM-350
 
 Read only:
 
 1. This file.
-2. [`tasks/RM-340.md`](tasks/RM-340.md).
-3. The Phase 3 table in [`TRACKER.md`](TRACKER.md#phase-3--shared-react-components-and-app-shells).
-4. The exact UI-inventory sections linked from the task record.
-5. Relevant source/tests discovered for RM-340.
+2. The Phase 3 table in [`TRACKER.md`](TRACKER.md#phase-3--shared-react-components-and-app-shells).
+3. Create `tasks/RM-350.md` while claiming the task, using its tracker
+   acceptance and discovered context.
+4. Relevant provider, router, Redux, subscription, and test setup source/tests
+   discovered for RM-350.
 
 Do not load the full historical migration plan, all completed task evidence, the
-theme map, or the dependency audit for RM-340.
+theme map, or the dependency audit for RM-350.
 
-## Handoff from RM-330
+## Handoff from RM-340
 
-- Claude completed RM-330 from clean commit `4cae693` and pushed task commit
-  `382ff6c`.
-- Added reusable React `DonutChart` and `SegmentBar` components plus an
-  override-aware icon source/store and `useIconUrl`.
-- `NavIcon` now consumes the icon store and both React preview entries start the
-  PNG-over-SVG override probe.
-- Verification passed: typecheck, lint, 149 tests, production build, bundle
-  budgets, formatting/diff checks, and live mobile/desktop RTL checks.
-- Latest recorded React-spike budgets: member 322.52/350 kB initial JS and
-  368.63/400 kB transfer; admin 322.50/375 kB initial JS and 368.61/425 kB
-  transfer.
+- Codex completed RM-340 from clean commit `cb18dae`.
+- Added four React hooks under `src/app/persistence` for remembered identity,
+  reading scale, last-read page, and per-khatma du3a acknowledgement.
+- Exact legacy keys, fallbacks, ranges, and the acknowledgement value `'1'` are
+  preserved. Blocked or throwing storage falls back safely while React state
+  remains usable.
+- Focused tests cover all four behaviors and unavailable storage.
+- Verification passed: typecheck, lint, 154 tests, production build, formatting,
+  and diff checks. Bundle budgets were not rerun because no preview entry imports
+  the new module and its bundle graph is unchanged.
 - No data/domain, dependency, lockfile, legacy UI, or production-entry changes.
-- The React icon probe intentionally requires an `image/*` content type because
-  Vite returns its HTML SPA fallback for missing PNG `HEAD` requests in dev.
 
-Detailed RM-330 evidence lives in [`tasks/RM-330.md`](tasks/RM-330.md). Earlier
+Detailed RM-340 evidence lives in [`tasks/RM-340.md`](tasks/RM-340.md). Earlier
 history is retrievable through [`archive/README.md`](archive/README.md) and is not
 startup context.
 
