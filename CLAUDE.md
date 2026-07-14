@@ -19,6 +19,14 @@ Canonical migration sources:
 - Stable governance/architecture/gates: [`PLAN.md`](docs/react-migration/PLAN.md)
 - Detailed active-task evidence: [`tasks/`](docs/react-migration/tasks/)
 
+For Material UI implementation or review, use the configured MUI MCP server
+when API behavior, version-specific guidance, component patterns, or generated
+React/MUI scaffolding would be useful. Check `package.json` first and pass the
+installed Material UI / MUI X major pairing rather than relying on the server's
+latest-version default. Treat MCP output as reference material: adapt it to this
+repository's RTL theme, shared primitives, accessibility rules, and tests. MUI
+Recipes code generation also requires `MUI_RECIPES_API_KEY` in the environment.
+
 At task claim and completion, update the affected tracker row and task record,
 then **rewrite** `NOW.md`; never append a session log. Partial migration work
 must not be merged to `main`, and cross-agent handoff still requires a clean,

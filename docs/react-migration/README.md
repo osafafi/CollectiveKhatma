@@ -18,6 +18,11 @@ Do not read every migration document or the historical archive by default.
 A routine task startup should consume no more than about 5,000–8,000 tokens of
 migration documentation.
 
+For MUI-facing tasks, use the configured MUI MCP server when version-specific
+documentation, component patterns, or React/MUI scaffolding would help. Detect
+the installed major versions from `package.json`, provide that pairing to the
+server, and adapt its output to the migration's RTL theme and shared contracts.
+
 ## Document ownership
 
 | Document                   | Purpose                                                      | Update pattern                                       |

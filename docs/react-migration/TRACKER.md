@@ -67,7 +67,7 @@ provider setup or editing legacy DOM helpers.
 
 | ID     | Task                               | Owner | Status      | Depends on                             | Concise acceptance/evidence                                                              |
 | ------ | ---------------------------------- | ----- | ----------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| RM-400 | Identity gate and member switching | Codex | NOT STARTED | RM-240, RM-310, RM-340                 | Live roster states, compatible persistence, cleanup, and switching work.                 |
+| RM-400 | Identity gate and member switching | Codex | DONE        | RM-240, RM-310, RM-340                 | Live roster gate, persistence, switching, cleanup tests, and RTL QA pass.                |
 | RM-410 | Khatma list and landing routes     | Codex | NOT STARTED | RM-240, RM-310, RM-320                 | Relevant khatmas, progress, assignments, warnings, history, and errors match baseline.   |
 | RM-420 | Personal and settings routes       | Codex | NOT STARTED | RM-310, RM-340                         | Personal insight, scale, navigation, and remembered settings match baseline.             |
 | RM-430 | Completion/du3a flow               | Codex | NOT STARTED | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |

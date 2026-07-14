@@ -18,6 +18,7 @@ function setHash(hash: string): void {
 
 afterEach(() => {
   window.history.replaceState(null, '', '/');
+  localStorage.clear();
 });
 
 function MemberRouteProbe() {
@@ -109,6 +110,7 @@ describe('typed React hash routing', () => {
 
   it('keeps member fallback behavior without rewriting an unknown hash', () => {
     setHash('#/unknown-member-route');
+    localStorage.setItem('khatma.memberId', 'routing-test-member');
 
     const { container } = render(<MemberApp />);
 
