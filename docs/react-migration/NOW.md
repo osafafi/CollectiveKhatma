@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                           |
 | Branch base                           | `6992007` (`main` at migration start)                      |
 | Last completed code task              | RM-500 — admin shell + Home dashboard                      |
-| Last completed code commit            | _recorded in the follow-up `docs: record RM-500 handoff hash`_ |
+| Last completed code commit            | `f11b8bf` — `RM-500: admin shell and Home dashboard`       |
 | Active migration task                 | None                                                       |
 | Current phase                         | Phase 5 — admin application migration                      |
 | Next recommended task                 | RM-510 — Roster route                                      |
