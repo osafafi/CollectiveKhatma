@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import { strings } from '@/content/strings.ar';
-import { ChartsPreview } from '@/app/ChartsPreview';
-import { PrimitivesPreview } from '@/app/PrimitivesPreview';
 import { AppProviders } from '@/app/providers/AppProviders';
-import { PreviewShell } from '@/app/PreviewShell';
 import { useReadingScale } from '@/app/persistence';
 import { MemberCompletionInterrupt } from '@/app/member/MemberCompletionInterrupt';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
@@ -13,6 +9,7 @@ import { KhatmaLandingPage } from './KhatmaLandingPage';
 import { KhatmasListPage } from './KhatmasListPage';
 import { MemberAssignmentsSubscriptions } from './MemberAssignmentsSubscriptions';
 import { PersonalPage } from './PersonalPage';
+import { AssignedReaderPage, BrowseReaderPage } from './reader';
 import { SettingsPage } from './SettingsPage';
 
 export function MemberApp() {
@@ -45,6 +42,8 @@ export function MemberRouteContent() {
 
   if (route.name === 'khatmas') return <KhatmasListPage />;
   if (route.name === 'khatma') return <KhatmaLandingPage khatmaId={route.id} />;
+  if (route.name === 'khatmaRead') return <AssignedReaderPage khatmaId={route.id} />;
+  if (route.name === 'quran') return <BrowseReaderPage page={route.page} />;
   if (route.name === 'personal') return <PersonalPage />;
   if (route.name === 'settings') {
     return (
@@ -57,16 +56,6 @@ export function MemberRouteContent() {
     );
   }
 
-  return (
-    <>
-      <PreviewShell
-        surface="member"
-        routeName={route.name}
-        heading={strings.preview.memberHeading}
-        description={strings.member.tagline}
-      />
-      <PrimitivesPreview />
-      <ChartsPreview />
-    </>
-  );
+  // Every member route is migrated; fall back to the default landing route.
+  return <KhatmasListPage />;
 }
