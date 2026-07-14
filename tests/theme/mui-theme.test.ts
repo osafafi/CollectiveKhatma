@@ -103,4 +103,31 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(fresh.direction).toBe('rtl');
     expect(fresh.palette.primary.main).toBe(appTheme.palette.primary.main);
   });
+
+  it('centralizes RM-320 component parity defaults', () => {
+    expect(appTheme.components?.MuiButton?.defaultProps).toMatchObject({
+      disableElevation: true,
+    });
+    expect(appTheme.components?.MuiButton?.styleOverrides?.root).toMatchObject({
+      textTransform: 'none',
+      fontWeight: 600,
+    });
+    expect(appTheme.components?.MuiButton?.styleOverrides?.sizeLarge).toMatchObject({
+      minHeight: 56,
+    });
+    expect(appTheme.components?.MuiCard?.styleOverrides?.root).toMatchObject({
+      borderRadius: 16,
+      borderColor: tokens.color.border,
+    });
+    expect(appTheme.components?.MuiChip?.styleOverrides?.root).toMatchObject({
+      borderRadius: 12,
+    });
+    expect(appTheme.components?.MuiLinearProgress?.styleOverrides?.root).toMatchObject({
+      height: 8,
+      backgroundColor: tokens.color.border,
+    });
+    expect(appTheme.components?.MuiOutlinedInput?.styleOverrides?.root).toMatchObject({
+      backgroundColor: tokens.color.bg,
+    });
+  });
 });

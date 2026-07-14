@@ -27,7 +27,13 @@ describe('React app roots', () => {
       'data-route',
       'khatmas',
     );
-    expect(screen.getByRole('status')).toHaveTextContent(strings.preview.notProduction);
+    expect(screen.getByText(strings.preview.notProduction)).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(
+      screen.getByRole('heading', { name: strings.preview.primitivesHeading }),
+    ).toBeInTheDocument();
   });
 
   it('renders the isolated admin preview root', () => {
@@ -40,6 +46,12 @@ describe('React app roots', () => {
       'data-route',
       'home',
     );
-    expect(screen.getByRole('status')).toHaveTextContent(strings.preview.notProduction);
+    expect(screen.getByText(strings.preview.notProduction)).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(
+      screen.getByRole('heading', { name: strings.preview.primitivesHeading }),
+    ).toBeInTheDocument();
   });
 });

@@ -1,7 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppProviders } from '@/app/providers/AppProviders';
+import { useConfirmation } from '@/app/providers/useConfirmation';
 import { useSnackbar } from '@/app/providers/useSnackbar';
 import { useMemberRoute } from '@/app/routing/hooks';
 import {
@@ -10,6 +12,7 @@ import {
   useAppSelector,
   type FirestoreSubscriptionSources,
 } from '@/app/store';
+import { strings } from '@/content/strings.ar';
 
 /** Inert sources: they register a cleanup but never push a snapshot. */
 const inertSources: FirestoreSubscriptionSources = {
@@ -23,6 +26,8 @@ function CompositionProbe() {
   const route = useMemberRoute();
   const rosterStatus = useAppSelector(selectRosterListener).status;
   const { enqueueSnackbar } = useSnackbar();
+  const { confirm } = useConfirmation();
+  const [confirmation, setConfirmation] = useState('idle');
   return (
     <div>
       <output data-testid="route">{route.name}</output>
@@ -33,6 +38,15 @@ function CompositionProbe() {
       >
         Notify
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          void confirm('Continue?').then((answer) => setConfirmation(String(answer)));
+        }}
+      >
+        Ask
+      </button>
+      <output aria-label="confirmation result">{confirmation}</output>
     </div>
   );
 }
@@ -62,5 +76,14 @@ describe('AppProviders composition (RM-300)', () => {
     // Snackbar is reachable from any descendant of the composition.
     await user.click(screen.getByRole('button', { name: 'Notify' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Saved');
+
+    // The shared confirmation flow is also reachable and resolves asynchronously.
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Continue?')).toBeInTheDocument();
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+    expect(screen.getByLabelText('confirmation result')).toHaveTextContent('true');
   });
 });

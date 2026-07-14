@@ -10,6 +10,11 @@ export const strings = {
     appName: 'خَتْمة',
     done: 'تم',
     loading: 'جارٍ التحميل…',
+    confirmTitle: 'تأكيد الإجراء',
+    confirm: 'تأكيد',
+    cancel: 'إلغاء',
+    increase: 'زيادة',
+    decrease: 'تقليل',
   },
   // Shared feedback-state copy for the React primitives (RM-300): loading,
   // empty, error/retry, snackbar dismissal, and the last-resort crash fallback.
@@ -28,6 +33,7 @@ export const strings = {
     notProduction: 'هذه معاينة تطوير منفصلة. التطبيق الحالي المنشور لم يتغير.',
     memberHeading: 'معاينة تطبيق الأعضاء',
     adminHeading: 'معاينة لوحة التحكم',
+    primitivesHeading: 'المكوّنات المشتركة',
   },
   // Bottom tab bar / side rail (member app). Kept short to fit a tab label.
   nav: {

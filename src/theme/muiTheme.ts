@@ -114,6 +114,78 @@ export function createAppTheme(): Theme {
     breakpoints: {
       values: { xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280 },
     },
+
+    // Shared primitive defaults (RM-320). These keep page-level components from
+    // repeating the legacy radius, spacing, disabled, and surface treatments.
+    components: {
+      MuiButton: {
+        defaultProps: { disableElevation: true },
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
+            fontWeight: 600,
+            '&.Mui-disabled': { opacity: 0.5 },
+          },
+          sizeLarge: {
+            minHeight: 56,
+            paddingBlock: 16,
+            fontSize: '1.125rem',
+          },
+        },
+      },
+      MuiCard: {
+        defaultProps: { variant: 'outlined' },
+        styleOverrides: {
+          root: {
+            borderColor: tokens.color.border,
+            borderRadius: tokens.radius.card,
+            boxShadow: '0 1px 2px rgb(31 42 36 / 8%)',
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: { borderRadius: tokens.radius.card },
+        },
+      },
+      MuiTextField: {
+        defaultProps: { size: 'small', variant: 'outlined' },
+      },
+      MuiFormControl: {
+        defaultProps: { size: 'small' },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: { backgroundColor: tokens.color.bg },
+        },
+      },
+      MuiCheckbox: {
+        defaultProps: { color: 'primary' },
+      },
+      MuiSlider: {
+        defaultProps: { color: 'primary' },
+      },
+      MuiChip: {
+        defaultProps: { size: 'small' },
+        styleOverrides: {
+          root: {
+            minHeight: 24,
+            height: 'auto',
+            borderRadius: tokens.radius.button,
+          },
+        },
+      },
+      MuiLinearProgress: {
+        styleOverrides: {
+          root: {
+            height: 8,
+            borderRadius: tokens.radius.button,
+            backgroundColor: tokens.color.border,
+          },
+          bar: { borderRadius: tokens.radius.button },
+        },
+      },
+    },
   });
 }
 

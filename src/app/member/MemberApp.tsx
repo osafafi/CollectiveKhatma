@@ -1,7 +1,7 @@
 import { strings } from '@/content/strings.ar';
+import { PrimitivesPreview } from '@/app/PrimitivesPreview';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { PreviewShell } from '@/app/PreviewShell';
-import { ThemeProbe } from '@/app/ThemeProbe';
 import { MemberShell } from '@/app/member/MemberShell';
 import { useMemberRoute } from '@/app/routing/hooks';
 
@@ -26,7 +26,7 @@ function MemberPreview() {
         heading={strings.preview.memberHeading}
         description={strings.member.tagline}
       />
-      <ThemeProbe />
+      <PrimitivesPreview />
     </>
   );
 }

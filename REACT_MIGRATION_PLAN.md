@@ -26,9 +26,9 @@ and this document is updated.
 | Integration branch | `reactmigration` |
 | Branch base | `6992007` (`main` at migration start) |
 | Overall status | Implementation in progress |
-| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300, RM-310 DONE; RM-320 next) |
+| Current phase | Phase 0–2 complete; Phase 3 in progress (RM-300–RM-320 DONE; RM-330/RM-340/RM-350 next) |
 | Next milestone | Phase 3 — shared React providers, shells, and primitives (RM-300…RM-350) |
-| Last updated | 2026-07-13 |
+| Last updated | 2026-07-14 |
 | Primary agents | Codex and Claude |
 
 ### Status vocabulary
@@ -474,7 +474,7 @@ updates without duplicate listeners or changes to the data/domain contract.
 | --- | --- | --- | --- | --- | --- |
 | RM-300 Build shared providers, error boundary, and feedback states | Claude | DONE | RM-210, RM-230 | P3-A | 2026-07-13: shared `AppProviders` composes store → MUI RTL theme → error boundary → write-operations → snackbar → hash router in one injectable place, and MemberApp/AdminApp now render through it (both duplicated provider stacks removed). New feedback primitives `LoadingState`/`EmptyState`/`ErrorState` (optional retry)/`AsyncContent` (maps `ListenerStatus`→loading/empty/error/retry) under `src/components/feedback/`; a class `ErrorBoundary` with a themed RTL fallback + reset-on-retry and a queued `SnackbarProvider`/`useSnackbar` (one toast at a time, FIFO, click-away-safe, Arabic dismiss) under `src/app/providers/`; `feedback.*` copy added to `strings.ar.ts`. Verified: typecheck ✓, lint ✓, 117 tests (+13) with 1 gated emulator test skipped ✓, two-entry production build unchanged ✓; both React previews render live through the composition with no React errors and correct RTL. |
 | RM-310 Build responsive member/admin shells and navigation | Claude | DONE | RM-210, RM-220 | P3-A | 2026-07-13: generic route-typed `AppShell`/`AppNav`/`NavIcon` (`src/components/navigation/`) reproduce the legacy shared tab bar as MUI — fixed bottom bar `< lg` promoting to a physical-right vertical rail `≥ lg` (RTL `insetInlineStart:0` + `borderInlineEnd` inner edge), retained `.tab-bar` safe-area inset + `.icon-mask` currentColor icons (default SVG; override probe stays RM-330), `aria-current` active tab in primary teal, 56px touch targets, Arabic labels. Thin `MemberShell`/`AdminShell` supply the data-driven tab lists + per-surface column max-widths and own the sole `main` landmark (`MemberApp`/`AdminApp` compose them; `PreviewShell`→`section`). Verified: typecheck ✓, lint ✓, 124 tests (+7) ✓, two-entry build unchanged (member 5.28/admin 9.38 kB gzip) ✓, bundle-budget gate ✓ (member 315.72/350, admin 315.70/375 kB JS); live preview confirms mobile bottom bar + desktop physical-right rail with correct RTL, active state, and 96px content reservation for both apps. |
-| RM-320 Build shared MUI form/display primitives | Claude | NOT STARTED | RM-210 | P3-B | Buttons, cards, fields, select, stepper, badges/chips, progress views, and confirmation pattern cover legacy use cases. |
+| RM-320 Build shared MUI form/display primitives | Codex | DONE | RM-210 | P3-B | 2026-07-14: `src/components/primitives/` now covers compact/outlined/quiet/destructive/hash/hero actions; titled, untitled, nested, and clickable cards; controlled text/search/number/date/multiline fields, portalled select, checkbox, and slider; Arabic-digit bounded stepper; semantic chips/notices; labelled/clamped progress; and a controlled confirmation dialog. A FIFO `ConfirmationProvider`/`useConfirmation` supplies the app-wide async replacement for native confirms. Central MUI overrides own 12px control/16px card radii, disabled state, field/surface styling, and 8px progress bars. `ThemeProbe` was removed and both previews compose the real primitives. Verified: typecheck ✓, lint ✓, 133 tests (+9) ✓, two-entry production build ✓, bundle budgets ✓ (member 321.69/367.80 kB; admin 321.68/367.78 kB), and live mobile/desktop RTL + portal checks in both previews ✓. |
 | RM-330 Port charts and custom icon override support | Claude | NOT STARTED | RM-210 | P3-B | Donut/segment visuals and file-based icon overrides work without legacy DOM builders. |
 | RM-340 Port browser-persistence hooks | Codex | NOT STARTED | RM-200 | P3-B | Identity, reading scale, last page, and du3a acknowledgement behaviors are typed and tested. |
 | RM-350 Build shared React test harness | Codex | NOT STARTED | RM-230, RM-300 | — | Tests can render with Redux/MUI/router providers and deterministic fake subscription data. |
@@ -629,6 +629,73 @@ correction or clarification for the owning agent to fold in.
    assertion-only. Useful when assigning verification ownership.
 
 ## Session Log
+
+### 2026-07-14 — Codex — RM-320 → DONE
+
+- Branch/commit: `reactmigration`, implemented from clean RM-310 handoff commit
+  `ec9c10e`; task commit pending at log-update time.
+- Outcome: built the shared Phase 3 form/display layer. `AppButton` covers compact,
+  outlined, quiet/destructive, hash-link, and 56px full-width hero actions;
+  `SurfaceCard`/`NestedSurface` cover titled, untitled, nested, and clickable
+  cards; `AppTextField`/`AppSelectField`/`AppCheckboxField`/`AppSliderField`
+  cover every legacy field kind while callers retain local drafts; `NumberStepper`
+  supplies bounded Arabic-digit +/- controls; `StatusChip`/`NoticeBanner` and
+  `ProgressBar`/`ProgressView` preserve text alongside semantic color. A controlled
+  `ConfirmationDialog` plus FIFO `ConfirmationProvider`/`useConfirmation` replaces
+  native confirms with an async, RTL-safe app-wide pattern. `ThemeProbe` is gone;
+  both branch previews now render a composition of the real primitives.
+- Files/areas changed: new `src/components/primitives/` public barrel and
+  implementation; new confirmation context/provider/hook under `src/app/providers/`
+  and composition in `AppProviders`; new `src/app/PrimitivesPreview.tsx` wired into
+  `MemberApp`/`AdminApp`; centralized component overrides in `src/theme/muiTheme.ts`;
+  shared confirmation/stepper/preview copy in `src/content/strings.ar.ts`; new
+  `tests/components/primitives.test.tsx` plus expanded theme, provider-composition,
+  and root tests. Deleted temporary `src/app/ThemeProbe.tsx`. No data/domain,
+  dependency, lockfile, production-entry, or legacy UI change.
+- Verification: `npm run typecheck` ✓; `npm run lint` ✓; `npm test` ✓ — 24 files / 133
+  tests pass (+9) with the gated emulator test skipped; `npm run build` ✓ and still
+  emits only `index.html` + `admin-nano.html` (member 5.28/admin 9.38/shared 153.52
+  kB gzip); `npm run check:bundle-budgets` ✓ — member 321.69 kB JS / 367.80 kB
+  transfer vs 350/400, admin 321.68 / 367.78 vs 375/425; changed files are Prettier
+  clean and `git diff --check` is clean. Live in-app-browser verification on both
+  dev previews: mobile 390x844 cards fit at 358px above the 63px bottom nav;
+  desktop 1280px retains the physical-right 96px rail; document, fields, select
+  listbox, and confirmation dialog are RTL; card/dialog radius is 16px, controls
+  12px, progress 8px; select and modal portal outside `#app`; only the expected
+  offline-Firestore messages appear, with no React errors.
+- Decisions and risks: these are presentational/local-interaction contracts only;
+  Phases 4–5 still own all feature-screen wiring and draft lifecycle behavior.
+  Progress always pairs color with visible/accessible text, confirmation requests
+  queue one at a time and resolve false on cancellation/unmount, and no native
+  confirm is introduced in the React tree. RM-330 still owns donut/segment charts
+  and PNG-over-SVG icon overrides; this task does not overlap them. The React spike
+  remains under budget with 28.31 kB member-JS and 32.20 kB member-transfer headroom.
+- Recommended next action: hand to Claude for RM-330 (charts + custom icon override
+  probe); RM-210 is `DONE`, and the new display primitives are ready to host its
+  chart legends/status text. RM-340/RM-350 remain independently unblocked.
+
+### 2026-07-14 — Codex — RM-320 → IN PROGRESS
+
+- Branch/commit: `reactmigration` at clean handoff commit `ec9c10e` (`RM-310:
+  build responsive member/admin shells and navigation`). The owner-supplied
+  handoff used the placeholder `<new hash>`; the current clean RM-310 task commit
+  is treated as the intended handoff point.
+- Outcome: claimed RM-320 under Codex after confirming its RM-210 dependency is
+  `DONE`; shared MUI form/display primitive work is beginning.
+- Files/areas changed: tracker claim only before broad implementation changes.
+- Verification: read this plan end-to-end plus the repository instructions;
+  confirmed branch `reactmigration`, clean working tree, and current HEAD; the
+  pre-change `npm run typecheck` baseline passes. `package-lock.json` has not
+  changed since RM-130, so no fresh install is required.
+- Decisions and risks: keep feature-screen wiring in Phases 4–5 and preserve the
+  legacy behavior contract while replacing the temporary `ThemeProbe`. New
+  user-facing copy must live in `src/content/strings.ar.ts`; components must be
+  reusable, accessible, RTL-safe, and cover the legacy buttons, surfaces, form
+  controls, steppers, badges/chips, progress views, and confirmation flow.
+- Recommended next action: inventory every legacy primitive and its call sites,
+  define a compact shared React API, implement it with focused component tests,
+  replace `ThemeProbe` in both previews, then run the full shared-component
+  verification matrix.
 
 ### 2026-07-13 — Claude — RM-310 → DONE
 

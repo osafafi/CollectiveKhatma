@@ -6,6 +6,7 @@ import {
 } from '@/app/operations';
 import { AppStoreProvider } from '@/app/providers/AppStoreProvider';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
+import { ConfirmationProvider } from '@/app/providers/ConfirmationProvider';
 import { ErrorBoundary } from '@/app/providers/ErrorBoundary';
 import { SnackbarProvider } from '@/app/providers/SnackbarProvider';
 import { AppHashRouter } from '@/app/routing/AppHashRouter';
@@ -32,6 +33,7 @@ interface AppProvidersProps {
  *                      the feature subtree it guards.
  *   WriteOperations    Injectable data-layer mutations (defaults to the real set).
  *   SnackbarProvider   App-wide transient feedback available to every route.
+ *   Confirmation       Queued async replacement for native `window.confirm`.
  *   AppHashRouter      Hash routing wrapping the feature subtree.
  *
  * MemberApp and AdminApp both render through this so the provider wiring lives in
@@ -50,7 +52,9 @@ export function AppProviders({
         <ErrorBoundary>
           <WriteOperationsProvider operations={operations}>
             <SnackbarProvider>
-              <AppHashRouter>{children}</AppHashRouter>
+              <ConfirmationProvider>
+                <AppHashRouter>{children}</AppHashRouter>
+              </ConfirmationProvider>
             </SnackbarProvider>
           </WriteOperationsProvider>
         </ErrorBoundary>
