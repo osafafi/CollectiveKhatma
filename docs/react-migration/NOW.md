@@ -10,15 +10,14 @@
 | Integration branch                    | `reactmigration`                                    |
 | Branch base                           | `6992007` (`main` at migration start)               |
 | Last completed code task              | RM-400 — member identity gate                       |
-| Last completed code commit            | Pending; working tree is based on `deefbb5`         |
+| Last completed code commit            | `16b4814` — `RM-400: add member identity gate`      |
 | Active migration task                 | None                                                |
 | Current phase                         | Phase 4 — member application migration              |
 | Next recommended task                 | RM-410 — khatma list and landing routes (Codex)     |
 | Open decisions affecting current work | None; OD-03 is needed by RM-460 and OD-04 by RM-740 |
 | Last updated                          | 2026-07-14                                          |
 
-RM-400 is complete in the working tree based on pushed RM-350 commit `deefbb5`.
-Commit this implementation and migration evidence together before handoff.
+RM-400 is committed at `16b4814`; this file is the exact-hash handoff update.
 
 ## Next-session read set — RM-410
 
