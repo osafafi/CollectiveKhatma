@@ -21,7 +21,8 @@ for a future collaborator to pick up. This reflects the design mandated by
 > `theme` layers below are shared unchanged. See
 > [§React Migration Architecture](#react-migration-architecture-branch-only) for
 > the implemented React/state boundaries and
-> [REACT_MIGRATION_PLAN.md](REACT_MIGRATION_PLAN.md) for phase-by-phase progress.
+> [the migration tracker](docs/react-migration/TRACKER.md) for phase-by-phase
+> progress.
 
 ## Layers
 
@@ -185,9 +186,9 @@ change what production ships.
   development only. They are deliberately absent from the production build inputs
   (see `entryFiles` in [`vite.config.ts`](vite.config.ts)), so the build cannot
   publish them until the Phase 6 cutover.
-- The full plan, task tracker, and phase gates live in
-  [REACT_MIGRATION_PLAN.md](REACT_MIGRATION_PLAN.md); accepted decisions are its
-  Accepted Architecture Decisions table (AD-01…AD-11).
+- Stable migration governance, phase gates, and accepted decisions live in
+  [the compact migration plan](docs/react-migration/PLAN.md) (AD-01…AD-12), while
+  current task status lives in [the tracker](docs/react-migration/TRACKER.md).
 
 ### The `src/app/` layer
 

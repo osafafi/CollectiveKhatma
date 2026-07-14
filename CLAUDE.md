@@ -7,12 +7,23 @@ Keep project guidance here and do not create or maintain a duplicate `AGENTS.md`
 
 ### Active React migration
 
-On the `reactmigration` branch (or a `reactmig-*` task branch), read and update
-[`REACT_MIGRATION_PLAN.md`](REACT_MIGRATION_PLAN.md) before starting migration
-work. It is the shared Codex/Claude progress tracker, ownership map, acceptance
-checklist, and session handoff log. Partial migration work must not be merged to
-`main`; the branch strategy and final owner-approval gate in that document are
-binding for this migration.
+On the `reactmigration` branch (or a `reactmig-*` task branch), begin with
+[`docs/react-migration/NOW.md`](docs/react-migration/NOW.md). Read only the active
+task record, relevant tracker phase, and exact reference sections named there.
+Do not bulk-read all migration documents or historical records.
+
+Canonical migration sources:
+
+- Current state/handoff: [`NOW.md`](docs/react-migration/NOW.md)
+- Task owner/status/dependencies: [`TRACKER.md`](docs/react-migration/TRACKER.md)
+- Stable governance/architecture/gates: [`PLAN.md`](docs/react-migration/PLAN.md)
+- Detailed active-task evidence: [`tasks/`](docs/react-migration/tasks/)
+
+At task claim and completion, update the affected tracker row and task record,
+then **rewrite** `NOW.md`; never append a session log. Partial migration work
+must not be merged to `main`, and cross-agent handoff still requires a clean,
+committed exact hash. The branch strategy and final owner-approval gate in
+`PLAN.md` remain binding.
 
 ## Reference Commands
 
