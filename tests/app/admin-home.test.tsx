@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import type { QuranIndex } from '@/content/quran/types';
+import type { QuranIndex, Surah } from '@/content/quran/types';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
 import { seriesTitle } from '@/domain/series';
@@ -14,10 +14,12 @@ import {
   type RenderWithAppProvidersOptions,
 } from '../support/reactTestHarness';
 
-// The dashboard loads surah/juz maps for distribution; mock the loader so jsdom
+// The dashboard loads surah/juz maps for distribution, and the open detail khatma
+// (P9) mounts the detail page, which loads surah names; mock the loader so jsdom
 // tests stay deterministic and offline (a `range`-scope distribution needs none).
 const loader = vi.hoisted(() => ({
   getQuranIndex: vi.fn<() => Promise<QuranIndex>>(),
+  getSurahs: vi.fn<() => Promise<Surah[]>>(),
 }));
 vi.mock('@/content/quran/loader', () => loader);
 
@@ -85,6 +87,8 @@ describe('admin Home dashboard (RM-500)', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);
+    loader.getSurahs.mockReset();
+    loader.getSurahs.mockResolvedValue([]);
   });
 
   it('renders per-khatma metrics, pending readers, warnings, and the detail link', async () => {

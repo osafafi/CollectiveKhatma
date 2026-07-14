@@ -84,8 +84,8 @@ do not reset reader state.
 | ------ | --------------------------------- | ------ | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
 | RM-500 | Admin shell and Home dashboard    | Claude | DONE        | RM-240, RM-250, RM-310, RM-320         | Metrics, warnings, distribute/redistribute, same-day guard, and status outcomes match (RM-500). |
 | RM-510 | Roster route                      | Claude | DONE        | RM-250, RM-320                         | Search (caret/focus), CRUD, min-1 stepper, enablement, uniqueness, and confirmation match (RM-510). |
-| RM-520 | Khatmas list/create/continue      | Claude | NOT STARTED | RM-250, RM-320                         | Scope, continuation, members, capacities, validation, and drafts work.                  |
-| RM-530 | Khatma detail route               | Claude | NOT STARTED | RM-250, RM-320                         | Progress, assignments, edits, releases, warnings, completion, delete, and history work. |
+| RM-520 | Khatmas list/create/continue      | Claude | DONE        | RM-250, RM-320                         | Scope, continuation, members, capacities, validation, and drafts work (RM-520).         |
+| RM-530 | Khatma detail route               | Claude | DONE        | RM-250, RM-320                         | Progress, assignments, edits, releases, warnings, completion, delete, and history work (RM-530). |
 | RM-540 | Admin Settings route              | Claude | NOT STARTED | RM-250, RM-320                         | Global du3a edit/save/error and reading settings match baseline.                        |
 | RM-550 | Prove form-draft stability        | Claude | NOT STARTED | RM-500, RM-510, RM-520, RM-530, RM-540 | Unrelated snapshots do not overwrite touched fields or close interactions.              |
 | RM-560 | Admin component/integration tests | Claude | NOT STARTED | RM-550                                 | Critical CRUD, distribution, validation, listener, and error flows automated.           |

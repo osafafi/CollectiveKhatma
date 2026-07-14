@@ -2,8 +2,11 @@ import { Stack, Typography } from '@mui/material';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { AdminAssignmentsSubscriptions } from '@/app/admin/AdminAssignmentsSubscriptions';
 import { AdminShell } from '@/app/admin/AdminShell';
+import { CreateKhatmaPrefillProvider } from '@/app/admin/CreateKhatmaPrefill';
 import { AdminHomePage } from '@/app/admin/pages/HomePage';
 import { AdminRosterPage } from '@/app/admin/pages/RosterPage';
+import { AdminKhatmasPage } from '@/app/admin/pages/KhatmasPage';
+import { AdminKhatmaPage } from '@/app/admin/pages/KhatmaPage';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { useAdminRoute } from '@/app/routing/hooks';
@@ -25,12 +28,12 @@ export function AdminApp() {
  */
 export function AdminExperience() {
   return (
-    <>
+    <CreateKhatmaPrefillProvider>
       <AdminAssignmentsSubscriptions />
       <AdminShell>
         <AdminRouteContent />
       </AdminShell>
-    </>
+    </CreateKhatmaPrefillProvider>
   );
 }
 
@@ -38,9 +41,10 @@ function AdminRouteContent() {
   const route = useAdminRoute();
   if (route.name === 'home') return <AdminHomePage />;
   if (route.name === 'roster') return <AdminRosterPage />;
-  // Khatmas list/create (RM-520), Khatma detail (RM-530), and Settings (RM-540)
-  // land in later Phase 5 tasks; the shell stays navigable and those tabs resolve
-  // to a clear placeholder until each page is migrated.
+  if (route.name === 'khatmas') return <AdminKhatmasPage />;
+  if (route.name === 'khatma') return <AdminKhatmaPage id={route.id} />;
+  // Settings (RM-540) lands in a later Phase 5 task; the shell stays navigable and
+  // that tab resolves to a clear placeholder until the page is migrated.
   return <AdminRoutePlaceholder route={route} />;
 }
 
