@@ -70,7 +70,7 @@ provider setup or editing legacy DOM helpers.
 | RM-400 | Identity gate and member switching | Codex | DONE        | RM-240, RM-310, RM-340                 | Live roster gate, persistence, switching, cleanup tests, and RTL QA pass.                |
 | RM-410 | Khatma list and landing routes     | Codex | DONE        | RM-240, RM-310, RM-320                 | Relevant khatmas, progress, assignments, warnings, history, and errors match baseline.   |
 | RM-420 | Personal and settings routes       | Codex | DONE        | RM-310, RM-340                         | Personal insight, scale, navigation, and remembered settings match baseline.             |
-| RM-430 | Completion/du3a flow               | Codex | NOT STARTED | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |
+| RM-430 | Completion/du3a flow               | Codex | DONE        | RM-240, RM-340                         | Reciter variants, content, acknowledgement, and navigation suppression match.            |
 | RM-440 | Quran reader                       | Codex | NOT STARTED | RM-220, RM-250, RM-320, RM-340         | Browse/assigned reading, navigation, scale, finish, errors, and stable scroll/page work. |
 | RM-450 | Member component/integration tests | Codex | NOT STARTED | RM-400, RM-410, RM-420, RM-430, RM-440 | Critical route, realtime, identity, completion, and reader behavior automated.           |
 | RM-460 | Member parity review               | Joint | NOT STARTED | RM-450                                 | Root inventory member checklist passes mobile/desktop RTL or differences are approved.   |
