@@ -7,22 +7,36 @@ import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberIdentitySummary } from '@/app/member/MemberIdentitySummary';
 import { MemberShell } from '@/app/member/MemberShell';
 import { useMemberRoute } from '@/app/routing/hooks';
+import { KhatmaLandingPage } from './KhatmaLandingPage';
+import { KhatmasListPage } from './KhatmasListPage';
+import { MemberAssignmentsSubscriptions } from './MemberAssignmentsSubscriptions';
 
 export function MemberApp() {
   return (
     <AppProviders>
       <MemberIdentityBoundary>
-        <MemberShell>
-          <MemberPreview />
-        </MemberShell>
+        <MemberExperience />
       </MemberIdentityBoundary>
     </AppProviders>
   );
 }
 
-function MemberPreview() {
+export function MemberExperience() {
+  return (
+    <>
+      <MemberAssignmentsSubscriptions />
+      <MemberShell>
+        <MemberRouteContent />
+      </MemberShell>
+    </>
+  );
+}
+
+export function MemberRouteContent() {
   const route = useMemberRoute();
 
+  if (route.name === 'khatmas') return <KhatmasListPage />;
+  if (route.name === 'khatma') return <KhatmaLandingPage khatmaId={route.id} />;
   if (route.name === 'personal') return <MemberIdentitySummary />;
 
   return (
