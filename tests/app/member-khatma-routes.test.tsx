@@ -101,6 +101,7 @@ describe('member khatma routes (RM-410)', () => {
       status: 'completed',
       createdAt: 0,
     });
+    localStorage.setItem(`khatma.du3aAck.${done.id}`, '1');
     const harness = renderMember({
       data: {
         roster: [amina, maryam],
@@ -237,6 +238,7 @@ describe('member khatma routes (RM-410)', () => {
       2,
     );
     const other = makeAssignment(maryam.id, [round(2, [5, 6])], { 2: 20 }, 9);
+    localStorage.setItem(`khatma.du3aAck.${active.id}`, '1');
     const harness = renderMember({
       route: `/khatma/${active.id}`,
       data: {

@@ -5,6 +5,7 @@ import { PrimitivesPreview } from '@/app/PrimitivesPreview';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { PreviewShell } from '@/app/PreviewShell';
 import { useReadingScale } from '@/app/persistence';
+import { MemberCompletionInterrupt } from '@/app/member/MemberCompletionInterrupt';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberShell } from '@/app/member/MemberShell';
 import { useMemberRoute } from '@/app/routing/hooks';
@@ -28,9 +29,11 @@ export function MemberExperience() {
   return (
     <>
       <MemberAssignmentsSubscriptions />
-      <MemberShell>
-        <MemberRouteContent />
-      </MemberShell>
+      <MemberCompletionInterrupt>
+        <MemberShell>
+          <MemberRouteContent />
+        </MemberShell>
+      </MemberCompletionInterrupt>
     </>
   );
 }
