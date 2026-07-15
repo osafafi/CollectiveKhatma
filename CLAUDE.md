@@ -67,12 +67,12 @@ Strict one-directional dependency rule enforced by ESLint:
 
 ```
 src/
-├── app/              entries, providers, routing, store, operations, member/, admin/
+├── app/              entries, providers, routing, store, operations, persistence, member/, admin/
 ├── components/       primitives, navigation, charts, icons, feedback
-├── data/             firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts
-├── domain/           types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts
+├── data/             firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts, content.ts
+├── domain/           types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts, validation.ts
 ├── content/          strings.ar.ts, quran/
-└── theme/            muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts
+└── theme/            muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts, fonts/
 ```
 
 ---

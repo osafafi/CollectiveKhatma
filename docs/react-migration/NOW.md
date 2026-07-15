@@ -9,56 +9,49 @@
 | ------------------------------------- | ----------------------------------------------------- |
 | Integration branch                    | `reactmigration`                                      |
 | Branch base                           | `6992007` (`main` at migration start)                 |
-| Last completed code tasks             | RM-640 and RM-650                                     |
-| Last completed code commit            | `d87d0af`                                              |
+| Last completed task                   | RM-670 — documentation reconciliation                 |
+| Last completed code commit            | `5cf3d8c` (RM-640 + RM-650; RM-670 hash recorded next) |
 | Active migration task                 | None                                                  |
 | Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation |
-| Next recommended task                 | RM-670 — Update all project documentation             |
+| Next recommended task                 | RM-700 — final clean quality suite (Phase 7)          |
 | Authorization-gated task              | RM-660 — staging/live smoke test                      |
 | Open decisions affecting current work | OD-04 by RM-740                                       |
 | Last updated                          | 2026-07-15                                            |
 
-RM-640 added durable two-client emulator coverage for realtime writes,
-distribution, completion, reload/reconnect, and listener cleanup. RM-650 fixed
-focus-ring and tinted-status contrast, and pinned keyboard, portal RTL, and
-responsive shell behavior.
+RM-670 reconciled the living user/developer documentation with the shipped
+React + MUI implementation. Phase 6 code and QA (RM-620–RM-650) are complete;
+only the authorization-gated staging smoke test (RM-660) remains in Phase 6.
 
-## Completed validation — RM-640
+## Completed — RM-670 (documentation)
 
-- Two production-source clients observed the same roster/khatma writes,
-  assignment distribution, round completion, and automatic khatma completion.
-- A fresh client restored exactly one completed round; a released client ignored
-  later writes and stayed idle.
-- The gated emulator test passed locally and cleaned up only its isolated data.
+- `REQUIREMENTS.md` §3 now documents the React + MUI + Redux + React Router stack
+  (with a migration note); the static-site / no-server / Firestore / layered
+  requirements are unchanged.
+- `ARCHITECTURE.md` directory map and Firestore data model match `types.ts`
+  (added `Khatma.capacities`, `RoundChunk.loosePages`/`redistributedPages`, the
+  `content/global` collection) and its `## Security` section is restored, so the
+  README `#security` anchor resolves again.
+- `PROGRESS.md` no longer links the deleted `src/domain/schedule.ts`; its Next
+  Steps repoint at the tracker. The `CLAUDE.md` file map lists `persistence`,
+  `content.ts`, `validation.ts`, and `fonts/`.
+- Root `REACT_MIGRATION_*.md` files left intact as labeled historical artifacts
+  (RM-020/RM-110/RM-115 oracles) or a still-correct router.
 
-## Completed QA — RM-650
+## Verification (documentation-only per PLAN matrix)
 
-- Keyboard navigation follows the logical RTL tab order. Portalled dialogs use
-  RTL styling, autofocus the primary action, close by Escape, and restore focus.
-- Focus ring contrast is 3.06:1–3.22:1; success/warning text on tinted statuses
-  is 5.42:1–5.97:1.
-- Mobile contracts retain a full-width bottom bar and 112px content clearance;
-  desktop retains a 96px full-height right rail and 32px bottom padding.
-- Prior live 375px/1280px member/admin walks remain valid because RM-620/RM-630
-  changed only retired UI and chunking. A fresh browser rerun was URL-policy
-  blocked after an initial pre-server failure, so no new visual claim was made.
-
-## Verification
-
-- Typecheck/build — passed.
-- Lint — passed.
-- Default tests — 39 files passed, 1 skipped; 225 passed, 1 skipped.
-- Gated emulator journey — 1 test passed.
-- Production budget gate — member 341.59/387.75 kB; admin 344.72/390.98 kB.
-- Vite emits no oversized-chunk warning; diff whitespace is clean.
+- Link/path review — every relative markdown link in the edited docs resolves to
+  a real file; README/ARCHITECTURE anchors resolve.
+- `npx prettier --check` — passes for all edited docs.
+- `git diff --check` — clean.
 
 ## Next-session options
 
-### RM-670 — Update all project documentation
+### RM-700 — Final clean quality suite (Phase 7)
 
-1. Read this file, Phase 6 in `TRACKER.md`, and tasks RM-620/RM-630/RM-640/RM-650.
-2. Claim RM-670 and reconcile user/developer documentation with the final React
-   implementation, local emulator flow, production entries, and validation.
+1. Read this file, Phase 7 in `TRACKER.md`, and `PLAN.md` verification matrix.
+2. Claim RM-700, then run a clean install plus typecheck, lint, all tests, build,
+   and CI, recording results. RM-700 now depends only on completed tasks
+   (RM-630, RM-640, RM-650, RM-670).
 
 ### RM-660 — Authorized staging/live smoke test
 

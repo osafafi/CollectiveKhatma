@@ -55,10 +55,10 @@ conventions — `npm run lint` fails if they're broken:
 
 ```
 src/
-├── app/           entries, providers, routing, store, operations, member/, admin/
+├── app/           entries, providers, routing, store, operations, persistence, member/, admin/
 ├── components/    primitives, navigation, charts, icons, feedback
-├── data/          firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts
-├── domain/        types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts
+├── data/          firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts, content.ts
+├── domain/        types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts, validation.ts
 ├── content/       strings.ar.ts, quran/
 └── theme/         muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts, fonts/
 ```
@@ -89,6 +89,7 @@ Represents a single open-ended, numbered group reading session.
 - `totalPages`: number
 - `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
 - `memberIds`: string[] (list of participants)
+- `capacities`: optional Record<memberId, `{ pages, surahs, juz }`> (per-member ADDITIVE per-round capacity; absent ⇒ the member's roster `pagesPerDay`. Copied forward at rollover)
 - `status`: 'active' | 'completed'
 - `remainingPages`: number[] (pool of pages not yet assigned, sorted ascending)
 - `roundCount`: number (number of distribution rounds triggered)
@@ -111,7 +112,15 @@ Represents a member's reading assignment history for a specific khatma.
 - `round`: number (round identifier)
 - `date`: string (ISO YYYY-MM-DD)
 - `pages`: number[] (pages assigned for this round)
+- `loosePages`: optional number[] (the subset of `pages` from loose-page capacity; the only portion a same-day redistribution recalls — whole surahs/ajzā' stay held)
+- `redistributedPages`: optional number[] (loose pages recalled by a later redistribution, retained as audit history)
 - `released`: optional true (marks that pages were returned to the pool due to a miss)
+
+### 4. `content/global` (GlobalContent)
+
+The single admin-editable content document.
+
+- `du3aText`: string (du3a2 al-khatma shown on completion — REQUIREMENTS §7)
 
 ---
 
@@ -310,3 +319,26 @@ The centralized MUI RTL theme lives in `src/theme/` (`muiTheme.ts`, `rtlCache.ts
 `spacing`, and `breakpoints` with `direction: 'rtl'`. Application-specific CSS
 (Quran typography, reading scale, safe areas, icon masks) remains in
 `globalStyles.ts` rather than being forced into component overrides (AD-09).
+
+---
+
+## Security
+
+**There is no authentication in this app** — this is a deliberate, accepted
+trade-off for a trusted community of senior users (REQUIREMENTS §3, §4, §8).
+Understand exactly what that means:
+
+- The Firebase web config ships in the **public client bundle**. It is not a
+  secret and cannot be hidden.
+- Firestore security rules ([`firestore.rules`](firestore.rules)) can therefore
+  only **validate document shape and reject unknown paths** — they are **not an
+  identity boundary**. Anyone who finds the config could write to the database.
+- The admin app is protected only by an **unguessable URL** (`admin-nano.html`),
+  never linked from the member app. This is obscurity, not access control.
+- Member identity is a **trust-based** localStorage cache (`useRememberedMemberId`
+  in [`src/app/persistence/browserPersistence.ts`](src/app/persistence/browserPersistence.ts));
+  anyone could tap a wrong name, and the admin can correct mistaken marks.
+
+Do not add features that assume these rules protect data by identity. If real
+protection is ever needed, it requires introducing authentication (out of scope
+for v1) and rewriting the rules around it.

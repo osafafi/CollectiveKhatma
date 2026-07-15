@@ -105,7 +105,7 @@ do not disrupt in-progress forms.
 | RM-640 | Emulator cross-client validation   | Joint                     | DONE        | RM-610         | Two production-source clients pass writes/distribution/completion/reload/cleanup locally.   |
 | RM-650 | Accessibility, RTL, responsive QA  | Joint                     | DONE        | RM-620         | RTL keyboard/portal/layout contracts pass; focus and tinted-status contrast defects fixed.  |
 | RM-660 | Authorized staging/live smoke test | Project owner + one agent | NOT STARTED | RM-640, RM-650 | With explicit authorization, production-like Firebase reads/writes pass without deployment. |
-| RM-670 | Update all project documentation   | Joint                     | NOT STARTED | RM-620, RM-630 | User/developer docs match final implementation and setup.                                   |
+| RM-670 | Update all project documentation   | Joint                     | DONE        | RM-620, RM-630 | User/developer docs match final implementation and setup (RM-670).                          |
 
 Phase exit: both production entries use React, legacy UI/Tailwind are gone, and
 the app is validated end to end without changing `main` prematurely.

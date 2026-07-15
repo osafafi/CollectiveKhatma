@@ -24,8 +24,9 @@ implemented across the domain, data, state, and presentation layers.
    - [distribution.ts](src/domain/distribution.ts): Core round planner settles pending chunks (re-pooling missed pages), orders members, handles mid-round rollovers to N+1, and identifies completed khatmas.
    - [series.ts](src/domain/series.ts): Utilities for series grouping, titles, and next number calculations.
    - [progress.ts](src/domain/progress.ts): Progress calculations based on round counts and done/released pages.
-   - [assignment.ts](src/domain/assignment.ts) / [schedule.ts](src/domain/schedule.ts): Pruned obsolete duration math, schedule checks, and legacy generators.
-   - Tests: 48 passing tests including comprehensive planner logic in [distribution.test.ts](tests/domain/distribution.test.ts).
+   - [assignment.ts](src/domain/assignment.ts): Resolves a page scope to a flat page pool. Obsolete duration math, schedule checks, and legacy generators were pruned during the round-based redesign.
+   - [rotation.ts](src/domain/rotation.ts) / [validation.ts](src/domain/validation.ts): First-choice rotation by `seriesNumber` and shared input validation.
+   - Tests: comprehensive planner logic in [distribution.test.ts](tests/domain/distribution.test.ts).
 
 2. **Data-access Layer**:
    - [distribution.ts](src/data/distribution.ts): Implemented transactional `runDistribution` with same-day distribution blocks, atomic writes, and rollover setup.
@@ -70,10 +71,21 @@ npm run typecheck && npm run lint && npm test && npm run build
 
 ## Next Steps
 
-1. **Staging / Production Testing**:
-   - Run a thorough pass against a live Firestore project rather than the local emulator (`VITE_USE_EMULATOR=false`).
-   - Deploy rules: `firebase deploy --only firestore:rules --project collectivekhatma`.
-2. **Icons Customization**:
-   - Verify that dropping custom PNG files into `public/icons/` correctly replaces the default SVG graphics.
-3. **Security Slug Setup**:
-   - Change `admin-nano.html` and its mapping in `vite.config.ts` to a random secret slug prior to final release.
+The remaining React-migration work is tracked in
+[`docs/react-migration/TRACKER.md`](docs/react-migration/TRACKER.md):
+
+1. **Authorized staging/live smoke test (RM-660)** — with explicit project-owner
+   authorization only, run a pass against a live Firestore project rather than the
+   local emulator, and deploy rules with `npm run deploy:rules`. Do not deploy
+   from the migration branch.
+2. **Merge readiness (RM-700–RM-740)** — final clean quality suite, delta review
+   against `main`, joint code/behavior review, merge summary + rollback plan, and
+   owner-approved merge.
+
+Pre-release operational checklist (unchanged by the migration):
+
+- **Icons**: dropping custom PNG files into `public/icons/` should replace the
+  default SVG graphics at runtime.
+- **Security slug**: change `admin-nano.html` and its `ADMIN_ENTRY` mapping in
+  `vite.config.ts` to a random secret slug before release, and never link to it
+  from the member app.
