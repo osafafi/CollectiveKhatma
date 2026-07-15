@@ -30,15 +30,22 @@ no passwords, no app-store installs for members.
 
 ## 3. Tech stack & architecture
 
+> **Note (React migration).** The UI stack below was originally specified as
+> plain HTML + Tailwind CSS with no framework. It has since been migrated to
+> **React + Material UI (MUI)**, and this section reflects the shipped stack. The
+> static-site, no-server, Firestore-only, and layered-architecture requirements
+> are unchanged. See [ARCHITECTURE.md](ARCHITECTURE.md) and the
+> [migration tracker](docs/react-migration/TRACKER.md).
+
 - **Language**: TypeScript everywhere — both the member-facing app and the
   admin app. No untyped JS.
-- **UI**: plain HTML + Tailwind CSS. No frontend framework (no React,
-  Vue, Angular, etc.) — this stays a static site buildable/deployable to
-  GitHub Pages.
-- **Theming**: a single centralized theme (design tokens: colors,
-  spacing, font sizes, radii) that the *developer* can edit in one place
-  (e.g. a Tailwind config + a small set of CSS variables) to restyle the
-  whole app without touching individual pages. This is a developer-only
+- **UI**: **React + Material UI (MUI)**, with Redux Toolkit for state and React
+  Router (hash routing) for navigation. This stays a static site
+  buildable/deployable to GitHub Pages — there is still no custom server.
+- **Theming**: a single centralized **MUI RTL theme** (design tokens: colors,
+  spacing, font sizes, radii, breakpoints) plus a small set of retained global
+  styles, all editable by the *developer* in one place (`src/theme/`) to restyle
+  the whole app without touching individual screens. This is a developer-only
   concern — the admin never edits styling, only content (roster, khatmas,
   du3a text).
 - **Code architecture**: clean, functional-oriented, clearly separated
@@ -48,12 +55,11 @@ no passwords, no app-store installs for members.
   - A domain/logic layer (pure functions: page-assignment algorithm,
     progress/insight calculations, validation) with no DOM or Firestore
     dependencies — easy to unit test in isolation.
-  - A UI layer (rendering + event wiring) that calls into the above two
-    layers, with no business logic embedded in it.
-  - No hardcoded strings/markup baked into HTML files — all user-facing
-    Arabic text lives in a single source (e.g. a strings/content module),
-    and HTML is generated/populated from TypeScript, not hand-authored with
-    inline copy.
+  - A React presentation layer (components + routing + Redux) that calls into
+    the above two layers, with no business logic embedded in it.
+  - No hardcoded strings baked into components — all user-facing Arabic text
+    lives in a single content module (`src/content/strings.ar.ts`), and screens
+    render from it rather than inline copy.
 - **Backend**: **Firebase (Firestore)**, chosen specifically because this
   is a first BaaS project for the developer — Firestore's client SDK is
   simple to drop into a plain TS/HTML site, has realtime listeners (so
@@ -113,10 +119,10 @@ Khatmas belong to named series and operate without fixed schedules, durations, o
 - **Open-Ended Lifecycle**: A khatma has no `startDate` or `durationDays`. It is completed only when all pages in its page scope are successfully read.
 - **Named Series & Numbering**: Khatmas are organized into series with stable `seriesId` identifiers. As one khatma finishes, the next one continues the sequence (e.g., "أهل القرآن 1" → "أهل القرآن 2").
 - **Admin-Triggered Daily Rounds**: Instead of split schedules, the admin manually triggers a daily distribution round by clicking a button. 
-- **Auto-Flagging & Returned Pages**: 
+- **Auto-Flagging & Held Pages**:
   - Members who fail to finish their assigned pages before the next distribution round are flagged.
   - The first miss flags the member as **Yellow** (warning). A second consecutive miss flags them as **Red**.
-  - Their unread pages are automatically returned to the remaining page pool. This ensures that low page numbers never lag and the pool remains sequential.
+  - Their unread pages remain assigned, block a new assignment, and return to the sorted remaining-page pool only when the admin explicitly releases the chunk.
 - **Rollover & Coexistence**:
   - When the oldest khatma's remaining page pool drains mid-distribution round, the system seals that khatma (N) and automatically spawns the next numbered khatma (N+1) under the same series.
   - Chunks never span two different khatmas; the member at the boundary receives a short chunk from N, and subsequent members draw from N+1.

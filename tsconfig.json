@@ -9,6 +9,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "jsx": "react-jsx",
     "noEmit": true,
 
     "strict": true,
@@ -24,5 +25,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "scripts", "tests", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "scripts",
+    "tests",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

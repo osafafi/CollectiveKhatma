@@ -89,8 +89,10 @@ async function seedRoster(): Promise<SeededPerson[]> {
  * Create "أهل القرآن 1" and replay two distribution rounds through the real
  * `planDistribution` engine, exactly as the admin app would apply them:
  *  - Round 1 (two days ago): everyone served; مريم doesn't read hers.
- *  - Round 2 (yesterday): مريم's page is released (yellow flag) and re-served
- *    to the group; everyone but مريم finishes their new chunk.
+ *  - Round 2 (yesterday): مريم still holds her unread page, so she is skipped
+ *    and her warning escalates to yellow — the engine never auto-releases the
+ *    chunk (invariant 2), it stays pending with her; everyone else settles
+ *    round 1 and takes a fresh chunk from the pool.
  * Leaves `lastDistributionDate` = yesterday, so "Distribute" works today.
  */
 async function seedKhatma(members: SeededPerson[]): Promise<void> {

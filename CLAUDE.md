@@ -5,6 +5,34 @@
 `CLAUDE.md` is the single source of repository instructions for ALL coding agents.
 Keep project guidance here and do not create or maintain a duplicate `AGENTS.md`.
 
+### Active React migration
+
+On the `reactmigration` branch (or a `reactmig-*` task branch), begin with
+[`docs/react-migration/NOW.md`](docs/react-migration/NOW.md). Read only the active
+task record, relevant tracker phase, and exact reference sections named there.
+Do not bulk-read all migration documents or historical records.
+
+Canonical migration sources:
+
+- Current state/handoff: [`NOW.md`](docs/react-migration/NOW.md)
+- Task owner/status/dependencies: [`TRACKER.md`](docs/react-migration/TRACKER.md)
+- Stable governance/architecture/gates: [`PLAN.md`](docs/react-migration/PLAN.md)
+- Detailed active-task evidence: [`tasks/`](docs/react-migration/tasks/)
+
+For Material UI implementation or review, use the configured MUI MCP server
+when API behavior, version-specific guidance, component patterns, or generated
+React/MUI scaffolding would be useful. Check `package.json` first and pass the
+installed Material UI / MUI X major pairing rather than relying on the server's
+latest-version default. Treat MCP output as reference material: adapt it to this
+repository's RTL theme, shared primitives, accessibility rules, and tests. MUI
+Recipes code generation also requires `MUI_RECIPES_API_KEY` in the environment.
+
+At task claim and completion, update the affected tracker row and task record,
+then **rewrite** `NOW.md`; never append a session log. Partial migration work
+must not be merged to `main`, and cross-agent handoff still requires a clean,
+committed exact hash. The branch strategy and final owner-approval gate in
+`PLAN.md` remain binding.
+
 ## Reference Commands
 
 ### Build & Validate
@@ -27,10 +55,11 @@ Keep project guidance here and do not create or maintain a duplicate `AGENTS.md`
 Strict one-directional dependency rule enforced by ESLint:
 
 - **`src/data/`**: The ONLY layer that can import `firebase/*` or `firebase/firestore`. Communicates with Firestore.
-- **`src/domain/`**: Pure business logic (calculators, types, algorithms). MUST stay pure (no imports from `firebase`, `data`, or `ui`).
+- **`src/domain/`**: Pure business logic (calculators, types, algorithms). MUST stay pure (no imports from Firebase, data access, app, components, or theme).
 - **`src/content/`**: Raw Quran text/metadata, static surah maps, and Arabic strings ([strings.ar.ts](src/content/strings.ar.ts)). No business logic.
-- **`src/theme/`**: CSS styling system and reading scale configuration.
-- **`src/ui/`**: Builds DOM, handles events, and bridges UI to `data` and `domain`.
+- **`src/theme/`**: Centralized MUI/RTL theme, retained global styles, and reading scale configuration.
+- **`src/app/`**: React entries, providers, routing, Redux store, member/admin composition, and write-operation adapters.
+- **`src/components/`**: Shared React primitives, navigation, charts, icons, and feedback.
 
 ---
 
@@ -38,14 +67,12 @@ Strict one-directional dependency rule enforced by ESLint:
 
 ```
 src/
-├── data/             firebase.ts (init), roster.ts, khatmas.ts, assignments.ts, distribution.ts
-├── domain/           types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts
+├── app/              entries, providers, routing, store, operations, persistence, member/, admin/
+├── components/       primitives, navigation, charts, icons, feedback
+├── data/             firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts, content.ts
+├── domain/           types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts, validation.ts
 ├── content/          strings.ar.ts, quran/
-├── theme/            theme.css, reading.ts
-└── ui/
-    ├── shared/       router.ts, nav.ts, components.ts, charts.ts, icons.ts
-    ├── member/       render.ts, pages/khatmas.ts, reader.ts
-    └── admin/        render.ts, ctx.ts, routes.ts, nav.ts, pages/{home,khatma,khatmas,roster,settings}.ts
+└── theme/            muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts, fonts/
 ```
 
 ---
