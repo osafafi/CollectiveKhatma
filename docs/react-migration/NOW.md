@@ -5,81 +5,77 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                              |
-| ------------------------------------- | ---------------------------------------------------------- |
-| Integration branch                    | `reactmigration`                                           |
-| Branch base                           | `6992007` (`main` at migration start)                      |
-| Last completed code task              | RM-550 — form-draft stability (with RM-540)                |
-| Last completed code commit            | `907e35d` (RM-520+530); RM-540+550 complete on-branch, **commit pending** |
-| Active migration task                 | None                                                       |
-| Current phase                         | Phase 5 — admin application migration                      |
-| Next recommended task                 | RM-560 — Admin component/integration tests                 |
-| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740      |
-| Last updated                          | 2026-07-14                                                 |
+| Field                                 | Current value                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| Integration branch                    | `reactmigration`                                                               |
+| Branch base                           | `6992007` (`main` at migration start)                                          |
+| Last completed code task              | RM-560 — Admin component/integration tests                                     |
+| Last completed code commit            | `6402cf7` (RM-540+550); RM-560 + RM-570 complete on-branch, **commit pending** |
+| Active migration task                 | None                                                                           |
+| Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation                          |
+| Next recommended task                 | RM-600 — Cut over member entry to React                                        |
+| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740                          |
+| Last updated                          | 2026-07-15                                                                     |
 
-RM-540 + RM-550 migrated the **Admin Settings route** and pinned **form-draft
-stability** across every admin form. With RM-540 the admin app has **no route
-placeholders left** — all five hashes render real pages. Gates clean
-(typecheck / lint / **231** tests, +9, 1 skipped); emulator-verified.
+RM-560 + RM-570 close **Phase 5**. The React admin app now has an integration
+test layer and a live, emulator-backed parity sign-off. Gates clean (typecheck /
+lint / **235** tests, +4, 1 skipped); admin preview walked on mobile + desktop
+RTL with a live write round-trip.
 
-## Handoff from RM-540 + RM-550
+## Handoff from RM-560 + RM-570
 
-- **RM-540** `#/settings` — `src/app/admin/pages/SettingsPage.tsx`
-  (`AdminSettingsPage`): the du3a editor (`Du3aEditor` — seeded from live
-  `content.du3aText`, `setDu3aText` on save, `saved`/`saveError` status, **P3**
-  touched guard) and the shared reading-scale control.
-- **New shared primitive** `src/components/primitives/ReadingScaleControl.tsx`:
-  the 1–5 reading-scale `<details>` popover **extracted from the member
-  `SettingsPage`** so both apps use one control (**P11**, reused not forked). The
-  member page now consumes it (its RM-420 tests unchanged).
-- **`AdminApp`** `AdminRouteContent` now lifts `useReadingScale()` +
-  `settingsOpen` (like the member app), routes `settings` → the real page, and
-  **the dead `AdminRoutePlaceholder` / `PENDING_ROUTE_HEADING` are removed**.
-- **RM-550** — `tests/app/admin-draft-stability.test.tsx`: one consolidated proof
-  that live snapshots don't clobber drafts — P2 create form, P2 edit card, P2
-  add-person, P4 search caret. P3 (du3a) lives in `admin-settings.test.tsx`. No
-  source changes; the stability already existed (RM-510 draft-scope delta).
-- Intentional deltas (in the task records): du3a save carries `role`+tone (a11y);
-  drafts are component-local/route-scoped (P2/P3); the reading scale is one shared
-  localStorage-backed control (P11).
+- **RM-560** `tests/app/admin-integration.test.tsx` (4 scenarios) — the admin
+  parallel of `member-integration.test.tsx`: cross-feature journeys through the
+  composed `AdminExperience`. (1) create → live snapshot → detail → edit (CRUD +
+  validation); (2) distribute → completion snapshot drops the khatma **and
+  releases its listener** (**P10**); (3) navigation off a completed detail
+  releases only that listener while the active one persists (**P9→P10**); (4)
+  distribution error → alert → re-enabled → retry succeeds (error flow). No source
+  changes. The steady-state admin P-rows were already covered (P7/P8/P9 in
+  `admin-home`, P2/P3/P4 in `admin-draft-stability`/`admin-settings`); RM-560 adds
+  only the dynamic P10 the per-route suites do not exercise.
+- **RM-570** admin parity review — all §3 routes + §1/§6 confirmed live on the
+  emulator (metrics, roster search+caret, create scope/members/capacity/reciter/
+  continuation note, detail members/warning/return-to-pool/history, settings du3a
+  seeded from Firestore + shared reading scale, desktop right-rail vs mobile
+  bottom-bar RTL). One live `updatePerson` round-trip proved the write path.
+  **OD-03 already RESOLVED (RM-460)** — the admin app inherits the same
+  centralized refreshed theme (palette values match RM-460 exactly), so its visual
+  layer is the same approved delta; no new owner decision was needed.
+- Observation (shared, not a blocker): route headings render ink `#26312b` — the
+  `color="primary.main"` prop yields no color rule on the h2 heading, **identical
+  in the member app** (accepted in RM-460), legible, under the refresh umbrella.
+  A candidate for a future shared-theme touch-up, recorded in `tasks/RM-570.md`.
 
-## Next-session read set — RM-560 (Admin component/integration tests)
+## Next-session read set — RM-600 (Cut over member entry to React)
 
-Read only after the RM-540 + RM-550 exact-hash handoff commit:
+Read only after the RM-560 + RM-570 exact-hash handoff commit:
 
-1. This file + the Phase 5 table in
-   [`TRACKER.md`](TRACKER.md#phase-5--admin-application-migration).
-2. Create `tasks/RM-560.md` while claiming, from its tracker acceptance
-   (critical CRUD, distribution, validation, listener, and error flows).
-3. The existing admin suites to consolidate/extend, not duplicate:
-   `tests/app/admin-{home,roster,khatmas,khatma,settings,draft-stability}.test.tsx`
-   and the shared harness `tests/support/reactTestHarness.tsx`.
-4. Inventory §4 (the P1–P11 risk oracle) — RM-560 is where the remaining admin
-   P-rows (listener sets **P9**, same-day guard **P7**, busy-disable **P8**) get
-   their explicit regression tests if a prior task did not already cover them.
+1. This file + the Phase 6 table in
+   [`TRACKER.md`](TRACKER.md#phase-6--cutover-cleanup-and-end-to-end-validation).
+2. Create `tasks/RM-600.md` while claiming, from its tracker acceptance
+   (production member entry mounts React; smoke + build checks pass).
+3. The production entry wiring: `vite.config.ts` inputs (`index.html` = member
+   production, `react-preview.html` = the React member preview) and the entries
+   `src/app/entries/member.tsx` vs the legacy member bootstrap. RM-600 flips the
+   **production** member entry to the React tree without disturbing the admin
+   entry (admin cutover is RM-610, and depends on RM-600).
+4. The bundle budgets (RM-040) — member 350/400 kB JS/transfer — since a cutover
+   changes what production ships; re-run the budget/build check.
 
 ## Risks / notes for next task
 
-- Prefer **extending** the per-route admin suites over a new mega-file; the
-  harness already seeds Firestore publishers and swappable write operations.
-- **Screenshots** in the preview browser were timing out this session (a
-  browser-pane quirk, not an app fault — `read_page`/`javascript_tool` and the
-  console were clean). Verify via `read_page` + `get_page_text` if it recurs.
-- The seed script (`npm run seed`) was verified this session — see below.
-
-## Emulator seed status (verified 2026-07-14)
-
-`scripts/seed-emulator.ts` seeds **correctly**: cleared + re-seeded, then checked
-every CLAUDE.md invariant (page conservation over 1..604 = 0 missing / 0 double,
-streak/warning, `completedPages`, round settling) — all hold. The Home dashboard
-renders the intended demo (أهل القرآن ١, ١٠٪, ٦٠ read · ١ pending · ٥٤٣ remaining,
-مريم yellow). Only fix applied: a **misleading docstring** in `seedKhatma` (it
-claimed round 2 *releases + re-serves* مريم's page; the engine never auto-releases
-— she keeps it pending). The `MetadataLookupWarning` on run is a benign
-firebase-admin metadata probe, not a seed fault.
+- Partial migration must not reach `main`; cross-agent handoff needs a clean,
+  committed exact hash (this session's RM-560 + RM-570 commit is **pending**).
+- **Screenshots** in the preview browser time out (a browser-pane quirk, not an
+  app fault — `read_page`/`get_page_text`/`javascript_tool`/console are clean).
+  Verify via the DOM/a11y tree + computed styles, as RM-460/RM-570 did.
+- The emulator seed (`npm run seed`) is verified working; RM-600 is a production
+  entry/build change, so prioritize `npm run build` + a member smoke over jsdom.
+- RM-610 (admin cutover) is unblocked by RM-570 but gated on RM-600 first.
 
 ## Claim protocol
 
-Confirm this clean handoff, flip only the RM-560 tracker row to `IN PROGRESS`,
+Confirm this clean handoff, flip only the RM-600 tracker row to `IN PROGRESS`,
 create its task record, rewrite this file with active scope/read set/risks, and
 run the smallest useful baseline check. Do not append a chronological session log.

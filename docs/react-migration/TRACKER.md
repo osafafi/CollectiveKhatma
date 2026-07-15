@@ -80,16 +80,16 @@ do not reset reader state.
 
 ## Phase 5 — Admin application migration
 
-| ID     | Task                              | Owner  | Status      | Depends on                             | Concise acceptance/evidence                                                             |
-| ------ | --------------------------------- | ------ | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
-| RM-500 | Admin shell and Home dashboard    | Claude | DONE        | RM-240, RM-250, RM-310, RM-320         | Metrics, warnings, distribute/redistribute, same-day guard, and status outcomes match (RM-500). |
-| RM-510 | Roster route                      | Claude | DONE        | RM-250, RM-320                         | Search (caret/focus), CRUD, min-1 stepper, enablement, uniqueness, and confirmation match (RM-510). |
-| RM-520 | Khatmas list/create/continue      | Claude | DONE        | RM-250, RM-320                         | Scope, continuation, members, capacities, validation, and drafts work (RM-520).         |
-| RM-530 | Khatma detail route               | Claude | DONE        | RM-250, RM-320                         | Progress, assignments, edits, releases, warnings, completion, delete, and history work (RM-530). |
-| RM-540 | Admin Settings route              | Claude | DONE        | RM-250, RM-320                         | Global du3a edit/save/error and shared reading-scale control match baseline (RM-540).    |
-| RM-550 | Prove form-draft stability        | Claude | DONE        | RM-500, RM-510, RM-520, RM-530, RM-540 | Live snapshots keep create/edit/add-person/du3a drafts and search caret intact (RM-550). |
-| RM-560 | Admin component/integration tests | Claude | NOT STARTED | RM-550                                 | Critical CRUD, distribution, validation, listener, and error flows automated.           |
-| RM-570 | Admin parity review               | Joint  | NOT STARTED | RM-560                                 | Root inventory admin checklist passes mobile/desktop RTL or differences are approved.   |
+| ID     | Task                              | Owner  | Status | Depends on                             | Concise acceptance/evidence                                                                         |
+| ------ | --------------------------------- | ------ | ------ | -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| RM-500 | Admin shell and Home dashboard    | Claude | DONE   | RM-240, RM-250, RM-310, RM-320         | Metrics, warnings, distribute/redistribute, same-day guard, and status outcomes match (RM-500).     |
+| RM-510 | Roster route                      | Claude | DONE   | RM-250, RM-320                         | Search (caret/focus), CRUD, min-1 stepper, enablement, uniqueness, and confirmation match (RM-510). |
+| RM-520 | Khatmas list/create/continue      | Claude | DONE   | RM-250, RM-320                         | Scope, continuation, members, capacities, validation, and drafts work (RM-520).                     |
+| RM-530 | Khatma detail route               | Claude | DONE   | RM-250, RM-320                         | Progress, assignments, edits, releases, warnings, completion, delete, and history work (RM-530).    |
+| RM-540 | Admin Settings route              | Claude | DONE   | RM-250, RM-320                         | Global du3a edit/save/error and shared reading-scale control match baseline (RM-540).               |
+| RM-550 | Prove form-draft stability        | Claude | DONE   | RM-500, RM-510, RM-520, RM-530, RM-540 | Live snapshots keep create/edit/add-person/du3a drafts and search caret intact (RM-550).            |
+| RM-560 | Admin component/integration tests | Claude | DONE   | RM-550                                 | Critical CRUD, distribution, validation, listener, and error flows automated (RM-560).              |
+| RM-570 | Admin parity review               | Joint  | DONE   | RM-560                                 | Admin checklist passes mobile/desktop RTL live; refresh inherited from RM-460 (RM-570).             |
 
 Phase exit: the React admin preview has functional parity and realtime updates
 do not disrupt in-progress forms.
