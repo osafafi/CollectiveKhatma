@@ -116,6 +116,6 @@ the app is validated end to end without changing `main` prematurely.
 | ------ | ----------------------------------- | -------------- | ----------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
 | RM-700 | Final clean quality suite           | Joint          | DONE        | RM-630, RM-640, RM-650, RM-670 | Clean `npm ci`; typecheck, lint, 225 tests, build, and bundle budgets pass (RM-700).      |
 | RM-710 | Review delta against current `main` | Joint          | DONE        | RM-700                         | 226-file delta all intentional; `main` unmoved at base, 0 to reconcile, FF-able (RM-710). |
-| RM-720 | Joint code/behavior review          | Codex + Claude | NOT STARTED | RM-710                         | Boundaries, subscriptions, parity, dead code, docs, and risks jointly reviewed.           |
+| RM-720 | Joint code/behavior review          | Codex + Claude | DONE        | RM-710                         | Review clean after 3 low-risk fixes; 225 tests and budgets pass (RM-720).                 |
 | RM-730 | Merge summary and rollback plan     | Codex          | NOT STARTED | RM-720                         | Summary covers changes, verification, bundles, data compatibility, risks, rollback.       |
 | RM-740 | Owner approval and merge to `main`  | Project owner  | NOT STARTED | RM-730                         | Explicit owner authorization is obtained before merge.                                    |

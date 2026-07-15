@@ -9,7 +9,7 @@ import {
 export type MemberRouteLinkProps = Omit<LinkProps, 'to'> & { to: MemberRoute };
 export type AdminRouteLinkProps = Omit<LinkProps, 'to'> & { to: AdminRoute };
 
-/** Typed links for the future member and admin React navigation shells. */
+/** Typed links for member and admin navigation inside the shared hash router. */
 export function MemberRouteLink({ to, ...props }: MemberRouteLinkProps) {
   return <Link {...props} to={memberRoutePath(to)} />;
 }

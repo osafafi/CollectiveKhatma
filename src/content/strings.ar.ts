@@ -97,6 +97,7 @@ export const strings = {
   reader: {
     browseTitle: 'المصحف الشريف',
     surah: 'السورة',
+    surahHeading: 'سورة',
     juz: 'الجزء',
     page: 'صفحة',
     of: 'من',

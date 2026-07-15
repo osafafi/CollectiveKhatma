@@ -119,10 +119,10 @@ Khatmas belong to named series and operate without fixed schedules, durations, o
 - **Open-Ended Lifecycle**: A khatma has no `startDate` or `durationDays`. It is completed only when all pages in its page scope are successfully read.
 - **Named Series & Numbering**: Khatmas are organized into series with stable `seriesId` identifiers. As one khatma finishes, the next one continues the sequence (e.g., "أهل القرآن 1" → "أهل القرآن 2").
 - **Admin-Triggered Daily Rounds**: Instead of split schedules, the admin manually triggers a daily distribution round by clicking a button. 
-- **Auto-Flagging & Returned Pages**: 
+- **Auto-Flagging & Held Pages**:
   - Members who fail to finish their assigned pages before the next distribution round are flagged.
   - The first miss flags the member as **Yellow** (warning). A second consecutive miss flags them as **Red**.
-  - Their unread pages are automatically returned to the remaining page pool. This ensures that low page numbers never lag and the pool remains sequential.
+  - Their unread pages remain assigned, block a new assignment, and return to the sorted remaining-page pool only when the admin explicitly releases the chunk.
 - **Rollover & Coexistence**:
   - When the oldest khatma's remaining page pool drains mid-distribution round, the system seals that khatma (N) and automatically spawns the next numbered khatma (N+1) under the same series.
   - Chunks never span two different khatmas; the member at the boundary receives a short chunk from N, and subsequent members draw from N+1.

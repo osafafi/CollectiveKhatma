@@ -194,11 +194,9 @@ Watch-outs: <short list or none>
 | Admin drafts overwritten by snapshots            | Pristine/touched local drafts and RM-550 tests.                   |
 | MUI RTL defects in portals/icons                 | RTL cache, logical properties, RM-650 QA.                         |
 | Bundle growth on older phones                    | Budget gate, lazy routes, direct imports, RM-630.                 |
-| Tailwind/MUI transition conflicts                | Isolated previews; remove Tailwind only at RM-620.                |
 | Firebase tooling dev advisories                  | Production audit clean; monitor rather than force breaking fixes. |
 | Two agents edit the shared tree                  | Sequential single-writer and committed handoffs.                  |
 | Accidental domain/data behavior change           | Preserve boundaries; record separate defect tasks.                |
-| `main` advances during migration                 | Reconcile intentionally at RM-710.                                |
 | Hidden admin URL remains unauthenticated         | Accepted existing risk; React is not a security change.           |
 
 ## Open and resolved owner decisions
@@ -216,18 +214,18 @@ Watch-outs: <short list or none>
 
 Every item must pass before RM-740:
 
-- [ ] Member and admin parity reviews are complete.
-- [ ] Existing domain/data and new React tests are green.
-- [ ] Clean install, typecheck, lint, tests, build, and CI pass on Node 24 LTS.
-- [ ] Firestore listeners start once, surface errors, and clean up.
-- [ ] Remote changes update open clients without refresh.
-- [ ] Reader page and scroll state survive unrelated realtime updates.
-- [ ] Admin form drafts survive unrelated realtime updates.
-- [ ] Mobile/desktop RTL, accessibility, senior sizing, and portals pass.
-- [ ] Final bundle sizes are measured and accepted.
-- [ ] No unintended schema, rule, or domain behavior change exists.
-- [ ] Legacy DOM UI and Tailwind are removed or an exception is approved.
-- [ ] Final setup, architecture, contributor, and progress docs are accurate.
-- [ ] `main` received no partial migration work.
+- [x] Member and admin parity reviews are complete.
+- [x] Existing domain/data and new React tests are green.
+- [x] Clean install, typecheck, lint, tests, build, and CI pass on Node 24 LTS.
+- [x] Firestore listeners start once, surface errors, and clean up.
+- [x] Remote changes update open clients without refresh.
+- [x] Reader page and scroll state survive unrelated realtime updates.
+- [x] Admin form drafts survive unrelated realtime updates.
+- [x] Mobile/desktop RTL, accessibility, senior sizing, and portals pass.
+- [x] Final bundle sizes are measured and accepted.
+- [x] No unintended schema, rule, or domain behavior change exists.
+- [x] Legacy DOM UI and Tailwind are removed or an exception is approved.
+- [x] Final setup, architecture, contributor, and progress docs are accurate.
+- [x] `main` received no partial migration work.
 - [ ] Rollback plan is credible.
 - [ ] The project owner explicitly approves the merge.

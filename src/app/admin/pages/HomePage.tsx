@@ -8,9 +8,14 @@ import {
 } from '@/app/store';
 import { useWriteOperation, type OperationState } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
-import { adminHash } from '@/app/routing/routes';
+import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, SegmentBar } from '@/components/charts';
-import { AppButton, NestedSurface, StatusChip, SurfaceCard } from '@/components/primitives';
+import {
+  AppButton,
+  NestedSurface,
+  StatusChip,
+  SurfaceCard,
+} from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
@@ -151,7 +156,8 @@ function KhatmaMetrics({
       <DonutChart percent={progress.percent} size={88} />
       <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
         <Link
-          href={adminHash.khatma(khatma.id)}
+          component={AdminRouteLink}
+          to={{ name: 'khatma', id: khatma.id }}
           underline="always"
           color="primary.main"
           sx={{ alignSelf: 'start', fontWeight: 600 }}
@@ -202,7 +208,14 @@ function PendingReaders({
   if (rows.length === 0) return null;
 
   return (
-    <Box sx={{ borderRadius: 3, bgcolor: 'background.default', p: 3, color: 'text.secondary' }}>
+    <Box
+      sx={{
+        borderRadius: 3,
+        bgcolor: 'background.default',
+        p: 3,
+        color: 'text.secondary',
+      }}
+    >
       <Typography sx={{ fontWeight: 600 }}>{strings.admin.pendingHeading}</Typography>
       <Stack
         component="ul"
@@ -256,7 +269,9 @@ function Warnings({
           key={memberId}
           tone={level === 'red' ? 'danger' : 'warning'}
           label={`⚠ ${memberName(roster, memberId)} · ${
-            level === 'red' ? strings.admin.warningRedWord : strings.admin.warningYellowWord
+            level === 'red'
+              ? strings.admin.warningRedWord
+              : strings.admin.warningYellowWord
           }`}
         />
       ))}
@@ -272,7 +287,7 @@ function memberName(roster: readonly Person[], memberId: string): string {
 function pageRanges(pages: readonly number[]): string {
   const sorted = [...new Set(pages)].sort((a, b) => a - b);
   const ranges: string[] = [];
-  for (let i = 0; i < sorted.length; ) {
+  for (let i = 0; i < sorted.length;) {
     const start = sorted[i]!;
     let end = start;
     while (i + 1 < sorted.length && sorted[i + 1] === end + 1) {
@@ -426,7 +441,8 @@ function distributionStatus(
         : strings.admin.distributeSuccess,
     ];
     if (state.result.rolloverKhatmaId) notes.push(strings.admin.rolloverNote);
-    if (state.result.completedKhatmaIds.length > 0) notes.push(strings.admin.completedNote);
+    if (state.result.completedKhatmaIds.length > 0)
+      notes.push(strings.admin.completedNote);
     return { text: notes.join(' · '), tone: 'success' };
   }
   if (state.status === 'failure') {

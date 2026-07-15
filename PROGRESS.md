@@ -7,8 +7,8 @@ Living status doc tracking the development of the collective Quran khatma tracke
 - Setup / run / deploy → [README.md](README.md)
 
 **Last updated:** 2026-07-15 — Both production entries now mount React. Legacy
-DOM renderers and Tailwind have been removed; final bundle and migration
-validation work is tracked in `docs/react-migration/TRACKER.md`.
+DOM renderers and Tailwind have been removed; merge-readiness review and handoff
+work is tracked in `docs/react-migration/TRACKER.md`.
 
 ---
 
@@ -21,7 +21,7 @@ implemented across the domain, data, state, and presentation layers.
 
 1. **Domain Layer (Pure & Tested)**:
    - [types.ts](src/domain/types.ts): Defined shapes for `Khatma`, `Assignment`, `RoundChunk`, and `WarningLevel`.
-   - [distribution.ts](src/domain/distribution.ts): Core round planner settles pending chunks (re-pooling missed pages), orders members, handles mid-round rollovers to N+1, and identifies completed khatmas.
+   - [distribution.ts](src/domain/distribution.ts): Core round planner holds pending chunks with their readers until explicit admin release, orders ready members, handles mid-round rollovers to N+1, and identifies completed khatmas.
    - [series.ts](src/domain/series.ts): Utilities for series grouping, titles, and next number calculations.
    - [progress.ts](src/domain/progress.ts): Progress calculations based on round counts and done/released pages.
    - [assignment.ts](src/domain/assignment.ts): Resolves a page scope to a flat page pool. Obsolete duration math, schedule checks, and legacy generators were pruned during the round-based redesign.
@@ -78,9 +78,9 @@ The remaining React-migration work is tracked in
    authorization only, run a pass against a live Firestore project rather than the
    local emulator, and deploy rules with `npm run deploy:rules`. Do not deploy
    from the migration branch.
-2. **Merge readiness (RM-700–RM-740)** — final clean quality suite, delta review
-   against `main`, joint code/behavior review, merge summary + rollback plan, and
-   owner-approved merge.
+2. **Merge readiness (RM-720–RM-740)** — complete the joint code/behavior review,
+   prepare the merge summary + rollback plan, then obtain owner approval before
+   merging.
 
 Pre-release operational checklist (unchanged by the migration):
 

@@ -13,7 +13,7 @@ import {
   useAppSelector,
 } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
-import { adminHash } from '@/app/routing/routes';
+import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { useQuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { useSurahs } from '@/app/admin/useSurahs';
 import {
@@ -62,7 +62,12 @@ export function AdminKhatmasPage() {
   const khatmas = useAppSelector(selectKhatmas);
 
   return (
-    <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatmas">
+    <Stack
+      component="section"
+      spacing={4}
+      data-react-surface="admin"
+      data-route="khatmas"
+    >
       <Typography component="h1" variant="h2" color="primary.main">
         {strings.admin.navKhatmas}
       </Typography>
@@ -108,7 +113,8 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
 
   return (
     <Link
-      href={adminHash.khatma(khatma.id)}
+      component={AdminRouteLink}
+      to={{ name: 'khatma', id: khatma.id }}
       underline="none"
       sx={{
         display: 'flex',
@@ -268,7 +274,8 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
     const seriesId = existing?.seriesId ?? safeUUID();
     const autoNumber = existing ? nextSeriesNumber(khatmas, seriesId) : 1;
     const override = parseInt(draft.seriesNumberOverride, 10);
-    const seriesNumber = Number.isInteger(override) && override > 0 ? override : autoNumber;
+    const seriesNumber =
+      Number.isInteger(override) && override > 0 ? override : autoNumber;
     const reciter = draft.memberIds.has(draft.reciterId)
       ? draft.reciterId
       : pickDuaReciter(ids, khatmas);
@@ -348,7 +355,9 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
                 <CapacityRow
                   key={person.id}
                   person={person}
-                  capacity={draft.memberCaps[person.id] ?? groupFallback(roster, person.id)}
+                  capacity={
+                    draft.memberCaps[person.id] ?? groupFallback(roster, person.id)
+                  }
                   surahs={surahs}
                   onChange={(patch) => setCapacity(person.id, patch)}
                 />
@@ -361,9 +370,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           label={strings.admin.reciterLabel}
           value={reciterValue}
           options={reciterOptions}
-          onChange={(value) =>
-            setDraft((current) => ({ ...current, reciterId: value }))
-          }
+          onChange={(value) => setDraft((current) => ({ ...current, reciterId: value }))}
         />
 
         <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: 'wrap' }}>
@@ -392,9 +399,21 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           />
         </Stack>
 
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <AppButton onClick={() => void onCreate()}>{strings.admin.createButton}</AppButton>
-          <AppButton variant="text" quiet color="inherit" onClick={() => setShowCreateForm(false)}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <AppButton onClick={() => void onCreate()}>
+            {strings.admin.createButton}
+          </AppButton>
+          <AppButton
+            variant="text"
+            quiet
+            color="inherit"
+            onClick={() => setShowCreateForm(false)}
+          >
             {strings.admin.cancel}
           </AppButton>
         </Stack>
@@ -452,7 +471,12 @@ function ScopeControls({
         }
       />
       {draft.scopeKind === 'range' ? (
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <AppTextField
             type="number"
             label={strings.admin.fromPage}
@@ -636,7 +660,12 @@ function scopeToDraftFields(scope: PageScope): Partial<CreateDraft> {
     };
   }
   if (scope.kind === 'surahs') {
-    return { scopeKind: 'surahs', rangeFrom: '1', rangeTo: '604', surahIds: new Set(scope.surahIds) };
+    return {
+      scopeKind: 'surahs',
+      rangeFrom: '1',
+      rangeTo: '604',
+      surahIds: new Set(scope.surahIds),
+    };
   }
   return { scopeKind: 'full', rangeFrom: '1', rangeTo: '604', surahIds: new Set() };
 }

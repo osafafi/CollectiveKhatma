@@ -11,7 +11,7 @@ no server or Cloud Functions. See [REQUIREMENTS.md](REQUIREMENTS.md) for the ful
 product spec and [ARCHITECTURE.md](ARCHITECTURE.md) for how the code is organized.
 
 > **Status:** The member and hidden admin production entries run on React. The
-> migration branch is in final cleanup and end-to-end validation; see the
+> migration branch is in final merge-readiness review; see the
 > [migration tracker](docs/react-migration/TRACKER.md).
 
 ## Tech stack
@@ -181,5 +181,6 @@ a page range, a whole chapter, or both.
 The app includes the round-based assignment engine, live member reading and
 completion flows, roster and khatma administration, progress dashboards,
 du3a/settings controls, bundled paged Quran reader, browser persistence, and
-responsive Arabic RTL member/admin surfaces. Remaining migration validation is
-tracked in [the React migration tracker](docs/react-migration/TRACKER.md).
+responsive Arabic RTL member/admin surfaces. Remaining merge review, rollback
+planning, and owner approval are tracked in
+[the React migration tracker](docs/react-migration/TRACKER.md).

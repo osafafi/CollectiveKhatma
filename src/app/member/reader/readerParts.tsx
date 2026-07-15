@@ -195,7 +195,7 @@ function SurahHeader({ surah }: { surah: Surah | undefined }) {
       }}
     >
       <Typography color="primary.main" sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
-        {surah ? `سورة ${surah.name}` : ''}
+        {surah ? `${strings.reader.surahHeading} ${surah.name}` : ''}
       </Typography>
       {surah?.bismillahPre ? (
         // leading-normal: don't inherit the mushaf body's tall line-height here.
