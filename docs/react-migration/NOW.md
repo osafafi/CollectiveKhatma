@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                 |
 | Branch base                           | `6992007` (`main` at migration start)            |
 | Last completed task                   | RM-710 — review delta against current `main`     |
-| Last completed commit                 | _pending handoff-hash commit (RM-710)_           |
+| Last completed commit                 | `d1c47e8` (RM-710 delta review)                  |
 | Active migration task                 | None                                             |
 | Current phase                         | Phase 7 — merge readiness and controlled handoff |
 | Next recommended task                 | RM-720 — joint code/behavior review              |
