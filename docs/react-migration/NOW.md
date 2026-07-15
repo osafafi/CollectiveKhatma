@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                      |
 | Branch base                           | `6992007` (`main` at migration start)                 |
 | Last completed task                   | RM-670 — documentation reconciliation                 |
-| Last completed code commit            | `5cf3d8c` (RM-640 + RM-650; RM-670 hash recorded next) |
+| Last completed commit                 | `16563f9` (RM-670 documentation reconciliation)       |
 | Active migration task                 | None                                                  |
 | Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation |
 | Next recommended task                 | RM-700 — final clean quality suite (Phase 7)          |
