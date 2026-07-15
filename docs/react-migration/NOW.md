@@ -5,56 +5,61 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                    |
-| ------------------------------------- | ------------------------------------------------ |
-| Integration branch                    | `reactmigration`                                 |
-| Branch base                           | `6992007` (`main` at migration start)            |
-| Last completed task                   | RM-720 — joint code/behavior review              |
-| Last completed commit                 | `0e62d29` (RM-720 review and fixes)              |
-| Active migration task                 | None                                             |
-| Current phase                         | Phase 7 — merge readiness and controlled handoff |
-| Next recommended task                 | RM-730 — merge summary and rollback plan         |
-| Authorization-gated task              | RM-660 — staging/live smoke test                 |
-| Open decisions affecting current work | OD-04 by RM-740                                  |
-| Last updated                          | 2026-07-15                                       |
+| Field                                 | Current value                                        |
+| ------------------------------------- | ---------------------------------------------------- |
+| Integration branch                    | `reactmigration`                                     |
+| Branch base                           | `6992007` (`main` at migration start, still unmoved) |
+| Last completed task                   | RM-730 — merge summary and rollback plan             |
+| Last completed commit                 | pending commit of RM-730 docs                        |
+| Active migration task                 | None                                                 |
+| Current phase                         | Phase 7 — merge readiness and controlled handoff     |
+| Next recommended task                 | RM-740 — owner approval and merge (owner-gated)      |
+| Authorization-gated task              | RM-660 — staging/live smoke test                     |
+| Open decisions affecting current work | OD-04 (merge method) by RM-740                       |
+| Last updated                          | 2026-07-15                                           |
 
-RM-720 reviewed the integrated migration across dependency boundaries,
-subscription lifecycle, member/admin parity and stability, production
-reachability, living documentation, and residual risks. Three low-severity
-findings were fixed; no blocking code/behavior finding remains. All 225 default
-tests and both production bundle budgets pass.
+RM-730 produced the owner-facing merge summary and rollback plan
+([`MERGE_SUMMARY.md`](MERGE_SUMMARY.md)) and checked the "Rollback plan is
+credible" merge-readiness gate. **All agent-executable migration work is now
+complete.** The only remaining actions are owner-gated: RM-740 (approval + merge)
+and, if authorized, RM-660 (live smoke test).
 
-## Completed — RM-720 (joint code/behavior review)
+## Completed — RM-730 (merge summary and rollback plan)
 
-- Boundaries: Firebase SDK imports remain exclusive to `src/data`; domain stays
-  pure; writes/listeners flow through the app adapters; Redux stays serializable.
-- Lifecycle/parity: reference counting, errors, cleanup, remote updates, reader
-  stability, admin drafts, RTL/accessibility, and both route inventories trace to
-  implementation plus focused/full tests and earlier emulator/live-local QA.
-- Hygiene: every implementation module is production-reachable; previews remain
-  intentional non-deployable aliases; root migration artifacts remain labeled
-  historical evidence. Living-doc links resolve.
-- Fixes: corrected stale auto-return documentation, centralized the reader surah
-  heading, and connected the typed route-link module to production admin links.
-- Verification: typecheck, lint, 225 tests, production build, and budgets pass.
-  Final sizes: member 341.60/387.76 kB; admin 344.76/391.02 kB.
+- Deliverable [`MERGE_SUMMARY.md`](MERGE_SUMMARY.md): migration delta, preserved
+  data/domain compatibility, fresh verification, final bundles, residual risks,
+  rollback plan, and the RM-740 authorization boundary.
+- Rollback basis: no data migration (schema/rules/indexes/domain/data byte-
+  unchanged), concrete restore point `6992007`, static Pages deploy → rollback is
+  one revert + redeploy in minutes. Recommends a single revertable merge commit
+  (OD-04 input) over pure fast-forward.
+- Fresh verification at `7ba078c` (code-identical to RM-720's run): typecheck,
+  lint, 225 tests (1 emulator skip), and both bundle budgets pass. Member
+  341.60/387.75 kB; admin 344.76/391.01 kB.
+- Only one merge-readiness gate remains open: explicit owner approval (RM-740).
 
-## Next — RM-730 (merge summary and rollback plan)
+## Next — RM-740 (owner approval and merge to `main`) — OWNER-GATED
+
+Not an agent-executable task. Requires explicit project-owner authorization.
+
+Read set if resuming migration context:
 
 1. `docs/react-migration/NOW.md`
-2. `docs/react-migration/tasks/RM-720.md`
-3. TRACKER Phase 7
-4. `PLAN.md` governance, verification matrix, risks, decisions, and
-   merge-readiness gates
+2. `docs/react-migration/MERGE_SUMMARY.md`
+3. `docs/react-migration/tasks/RM-730.md`
+4. TRACKER Phase 7 and PLAN merge-readiness gates + OD-04
 
-Prepare a concise owner-facing summary covering the migration delta,
-verification, final bundles, preserved data/domain compatibility, residual
-risks, rollback steps, and explicit RM-740 authorization boundary. Do not merge.
+At RM-740 the owner: selects the OD-04 merge method (merge commit / squash /
+reviewed PR — `MERGE_SUMMARY.md` recommends a single revertable commit), decides
+whether to authorize RM-660 first, and approves the merge. Agents must not merge,
+deploy, or resolve OD-04 without that authorization.
 
 ## Risks / constraints
 
-- RM-660 requires explicit authorization before any staging/live reads or writes.
-- Do not deploy from the migration branch or expose/rename `admin-nano.html`.
-- Do not merge to `main`; OD-04 remains open for RM-740.
-- The member budget has 8.40 kB JS gzip and 12.24 kB transfer headroom.
+- RM-660 requires explicit authorization before any staging/live reads or writes;
+  the live production path is otherwise unproven (emulator + automated suite only).
+- Do not merge to `main`, force-push shared branches, deploy from the migration
+  branch, or expose/rename `admin-nano.html`.
+- OD-04 (merge method) remains open for RM-740.
+- The member budget has 8.40 kB JS gzip and 12.25 kB transfer headroom.
 - Local runner is `v24.14.0`; CI pins `24.18.0` via `.nvmrc`. Keep them aligned.

@@ -227,5 +227,5 @@ Every item must pass before RM-740:
 - [x] Legacy DOM UI and Tailwind are removed or an exception is approved.
 - [x] Final setup, architecture, contributor, and progress docs are accurate.
 - [x] `main` received no partial migration work.
-- [ ] Rollback plan is credible.
+- [x] Rollback plan is credible.
 - [ ] The project owner explicitly approves the merge.
