@@ -5,17 +5,17 @@
 
 ## Snapshot
 
-| Field                                 | Current value                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------ |
-| Integration branch                    | `reactmigration`                                                               |
-| Branch base                           | `6992007` (`main` at migration start)                                          |
-| Last completed code task              | RM-560 — Admin component/integration tests                                     |
-| Last completed code commit            | `6402cf7` (RM-540+550); RM-560 + RM-570 complete on-branch, **commit pending** |
-| Active migration task                 | None                                                                           |
-| Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation                          |
-| Next recommended task                 | RM-600 — Cut over member entry to React                                        |
-| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740                          |
-| Last updated                          | 2026-07-15                                                                     |
+| Field                                 | Current value                                         |
+| ------------------------------------- | ----------------------------------------------------- |
+| Integration branch                    | `reactmigration`                                      |
+| Branch base                           | `6992007` (`main` at migration start)                 |
+| Last completed code task              | RM-560 — Admin component/integration tests            |
+| Last completed code commit            | `6c733e9` (RM-560 + RM-570 handoff hash)              |
+| Active migration task                 | None                                                  |
+| Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation |
+| Next recommended task                 | RM-600 — Cut over member entry to React               |
+| Open decisions affecting current work | OD-03 RESOLVED (intentional refresh); OD-04 by RM-740 |
+| Last updated                          | 2026-07-15                                            |
 
 RM-560 + RM-570 close **Phase 5**. The React admin app now has an integration
 test layer and a live, emulator-backed parity sign-off. Gates clean (typecheck /
@@ -66,7 +66,7 @@ Read only after the RM-560 + RM-570 exact-hash handoff commit:
 ## Risks / notes for next task
 
 - Partial migration must not reach `main`; cross-agent handoff needs a clean,
-  committed exact hash (this session's RM-560 + RM-570 commit is **pending**).
+  committed exact hash — RM-560 + RM-570 are committed at `6c733e9`.
 - **Screenshots** in the preview browser time out (a browser-pane quirk, not an
   app fault — `read_page`/`get_page_text`/`javascript_tool`/console are clean).
   Verify via the DOM/a11y tree + computed styles, as RM-460/RM-570 did.
