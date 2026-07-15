@@ -134,6 +134,9 @@ describe('admin Home dashboard (RM-500)', () => {
       'href',
       '#/khatmas/k1',
     );
+    expect(
+      screen.getByRole('button', { name: strings.admin.pageMapHeading }),
+    ).toBeVisible();
 
     // Pending readers: only Maryam holds a chunk, shown with exact page ranges.
     const pending = screen.getByText(strings.admin.pendingHeading).closest('div')!;

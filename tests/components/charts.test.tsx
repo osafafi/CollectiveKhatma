@@ -1,8 +1,16 @@
 import type { ReactElement } from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act } from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
-import { DonutChart, SegmentBar, type BarSegment } from '@/components/charts';
+import {
+  DonutChart,
+  QuranPageGrid,
+  SegmentBar,
+  type BarSegment,
+} from '@/components/charts';
+import { strings } from '@/content/strings.ar';
+import type { Assignment, Khatma, Person } from '@/domain/types';
 import { tokens } from '@/theme/muiTheme';
 
 function renderThemed(ui: ReactElement) {
@@ -121,5 +129,122 @@ describe('SegmentBar (RM-330)', () => {
     expect(fills).toHaveLength(1);
     expect(fills[0]).toHaveStyle({ backgroundColor: tokens.color.border });
     expect(screen.getByText('قُرئت: ٠')).toBeInTheDocument();
+  });
+});
+
+const GRID_KHATMA: Khatma = {
+  id: 'grid',
+  seriesId: 'grid-series',
+  seriesName: 'أهل القرآن',
+  seriesNumber: 1,
+  totalPages: 6,
+  scope: { kind: 'range', fromPage: 1, toPage: 6 },
+  memberIds: ['p1', 'p2'],
+  status: 'active',
+  remainingPages: [5, 6],
+  roundCount: 2,
+  createdAt: 1,
+};
+
+const GRID_ASSIGNMENTS: Assignment[] = [
+  {
+    memberId: 'p1',
+    rounds: [{ round: 1, date: '2026-07-14', pages: [1, 2] }],
+    doneByRound: { 1: 10 },
+    missedStreak: 0,
+  },
+  {
+    memberId: 'p2',
+    rounds: [{ round: 2, date: '2026-07-15', pages: [3, 4] }],
+    doneByRound: {},
+    missedStreak: 0,
+  },
+];
+
+const GRID_ROSTER: Person[] = [
+  {
+    id: 'p1',
+    name: 'Amina',
+    completedPages: [],
+    pagesPerDay: 2,
+    enabled: true,
+    createdAt: 1,
+  },
+  {
+    id: 'p2',
+    name: 'Maryam',
+    completedPages: [],
+    pagesPerDay: 2,
+    enabled: true,
+    createdAt: 2,
+  },
+];
+
+describe('QuranPageGrid', () => {
+  it('stays collapsed until requested and reveals the three page states', () => {
+    renderThemed(
+      <QuranPageGrid
+        khatma={GRID_KHATMA}
+        assignments={GRID_ASSIGNMENTS}
+        roster={GRID_ROSTER}
+      />,
+    );
+
+    expect(screen.queryByRole('grid')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: strings.admin.pageMapHeading }));
+
+    const grid = screen.getByRole('grid');
+    expect(grid.querySelectorAll('[role="gridcell"]')).toHaveLength(6);
+    expect(grid.querySelector('[data-page="1"]')).toHaveAttribute(
+      'data-page-state',
+      'done',
+    );
+    expect(grid.querySelector('[data-page="3"]')).toHaveAttribute(
+      'data-page-state',
+      'assigned',
+    );
+    expect(grid.querySelector('[data-page="5"]')).toHaveAttribute(
+      'data-page-state',
+      'remaining',
+    );
+  });
+
+  it('reveals diagonal details and scales neighboring boxes during a long press', () => {
+    renderThemed(
+      <QuranPageGrid
+        khatma={GRID_KHATMA}
+        assignments={GRID_ASSIGNMENTS}
+        roster={GRID_ROSTER}
+        neighborCount={2}
+        longPressMs={100}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: strings.admin.pageMapHeading }));
+    const grid = screen.getByRole('grid');
+    const page = (number: number) =>
+      grid.querySelector(`[data-page="${number}"]`) as HTMLElement;
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerDown(page(3), {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 40,
+        clientY: 40,
+      });
+      act(() => vi.advanceTimersByTime(100));
+
+      expect(page(3)).toHaveAttribute('data-active', 'true');
+      expect(page(2)).not.toHaveAttribute('data-scale', '1.000');
+      expect(page(1)).not.toHaveAttribute('data-scale', '1.000');
+      expect(page(6)).toHaveAttribute('data-scale', '1.000');
+      expect(screen.getByText('٣ · Maryam')).toBeInTheDocument();
+
+      fireEvent.pointerUp(page(3), { pointerId: 1, pointerType: 'touch' });
+      expect(page(3)).not.toHaveAttribute('data-active');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

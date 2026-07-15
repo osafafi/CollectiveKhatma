@@ -14,7 +14,7 @@ import { useAdminNavigate } from '@/app/routing/hooks';
 import { useSurahs } from '@/app/admin/useSurahs';
 import { useCreateKhatmaPrefill } from '@/app/admin/createKhatmaPrefillContext';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
-import { DonutChart } from '@/components/charts';
+import { DonutChart, QuranPageGrid } from '@/components/charts';
 import {
   AppButton,
   AppSelectField,
@@ -74,7 +74,7 @@ export function AdminKhatmaPage({ id }: { id: string }) {
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
       <BackLink />
-      <HeaderCard khatma={khatma} assignments={assignments} />
+      <HeaderCard khatma={khatma} assignments={assignments} roster={roster} />
       <EditCard khatma={khatma} />
       {khatma.status === 'active' ? (
         <>
@@ -116,9 +116,11 @@ function BackLink() {
 function HeaderCard({
   khatma,
   assignments,
+  roster,
 }: {
   khatma: Khatma;
   assignments: readonly Assignment[];
+  roster: readonly Person[];
 }) {
   const percent =
     khatma.status === 'completed' ? 100 : khatmaProgress(khatma, assignments).percent;
@@ -156,6 +158,7 @@ function HeaderCard({
           </Stack>
         </Stack>
         <ProgressBar value={percent} label={title} />
+        <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
       </Stack>
     </SurfaceCard>
   );

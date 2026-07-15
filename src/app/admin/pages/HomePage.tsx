@@ -9,7 +9,7 @@ import {
 import { useWriteOperation, type OperationState } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
-import { DonutChart, SegmentBar } from '@/components/charts';
+import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
 import {
   AppButton,
   NestedSurface,
@@ -117,6 +117,7 @@ function KhatmaBlock({
     <NestedSurface>
       <Stack spacing={3}>
         <KhatmaMetrics khatma={khatma} assignments={assignments} />
+        <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
         <PendingReaders assignments={assignments} roster={roster} />
         <Warnings assignments={assignments} roster={roster} />
         <DistributeAction

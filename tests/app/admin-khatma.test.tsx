@@ -128,6 +128,9 @@ describe('admin Khatma detail (RM-530)', () => {
     expect(
       screen.getByText(new RegExp(`${strings.admin.lastDistribution}: 2026-07-10`)),
     ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: strings.admin.pageMapHeading }),
+    ).toBeVisible();
   });
 
   it('saves edits through renameSeries + updateKhatma and shows the saved status', async () => {
