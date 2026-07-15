@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                 |
 | Branch base                           | `6992007` (`main` at migration start)            |
 | Last completed task                   | RM-720 — joint code/behavior review              |
-| Last completed commit                 | pending RM-720 handoff commit                    |
+| Last completed commit                 | `0e62d29` (RM-720 review and fixes)              |
 | Active migration task                 | None                                             |
 | Current phase                         | Phase 7 — merge readiness and controlled handoff |
 | Next recommended task                 | RM-730 — merge summary and rollback plan         |
