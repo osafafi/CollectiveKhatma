@@ -2,10 +2,8 @@ import { Box, Stack, useTheme, type Theme } from '@mui/material';
 import { toArabicDigits } from '@/content/quran/symbols';
 
 /**
- * Semantic segment colors, resolved through the MUI palette (the React tree
- * does not load `theme.css`, so the legacy `var(--color-…)` tokens do not exist
- * here). `accent` is the legacy amber (`palette.secondary`, today the chart
- * "pending" color) and `neutral` is the border/track tone (`palette.divider`).
+ * Semantic segment colors resolved through the MUI palette. `accent` is the
+ * chart's pending color and `neutral` is the border/track tone.
  */
 export type BarSegmentColor = 'primary' | 'accent' | 'neutral';
 
@@ -32,10 +30,9 @@ function segmentColor(theme: Theme, color: BarSegmentColor): string {
 
 /**
  * A single horizontal breakdown bar (e.g. read / being-read / remaining pages)
- * with 2px surface gaps between fills and a text legend below — the React twin
- * of the legacy `segmentBar` ([`src/ui/shared/charts.ts`](../../ui/shared/charts.ts)).
- * Counts are written out in the legend, so color is reinforcement, not the only
- * signal; the bar itself is decorative for assistive tech.
+ * with 2px surface gaps between fills and a text legend below. Counts are
+ * written out in the legend, so color is reinforcement, not the only signal;
+ * the bar itself is decorative for assistive tech.
  */
 export function SegmentBar({ segments }: SegmentBarProps) {
   const theme = useTheme();

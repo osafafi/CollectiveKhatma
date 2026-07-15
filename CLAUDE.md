@@ -55,10 +55,11 @@ committed exact hash. The branch strategy and final owner-approval gate in
 Strict one-directional dependency rule enforced by ESLint:
 
 - **`src/data/`**: The ONLY layer that can import `firebase/*` or `firebase/firestore`. Communicates with Firestore.
-- **`src/domain/`**: Pure business logic (calculators, types, algorithms). MUST stay pure (no imports from `firebase`, `data`, or `ui`).
+- **`src/domain/`**: Pure business logic (calculators, types, algorithms). MUST stay pure (no imports from Firebase, data access, app, components, or theme).
 - **`src/content/`**: Raw Quran text/metadata, static surah maps, and Arabic strings ([strings.ar.ts](src/content/strings.ar.ts)). No business logic.
-- **`src/theme/`**: CSS styling system and reading scale configuration.
-- **`src/ui/`**: Builds DOM, handles events, and bridges UI to `data` and `domain`.
+- **`src/theme/`**: Centralized MUI/RTL theme, retained global styles, and reading scale configuration.
+- **`src/app/`**: React entries, providers, routing, Redux store, member/admin composition, and write-operation adapters.
+- **`src/components/`**: Shared React primitives, navigation, charts, icons, and feedback.
 
 ---
 
@@ -66,14 +67,12 @@ Strict one-directional dependency rule enforced by ESLint:
 
 ```
 src/
-├── data/             firebase.ts (init), roster.ts, khatmas.ts, assignments.ts, distribution.ts
+├── app/              entries, providers, routing, store, operations, member/, admin/
+├── components/       primitives, navigation, charts, icons, feedback
+├── data/             firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts
 ├── domain/           types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts
 ├── content/          strings.ar.ts, quran/
-├── theme/            theme.css, reading.ts
-└── ui/
-    ├── shared/       router.ts, nav.ts, components.ts, charts.ts, icons.ts
-    ├── member/       render.ts, pages/khatmas.ts, reader.ts
-    └── admin/        render.ts, ctx.ts, routes.ts, nav.ts, pages/{home,khatma,khatmas,roster,settings}.ts
+└── theme/            muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts
 ```
 
 ---

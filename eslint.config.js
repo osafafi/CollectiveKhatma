@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
-  { ignores: ['dist', 'dist-react-spike', 'node_modules'] },
+  { ignores: ['dist', 'node_modules'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -59,7 +59,8 @@ export default tseslint.config(
     },
   },
 
-  // GUARDRAIL 2 — the domain layer must stay pure: no Firebase, data, or UI.
+  // GUARDRAIL 2 — the domain layer must stay pure: no Firebase, data, or
+  // presentation/application code.
   {
     files: ['src/domain/**/*.{ts,tsx}'],
     rules: {
@@ -76,8 +77,18 @@ export default tseslint.config(
               message: 'domain must stay pure — no data-access imports.',
             },
             {
-              group: ['@/ui', '@/ui/*', '**/ui/*'],
-              message: 'domain must stay pure — no UI imports.',
+              group: [
+                '@/app',
+                '@/app/*',
+                '**/app/*',
+                '@/components',
+                '@/components/*',
+                '**/components/*',
+                '@/theme',
+                '@/theme/*',
+                '**/theme/*',
+              ],
+              message: 'domain must stay pure — no application or presentation imports.',
             },
           ],
         },

@@ -6,10 +6,8 @@ import { AppNav } from './AppNav';
 
 /**
  * Responsive application shell (RM-310): a centered content column plus the
- * bottom-bar/right-rail {@link AppNav}. Mirrors the legacy layout in
- * [`src/ui/member/render.ts`](../../ui/member/render.ts) /
- * [`admin/render.ts`](../../ui/admin/render.ts): an outer wrapper reserves the
- * desktop rail (`lg:pr-24`) and an inner `<main>` centers the content with the
+ * bottom-bar/right-rail {@link AppNav}. An outer wrapper reserves the desktop
+ * rail and an inner `<main>` centers the content with the
  * per-surface max-widths, page padding, and bottom-bar clearance (`pb-28`,
  * `lg:pb-8`).
  *
@@ -40,8 +38,7 @@ export function AppShell<R>({
       {/*
         Reserve the 96px desktop rail on the physical right (RTL inline-start);
         no effect on mobile, where the nav is a bottom bar. Kept on its own
-        wrapper (like the legacy `lg:pr-24` div) so it never collides with the
-        column's own horizontal padding.
+        wrapper so it never collides with the column's own horizontal padding.
       */}
       <Box sx={{ paddingInlineStart: { lg: '96px' } }}>
         <Box

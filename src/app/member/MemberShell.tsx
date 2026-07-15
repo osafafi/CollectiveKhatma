@@ -5,7 +5,7 @@ import { useMemberRoute } from '@/app/routing/hooks';
 import { strings } from '@/content/strings.ar';
 
 /**
- * Member tab list — the React twin of the legacy [`src/ui/member/nav.ts`](../../ui/member/nav.ts).
+ * Member tab list with the established hashes, labels, and order.
  * The khatmas tab owns the khatma landing and reader sub-routes.
  */
 const MEMBER_TABS: ReadonlyArray<ShellTab<MemberRoute>> = [

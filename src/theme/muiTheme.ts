@@ -3,26 +3,15 @@ import { createTheme, type Theme } from '@mui/material/styles';
 /**
  * Centralized MUI theme (RM-210), refreshed under OD-03 (RM-460).
  *
- * The owner resolved OD-03 toward an **intentional visual refresh** — a fresh,
- * modern, senior-friendly look with reading-comfortable colors — rather than
- * pixel-parity with the legacy Tailwind UI. So this palette now **intentionally
- * diverges** from the Tailwind `@theme` block in [`theme.css`](./theme.css):
- *
- * - `theme.css` still carries the OLD palette because it styles the legacy tree,
- *   which stays in production until the RM-600 cutover and is deleted at RM-620.
- * - This file carries the REFRESHED palette that becomes production at cutover.
- *
- * `tests/theme/mui-theme.test.ts` therefore no longer asserts equality with
- * `theme.css`; it pins these refreshed values and asserts the divergence is
- * intentional (so neither copy drifts silently). Design intent and the WCAG-AA
- * contrast evidence are recorded in `docs/react-migration/tasks/RM-460.md`.
+ * The owner resolved OD-03 toward an intentional visual refresh: a fresh,
+ * modern, senior-friendly look with reading-comfortable colors. Design intent
+ * and WCAG-AA contrast evidence are recorded in RM-460.
  */
 
 /**
  * Refreshed design tokens (OD-03 / RM-460). Warm low-glare paper, a calm emerald
  * "Quran green" primary, a distinct gold accent (dark text), and higher-contrast
  * ink/muted for extended reading. See the RM-460 record for the contrast matrix.
- * These deliberately differ from `theme.css` `@theme` (see the file header).
  */
 export const tokens = {
   color: {
@@ -44,8 +33,8 @@ export const tokens = {
     card: 18, // softer 1.125rem — cards/sections/dialogs (RM-460 refresh)
   },
   font: {
-    // Same stacks as theme.css `@theme`; exposed as CSS vars in globalStyles.ts
-    // so `var(--font-ui)` / `var(--font-quran)` resolve without theme.css.
+    // Exposed as CSS vars in globalStyles.ts so the UI and Quran font stacks
+    // share one retained global definition.
     ui: 'var(--font-ui)',
   },
 } as const;
@@ -100,30 +89,25 @@ export function createAppTheme(): Theme {
       fontWeightRegular: 400,
       fontWeightMedium: 500,
       fontWeightBold: 700,
-      // Type scale from theme-map §3.2 (Tailwind v4 defaults). Heading teal
-      // (`text-primary`) is applied where headings are used, not globally.
-      h1: { fontSize: '1.875rem', lineHeight: 1.2, fontWeight: 700 }, // text-3xl (gate title)
-      h2: { fontSize: '1.5rem', lineHeight: 1.3333, fontWeight: 700 }, // text-2xl (route h1)
-      h3: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 }, // text-xl (card/surah header)
-      subtitle1: { fontSize: '1.125rem', lineHeight: 1.5556, fontWeight: 600 }, // text-lg (emphasis)
-      // Roomier line-heights than the Tailwind defaults for senior reading
-      // comfort (RM-460); font sizes are unchanged so layouts do not shift.
-      body1: { fontSize: '1rem', lineHeight: 1.65 }, // text-base
-      body2: { fontSize: '0.875rem', lineHeight: 1.55 }, // text-sm (rows, chips)
-      caption: { fontSize: '0.75rem', lineHeight: 1.4 }, // text-xs (badges, legends)
+      // App type scale. Heading color is applied where headings are used, not
+      // globally. Roomier body line heights support senior reading comfort.
+      h1: { fontSize: '1.875rem', lineHeight: 1.2, fontWeight: 700 },
+      h2: { fontSize: '1.5rem', lineHeight: 1.3333, fontWeight: 700 },
+      h3: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 },
+      subtitle1: { fontSize: '1.125rem', lineHeight: 1.5556, fontWeight: 600 },
+      body1: { fontSize: '1rem', lineHeight: 1.65 },
+      body2: { fontSize: '0.875rem', lineHeight: 1.55 },
+      caption: { fontSize: '0.75rem', lineHeight: 1.4 },
     },
 
     // Common radius = the button radius (12px). Cards/pills that differ (16px /
     // full) are overridden per-component in RM-320.
     shape: { borderRadius: tokens.radius.button },
 
-    // Tailwind's base spacing unit is 4px (MUI default is 8px). Set 4 so the
-    // legacy `p-4`=16px / `gap-2`=8px mental model maps 1:1 (theme-map §5).
+    // Compact 4px spacing unit used throughout the app.
     spacing: 4,
 
-    // Override to Tailwind's pixel breakpoints so `up('md')`/`up('lg')` fire at
-    // the same widths the legacy `md:`/`lg:` utilities do (theme-map §6). The app
-    // only actually uses md (768) and lg (1024).
+    // App responsive breakpoints; current layouts use md and lg.
     breakpoints: {
       values: { xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280 },
     },

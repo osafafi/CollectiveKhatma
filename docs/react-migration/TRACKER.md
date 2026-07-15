@@ -100,8 +100,8 @@ do not disrupt in-progress forms.
 | ------ | ---------------------------------- | ------------------------- | ----------- | -------------- | ------------------------------------------------------------------------------------------- |
 | RM-600 | Cut over member entry to React     | Joint                     | DONE        | RM-460         | React production entry; build/smoke pass; 341.62/387.73 kB within 350/400 kB budgets.       |
 | RM-610 | Cut over admin entry to React      | Joint                     | DONE        | RM-570, RM-600 | React hidden entry; route/build smoke passes; 342.32/388.43 kB within 375/425 kB budgets.   |
-| RM-620 | Remove legacy UI and Tailwind      | Joint                     | NOT STARTED | RM-610         | Legacy renderers/Tailwind are gone; retained CSS is independent; no dead imports.           |
-| RM-630 | Optimize and document bundles      | Codex                     | NOT STARTED | RM-620, RM-040 | Route splitting/imports reviewed and final sizes recorded against budgets.                  |
+| RM-620 | Remove legacy UI and Tailwind      | Joint                     | DONE        | RM-610         | Legacy UI/Tailwind removed; retained React styles independent; 221 tests and gates pass.    |
+| RM-630 | Optimize and document bundles      | Codex                     | DONE        | RM-620, RM-040 | Production graph split below 500 kB; member 341.44/387.60, admin 344.57/390.82 kB.          |
 | RM-640 | Emulator cross-client validation   | Joint                     | NOT STARTED | RM-610         | Two clients verify realtime reads/writes/distribution/completion/reload/reconnect/cleanup.  |
 | RM-650 | Accessibility, RTL, responsive QA  | Claude                    | NOT STARTED | RM-620         | Keyboard, focus, labels, contrast, direction, portals, sizing, and layouts pass.            |
 | RM-660 | Authorized staging/live smoke test | Project owner + one agent | NOT STARTED | RM-640, RM-650 | With explicit authorization, production-like Firebase reads/writes pass without deployment. |

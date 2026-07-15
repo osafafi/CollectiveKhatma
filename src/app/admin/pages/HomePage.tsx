@@ -29,9 +29,8 @@ import { todayIso } from '@/app/admin/todayIso';
 import { useQuranScopeMaps, type QuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 
 /**
- * Admin Home `#/home` (inventory §3.1) — the React twin of the legacy
- * [`homePage`](../../../ui/admin/pages/home.ts). One block per active series, one
- * sub-block per active khatma: at-a-glance metrics, pending readers, warnings,
+ * Admin Home `#/home` (inventory §3.1). One block per active series, one sub-block
+ * per active khatma: at-a-glance metrics, pending readers, warnings,
  * and the daily distribute/redistribute action that drives the round model.
  */
 export function AdminHomePage() {

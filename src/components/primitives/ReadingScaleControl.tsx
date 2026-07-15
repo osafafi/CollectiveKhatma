@@ -14,8 +14,7 @@ export interface ReadingScaleControlProps {
  * The shared 1–5 reading-scale disclosure (inventory §2.7 / §3.5, **P11**): one
  * localStorage-backed control reused verbatim by the member ([`SettingsPage`](../../app/member/SettingsPage.tsx))
  * and admin ([`AdminSettingsPage`](../../app/admin/pages/SettingsPage.tsx)) Settings
- * pages — the React twin of the single legacy [`settingsControl`](../../ui/shared/settings.ts),
- * not a fork per app.
+ * pages, not a fork per app.
  *
  * A native `<details>` popover whose open/close state is lifted to the caller so
  * it survives the route-change re-renders that keep the route content mounted;

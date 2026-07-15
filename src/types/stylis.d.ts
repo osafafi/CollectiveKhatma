@@ -8,8 +8,8 @@
  * non-pinned runtime. `stylis-plugin-rtl`'s own `.d.ts` references
  * `Middleware` from here too (it is otherwise tolerated via `skipLibCheck`).
  *
- * FOLLOW-UP (Lane A / RM-620 cleanup): if `@types/stylis` is later added, DELETE
- * this file — the two declarations would otherwise clash on `prefixer`.
+ * If `@types/stylis` is added later, delete this file because the declarations
+ * would otherwise clash on `prefixer`.
  */
 declare module 'stylis' {
   export interface Element {

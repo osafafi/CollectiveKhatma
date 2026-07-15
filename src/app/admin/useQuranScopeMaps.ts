@@ -11,9 +11,8 @@ export interface QuranScopeMaps {
 }
 
 /**
- * Load the surah/juz maps distribution relies on — the React twin of the legacy
- * admin boot load in [`src/ui/admin/render.ts`](../../ui/admin/render.ts), which
- * fetches `getQuranIndex()` once and derives `buildPageUnitMaps`.
+ * Load the surah/juz maps distribution relies on by fetching the Quran index
+ * once and deriving the page-unit maps.
  *
  * Returns `null` until the (cached) fetch resolves, and stays `null` if it fails.
  * That matches the legacy failure behavior: `full`/`range` distributions still

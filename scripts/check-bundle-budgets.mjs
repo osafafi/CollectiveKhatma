@@ -2,17 +2,17 @@ import { readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
 
-const outputDirectory = resolve('dist-react-spike');
+const outputDirectory = resolve('dist');
 const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 
 const budgets = {
   member: {
-    entry: 'react-preview.html',
+    entry: 'index.html',
     initialJavaScriptGzipBytes: 350_000,
     initialTransferBytes: 400_000,
   },
   admin: {
-    entry: 'admin-react-preview.html',
+    entry: 'admin-nano.html',
     initialJavaScriptGzipBytes: 375_000,
     initialTransferBytes: 425_000,
   },

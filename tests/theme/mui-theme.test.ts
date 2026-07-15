@@ -1,27 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { appTheme, createAppTheme, tokens } from '@/theme/muiTheme';
-
-/**
- * Extract the `--color-*` hex values from the `@theme` block of theme.css — the
- * still-legacy Tailwind palette. Through RM-450 the React palette was kept equal
- * to this copy (the R1 pattern). RM-460 refreshed the React palette under OD-03,
- * so the two now **intentionally diverge**: theme.css keeps the OLD palette (it
- * styles the legacy tree until RM-620), and muiTheme.ts carries the refreshed
- * one. This helper is now used to assert that divergence, not equality.
- */
-function readThemeCssColors(): Record<string, string> {
-  const css = readFileSync(
-    resolve(import.meta.dirname, '../../src/theme/theme.css'),
-    'utf8',
-  );
-  const colors: Record<string, string> = {};
-  for (const match of css.matchAll(/--color-([a-z-]+):\s*(#[0-9a-fA-F]{6});/g)) {
-    colors[match[1]!] = match[2]!.toLowerCase();
-  }
-  return colors;
-}
 
 describe('MUI theme — token mapping (RM-210)', () => {
   it('is right-to-left', () => {
@@ -60,20 +38,6 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(tokens.color.accent).not.toBe(tokens.color.warn);
   });
 
-  it('intentionally diverges from the legacy Tailwind palette (OD-03 refresh)', () => {
-    // theme.css keeps the OLD palette (legacy tree until RM-620); the React
-    // theme carries the refreshed one. Assert they DIFFER so neither copy is
-    // silently synced back — this replaces the pre-RM-460 equality guard.
-    const css = readThemeCssColors();
-    expect(css.primary).toBe('#0f766e'); // legacy value, unchanged
-    expect(Object.keys(css).length).toBeGreaterThanOrEqual(11);
-    expect(appTheme.palette.primary.main).not.toBe(css.primary);
-    expect(appTheme.palette.background.default).not.toBe(css.bg);
-    expect(tokens.color.bg).not.toBe(css.bg);
-    expect(tokens.color.primary).not.toBe(css.primary);
-    expect(tokens.color.accent).not.toBe(css.accent);
-  });
-
   it('sets white contrastText on filled semantics, dark ink on the gold accent', () => {
     expect(appTheme.palette.primary.contrastText).toBe('#ffffff');
     // Gold accent is light → dark ink text for legibility (RM-460).
@@ -83,13 +47,13 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(appTheme.palette.error.contrastText).toBe('#ffffff');
   });
 
-  it('reconciles the 4px spacing unit (Tailwind parity, not MUI default 8px)', () => {
-    expect(appTheme.spacing(2)).toBe('8px'); // gap-2
-    expect(appTheme.spacing(4)).toBe('16px'); // p-4
-    expect(appTheme.spacing(28)).toBe('112px'); // pb-28 (tab-bar clearance)
+  it('uses the app 4px spacing unit', () => {
+    expect(appTheme.spacing(2)).toBe('8px');
+    expect(appTheme.spacing(4)).toBe('16px');
+    expect(appTheme.spacing(28)).toBe('112px');
   });
 
-  it('overrides breakpoints to the Tailwind pixel values the app uses', () => {
+  it('uses the app responsive breakpoints', () => {
     expect(appTheme.breakpoints.values.md).toBe(768);
     expect(appTheme.breakpoints.values.lg).toBe(1024);
     expect(appTheme.breakpoints.values.xs).toBe(0);
@@ -101,7 +65,7 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(appTheme.shape.borderRadius).toBe(12);
   });
 
-  it('keeps the legacy UI font stack via the CSS variable and maps the type scale', () => {
+  it('uses the app UI font stack and type scale', () => {
     expect(appTheme.typography.fontFamily).toBe('var(--font-ui)');
     expect(appTheme.typography.fontWeightMedium).toBe(500);
     expect(appTheme.typography.fontWeightBold).toBe(700);

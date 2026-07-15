@@ -1,5 +1,5 @@
 /**
- * Shared hash-route contracts for the legacy and React applications.
+ * Shared hash-route contracts for the member and admin applications.
  *
  * Keep parsing pure and total: GitHub Pages serves a static entry, so route
  * selection happens entirely after the hash and an unknown URL renders the

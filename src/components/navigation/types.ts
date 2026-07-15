@@ -5,8 +5,7 @@ import type { IconName } from '@/components/icons';
  *
  * Generic over the app's typed route union (`MemberRoute` / `AdminRoute`) so the
  * member and admin apps each supply their own data-driven tab list without the
- * shared layout knowing their route shapes — the same seam the legacy
- * `renderTabBar<R>` ([`src/ui/shared/nav.ts`](../../ui/shared/nav.ts)) used.
+ * shared layout knowing their route shapes.
  */
 export interface ShellTab<R> {
   /** Icon file base name under `public/icons/` (see {@link NavIcon}). */

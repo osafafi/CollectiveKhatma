@@ -1,6 +1,5 @@
 /**
- * Icon source URLs + the file-based override system (RM-330) — the React twin of
- * the legacy [`src/ui/shared/icons.ts`](../../ui/shared/icons.ts).
+ * Icon source URLs + the file-based override system (RM-330).
  *
  * Icons load from `public/icons/` so the admin can swap them for downloaded
  * artwork without touching code: replace `icons/<name>.svg`, or drop an
@@ -8,9 +7,8 @@
  * startup by {@link resolveIconOverrides}). Only the image's alpha channel
  * matters: the `.icon-mask` span paints it with `currentColor`.
  *
- * The legacy tree kept the chosen URLs in a mutated Map and relied on the nav
- * re-rendering on every route/data change to pick an override up. React renders
- * are not tied to routes that way, so this module is a tiny external store:
+ * This module is a tiny external store so late override probes can update
+ * mounted navigation icons:
  * components read through `useIconUrl`, and a late-arriving override notifies
  * subscribers and re-renders exactly the icons that changed.
  *

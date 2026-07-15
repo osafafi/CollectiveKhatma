@@ -4,8 +4,7 @@ import type { ShellTab } from './types';
 import { NavIcon } from './NavIcon';
 
 /**
- * Responsive primary navigation (RM-310) — the React twin of the legacy shared
- * tab bar ([`src/ui/shared/nav.ts`](../../ui/shared/nav.ts)).
+ * Responsive primary navigation (RM-310).
  *
  * - **Mobile (`< lg`)**: a fixed full-width **bottom** bar with a top border. The
  *   `.tab-bar` retained global style adds the iOS home-indicator safe-area inset.

@@ -30,7 +30,6 @@
     "scripts",
     "tests",
     "vite.config.ts",
-    "vite.react-spike.config.ts",
     "vitest.config.ts"
   ]
 }

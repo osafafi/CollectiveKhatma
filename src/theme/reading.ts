@@ -2,9 +2,9 @@
  * Reading font-size scale — 5 discrete levels for the reading views.
  *
  * The chosen level is persisted in localStorage and applied via a
- * `data-reading-scale` attribute on <html>, which the theme CSS
- * (src/theme/theme.css) maps to the `--reading-scale` variable. Reading text
- * (`.quran-text`) sizes itself from that variable.
+ * `data-reading-scale` attribute on <html>, which the retained global styles
+ * map to the `--reading-scale` variable. Reading text (`.quran-text`) sizes
+ * itself from that variable.
  *
  * Priority feature for the senior audience (REQUIREMENTS §6).
  */

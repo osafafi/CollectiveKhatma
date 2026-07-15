@@ -2,24 +2,14 @@ import type { Interpolation, Theme } from '@mui/material/styles';
 import amiriQuranUrl from '@/theme/fonts/AmiriQuran.woff2';
 
 /**
- * Retained global CSS for the React tree (RM-210, AD-09 §8 of the theme map).
+ * App-specific global CSS retained alongside the MUI theme (AD-09).
  *
  * These are app-specific rules that must NOT be forced into MUI components:
  * the bundled Quran webfont, the reading-scale variables, the `.quran-text`
  * mushaf flow, the `.icon-mask` paint, and the `.tab-bar` safe-area inset. The
- * React preview does not load `theme.css` (it carries no Tailwind), so this file
- * also defines the `--font-ui` / `--font-quran` CSS variables the theme and
- * `.quran-text` reference.
- *
- * This mirrors the non-`@theme` part of [`theme.css`](./theme.css). The two
- * copies coexist during the migration (accepted R1 pattern) and `theme.css` is
- * left unchanged so the legacy tree is unaffected; the duplication is removed
- * when Tailwind goes at RM-620.
- *
- * The base `body`/`html` bg/color/font rules from `theme.css` are deliberately
- * omitted here — `CssBaseline` + the theme own them (reconciles the §8
- * double-rule note). Consumed by RM-330 (icon mask), RM-340 (reading-scale
- * hook), and RM-440 (reader).
+ * This file also defines the `--font-ui` / `--font-quran` CSS variables the
+ * theme and `.quran-text` reference. Base body/html color and font rules belong
+ * to `CssBaseline` and the MUI theme.
  */
 export const retainedGlobalStyles: Interpolation<Theme> = {
   '@font-face': {
@@ -28,7 +18,7 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
     fontDisplay: 'swap',
   },
 
-  // Font stacks + default reading scale, mirrored from theme.css `@theme`.
+  // Font stacks + default reading scale.
   ':root': {
     '--font-ui': "'Tajawal', system-ui, -apple-system, 'Segoe UI', sans-serif",
     '--font-quran': "'Amiri Quran', 'Amiri', 'Scheherazade New', serif",

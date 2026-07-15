@@ -6,43 +6,36 @@ for a future collaborator to pick up. This reflects the design mandated by
 
 ## Overview
 
-- A **static, framework-free** TypeScript app built by Vite into two HTML
-  entries (member + admin) that share all code under `src/`.
+- A **static React + TypeScript** app built by Vite into two HTML entries
+  (member + hidden admin) that share code under `src/`.
 - The browser talks **directly to Firestore** (client SDK). There is no server
   and no Cloud Functions — the admin's browser runs all privileged logic.
 - Code is split into **layers with a strict, one-directional dependency rule**,
   enforced by ESLint so the boundaries can't quietly erode.
 
-> **React migration in progress (`reactmigration` branch).** A React + MUI +
-> Redux Toolkit foundation now coexists with the framework-free app under a new
-> [`src/app/`](src/app/) layer, but **production still ships the legacy
-> two-entry app described below** — the React roots are branch-only Vite dev
-> previews, not yet a production entry. The `data`, `domain`, `content`, and
-> `theme` layers below are shared unchanged. See
-> [§React Migration Architecture](#react-migration-architecture-branch-only) for
-> the implemented React/state boundaries and
-> [the migration tracker](docs/react-migration/TRACKER.md) for phase-by-phase
-> progress.
+> Both production entries mount React. Migration cleanup and validation status
+> lives in [the migration tracker](docs/react-migration/TRACKER.md).
 
 ## Layers
 
 ```
         content/  ── strings + Quran text (no logic)
            │
-theme/     │        ui/  ── rendering + event wiring (no business logic)
+theme/     │        app/components ── React rendering + event wiring
   │        │         │  │
   │        ▼         ▼  ▼
   └──▶  domain/ ◀── data/  ── Firestore reads/writes (the ONLY Firebase importer)
         (pure)
 ```
 
-| Layer           | Path           | Responsibility                                                        | May import                           |
-| --------------- | -------------- | --------------------------------------------------------------------- | ------------------------------------ |
-| **Data-access** | `src/data/`    | Every Firestore read/write, as typed functions + realtime subscribers | `firebase/*`, `domain` types         |
-| **Domain**      | `src/domain/`  | Pure logic: distribution algorithm, progress math, types              | nothing (must stay pure)             |
-| **Content**     | `src/content/` | All Arabic UI strings + the bundled Quran dataset                     | (data only)                          |
-| **Theme**       | `src/theme/`   | Design tokens (CSS) + the reading-scale helper                        | —                                    |
-| **UI**          | `src/ui/`      | Build DOM, wire events, call `data` + `domain`                        | `data`, `domain`, `content`, `theme` |
+| Layer           | Path              | Responsibility                                                        | May import                           |
+| --------------- | ----------------- | --------------------------------------------------------------------- | ------------------------------------ |
+| **Data-access** | `src/data/`       | Every Firestore read/write, as typed functions + realtime subscribers | `firebase/*`, `domain` types         |
+| **Domain**      | `src/domain/`     | Pure logic: distribution algorithm, progress math, types              | nothing (must stay pure)             |
+| **Content**     | `src/content/`    | All Arabic UI strings + the bundled Quran dataset                     | (data only)                          |
+| **Theme**       | `src/theme/`      | MUI/RTL theme, retained global styles, reading scale                  | MUI, React types                     |
+| **Application** | `src/app/`        | Entries, routing, Redux, operations, member/admin features            | `data`, `domain`, `content`, `theme` |
+| **Components**  | `src/components/` | Reusable React UI primitives, navigation, charts, feedback            | `content`, `theme`                   |
 
 ### Enforced boundaries (guardrails)
 
@@ -52,9 +45,9 @@ conventions — `npm run lint` fails if they're broken:
 1. **Firebase is importable only inside `src/data/`.** Every other layer must go
    through the typed data-access functions. This keeps Firestore details in one
    place and makes the rest of the app testable without a database.
-2. **The domain layer must stay pure** — it cannot import `firebase`, `data`, or
-   `ui`. This guarantees the assignment algorithm and calculations are unit-
-   testable in isolation and free of side effects.
+2. **The domain layer must stay pure** — it cannot import Firebase, data access,
+   application, component, or theme code. This keeps calculations isolated and
+   free of side effects.
 
 ---
 
@@ -62,20 +55,13 @@ conventions — `npm run lint` fails if they're broken:
 
 ```
 src/
-├── data/          firebase.ts (init), roster.ts, khatmas.ts, assignments.ts, distribution.ts
+├── app/           entries, providers, routing, store, operations, member/, admin/
+├── components/    primitives, navigation, charts, icons, feedback
+├── data/          firebase.ts, roster.ts, khatmas.ts, assignments.ts, distribution.ts
 ├── domain/        types.ts, distribution.ts, series.ts, progress.ts, assignment.ts, rotation.ts
 ├── content/       strings.ar.ts, quran/
-├── theme/         theme.css, reading.ts
-└── ui/
-    ├── shared/    router.ts, nav.ts, components.ts, charts.ts, icons.ts
-    ├── member/    render.ts, pages/khatmas.ts, reader.ts
-    └── admin/     render.ts, ctx.ts, routes.ts, nav.ts, pages/{home,khatma,khatmas,roster,settings}.ts
+└── theme/         muiTheme.ts, rtlCache.ts, globalStyles.ts, reading.ts, fonts/
 ```
-
-> On the `reactmigration` branch this tree also carries the React foundation:
-> `src/theme/` additionally holds the MUI theme (`muiTheme.ts`, `rtlCache.ts`,
-> `globalStyles.ts`), and a new top-level `src/app/` layer holds all React
-> composition. See [§React Migration Architecture](#react-migration-architecture-branch-only).
 
 ---
 
@@ -147,8 +133,10 @@ The distribution logic is split into a pure planning phase and an atomic transac
 
 The admin dashboard is structured as a single-page app utilizing hash-based routing (`#/home`, `#/roster`, etc.).
 
-- **Router** (`createRouter`): general hash-routing framework shared with the member app.
-- **Routed Pages** (`src/ui/admin/pages/`): Modules render specific screens and dispatch transactional writes directly to Firestore.
+- **Router** (`src/app/routing/`): typed React Router hash contracts shared with
+  the member app.
+- **Routed Pages** (`src/app/admin/pages/`): React screens dispatch writes through
+  typed operation adapters and read normalized Redux state.
 
 ### 3. Icon Override System
 
@@ -160,32 +148,23 @@ Supports zero-code custom iconography for low-friction customization:
 
 ### 4. Custom SVG Charts
 
-Charts are hand-rolled using simple, theme-aware SVGs to maintain a zero-dependency build setup:
+Charts are hand-rolled using simple, theme-aware SVGs:
 
-- **Donut Chart** (`donutChart`): Draws two SVG circles. The foreground circle uses `stroke-dasharray` and `stroke-dashoffset` to represent completion percentage.
-- **Segmented Bar** (`segmentBar`): Builds a single flexbox container containing block divs colored with CSS theme variables to show Done vs. Pending vs. Remaining pages.
+- **Donut Chart** (`DonutChart`): draws two SVG circles and a centered percentage.
+- **Segmented Bar** (`SegmentBar`): renders proportional MUI-themed segments
+  with a text legend.
 
 ---
 
-## React Migration Architecture (branch-only)
+## React Application Architecture
 
-The `reactmigration` branch is migrating the member and admin UIs from the
-framework-free DOM code above to **React + Material UI (MUI) + Redux Toolkit**.
-This section records the boundaries that are already implemented and verified
-(Phase 2 foundation, task RM-260). It documents the target shape; it does **not**
-change what production ships.
+The member and admin UIs use **React + Material UI (MUI) + Redux Toolkit**. Both
+production entries mount this application architecture.
 
-**Status — what is and isn't live:**
-
-- **Production is unchanged.** `npm run build` still emits only the two legacy
-  entries (`index.html`, `admin-nano.html`) rendered by the framework-free
-  `src/ui/` code. The sections above remain the accurate description of the
-  deployed app.
-- **React is a branch-only preview.** The React roots mount from
-  `react-preview.html` / `admin-react-preview.html`, which Vite serves during
-  development only. They are deliberately absent from the production build inputs
-  (see `entryFiles` in [`vite.config.ts`](vite.config.ts)), so the build cannot
-  publish them until the Phase 6 cutover.
+- `npm run build` emits the member `index.html` and hidden `admin-nano.html`
+  inputs, both backed by React entries.
+- `react-preview.html` and `admin-react-preview.html` are development-only
+  aliases excluded from deployable build inputs.
 - Stable migration governance, phase gates, and accepted decisions live in
   [the compact migration plan](docs/react-migration/PLAN.md) (AD-01…AD-12), while
   current task status lives in [the tracker](docs/react-migration/TRACKER.md).
@@ -197,7 +176,7 @@ All React composition lives under a new `src/app/` layer. The shared
 
 ```
 src/app/
-├── entries/       member.tsx, admin.tsx        dev-only preview mounts
+├── entries/       member.tsx, admin.tsx        production mounts
 ├── bootstrap.tsx  createRoot(#app) inside <StrictMode>
 ├── member/        MemberApp.tsx                member root (composition)
 ├── admin/         AdminApp.tsx                 admin root (composition)
@@ -224,7 +203,7 @@ domain ─X─▶ React, Redux, data, or Firebase   (still pure)
 `firebase/*`; it reaches Firestore only through the typed `src/data/` functions
 (subscribers for reads, mutation functions for writes). This is the _same_
 ESLint guardrail described under [Enforced boundaries](#enforced-boundaries-guardrails) —
-`src/app/` is covered by Guardrail 1 exactly like `src/ui/`, so `npm run lint`
+`src/app/` is covered by Guardrail 1, so `npm run lint`
 fails if a React module imports Firebase directly.
 
 ### App composition & providers
@@ -327,10 +306,7 @@ single owner of listener lifecycle for React:
 ### Theme
 
 The centralized MUI RTL theme lives in `src/theme/` (`muiTheme.ts`, `rtlCache.ts`,
-`globalStyles.ts`) and maps the legacy design tokens onto MUI's `palette`,
-`typography`, `shape`, `spacing`, and `breakpoints` with `direction: 'rtl'`.
-Application-specific CSS (Quran typography, reading scale, safe areas, icon
-masks) is retained rather than forced into MUI (AD-09). **Tailwind remains
-enabled** in `vite.config.ts` until both entries have cut over to React; it is
-removed in Phase 6 (RM-620) so the transition never runs with a half-removed
-stylesheet layer.
+`globalStyles.ts`) and defines the app's `palette`, `typography`, `shape`,
+`spacing`, and `breakpoints` with `direction: 'rtl'`. Application-specific CSS
+(Quran typography, reading scale, safe areas, icon masks) remains in
+`globalStyles.ts` rather than being forced into component overrides (AD-09).

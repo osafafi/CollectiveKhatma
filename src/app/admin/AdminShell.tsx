@@ -6,8 +6,7 @@ import { useAdminRoute } from '@/app/routing/hooks';
 import { strings } from '@/content/strings.ar';
 
 /**
- * Admin tab list (REQUIREMENTS §8: Home / Roster / Khatmas / Settings) — the
- * React twin of the legacy [`src/ui/admin/nav.ts`](../../ui/admin/nav.ts). The
+ * Admin tab list (REQUIREMENTS §8: Home / Roster / Khatmas / Settings). The
  * khatmas tab owns the khatma detail sub-route.
  */
 const ADMIN_TABS: ReadonlyArray<ShellTab<AdminRoute>> = [
@@ -58,10 +57,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * The persistent admin title shown on every admin page (inventory §3), mirroring
- * the legacy `header()` in [`src/ui/admin/render.ts`](../../ui/admin/render.ts).
- * Rendered as a non-heading label so each route keeps a single `h1` (its own page
- * heading) rather than duplicating the legacy's two-`h1` structure.
+ * The persistent admin title shown on every admin page (inventory §3). Rendered
+ * as a non-heading label so each route keeps a single `h1` (its own page
+ * heading).
  */
 function AdminHeader() {
   return (

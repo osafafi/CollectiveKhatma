@@ -40,9 +40,8 @@ import type {
 } from '@/domain/types';
 
 /**
- * Admin Khatma detail `#/khatmas/{id}` (inventory §3.4) — the React twin of the
- * legacy [`khatmaPage`](../../../ui/admin/pages/khatma.ts). Header + editable
- * series metadata, then (for an active khatma) the per-member management table
+ * Admin Khatma detail `#/khatmas/{id}` (inventory §3.4). Header + editable series
+ * metadata, then (for an active khatma) the per-member management table
  * and controls, or (for a completed one) just start-next; the series history
  * closes the page.
  *

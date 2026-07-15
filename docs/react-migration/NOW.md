@@ -9,60 +9,56 @@
 | ------------------------------------- | ----------------------------------------------------- |
 | Integration branch                    | `reactmigration`                                      |
 | Branch base                           | `6992007` (`main` at migration start)                 |
-| Last completed code task              | RM-610 — Cut over admin entry to React                |
-| Last completed code commit            | Uncommitted; baseline `6c733e9`                       |
+| Last completed code task              | RM-630 — Optimize and document bundles                |
+| Last completed code commit            | Working tree on `cf11a52`                             |
 | Active migration task                 | None                                                  |
 | Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation |
-| Next recommended task                 | RM-620 — Remove legacy UI and Tailwind                |
+| Next recommended task                 | RM-640 or RM-650 (independent validation lanes)       |
 | Open decisions affecting current work | OD-04 by RM-740                                       |
 | Last updated                          | 2026-07-15                                            |
 
-RM-600 + RM-610 complete the controlled production cutover. Both deployable HTML
-inputs now mount React; the hidden admin filename and metadata are unchanged.
-Gates are clean (typecheck/build, lint, **235** tests + 1 skipped, focused entry
-contract, two built-page smokes, and bundle budgets).
+RM-620 removed the framework-free bootstraps, `src/ui/**`, Tailwind, and
+obsolete router tests while preserving React-owned global styles/assets. RM-630
+split the oversized shared runtime into stable production chunks and moved the
+budget gate from preview aliases to the deployable production manifest.
 
-## Handoff from RM-600 + RM-610
+## Completed bundle result — RM-630
 
-- `index.html` loads `src/app/entries/member.tsx`; `admin-nano.html` loads
-  `src/app/entries/admin.tsx`.
-- Both React entries set their localized runtime `document.title`, preserving the
-  parity inventory §1.1 contract from the legacy bootstraps.
-- Vite still publishes exactly the member and hidden admin production inputs.
-  `react-preview.html` and `admin-react-preview.html` remain development-only.
-- Built smokes passed: member `/` rendered the React member UI; hidden admin
-  `/admin-nano.html#/home` resolved the React `home` route. Both retained Arabic
-  RTL metadata and produced no console warnings/errors; admin retained
-  `noindex, nofollow`.
-- RM-040 budgets passed: member 341.62/387.73 kB against 350/400 kB JS/transfer;
-  admin 342.32/388.43 kB against 375/425 kB.
-- Tailwind and all legacy UI source remain intentionally present for RM-620.
+- Largest chunks: Firebase 483.78 kB raw, MUI/Emotion 311.22 kB, shared
+  React/application runtime 298.08 kB. Vite emits no oversized-chunk warning.
+- Member: 341.44 kB initial JS gzip / 387.60 kB transfer (350/400 kB limits).
+- Admin: 344.57 kB initial JS gzip / 390.82 kB transfer (375/425 kB limits).
+- Route-lazy loading was prototyped and rejected: it saved only about 1% while
+  adding an asynchronous loading phase to every non-default route.
+- Typecheck, lint, 221 tests + 1 skipped, production build, focused entry/app
+  tests, budget checks, and diff whitespace checks pass.
 
-## Next-session read set — RM-620 (Remove legacy UI and Tailwind)
+## Next-session options
 
-1. This file + Phase 6 in `TRACKER.md` + `tasks/RM-600.md` and `tasks/RM-610.md`.
-2. Create `tasks/RM-620.md` while claiming from tracker acceptance: legacy
-   renderers/Tailwind gone, retained CSS independent, no dead imports.
-3. Inventory `src/member.ts`, `src/admin.ts`, `src/ui/**`, Tailwind imports/plugin
-   and configuration, plus any tests/docs that still encode the transition.
-4. Separate CSS/assets still consumed by React from legacy-only CSS before
-   deleting anything; the Quran font, shared static icons, and React theme assets
-   are not legacy merely because legacy code also used them.
-5. Run dead-import search, typecheck, lint, full tests, production build, and
-   bundle budgets after cleanup.
+### RM-640 — Emulator cross-client validation
 
-## Risks / notes for next task
+1. Read this file, Phase 6 in `TRACKER.md`, and `tasks/RM-630.md`.
+2. Claim only RM-640 and create its task record.
+3. Use two clients against the emulator to verify realtime reads/writes,
+   distribution/completion, reload/reconnect, and listener cleanup.
 
-- Partial migration must not reach `main`; current work is uncommitted on
-  `reactmigration` after exact baseline `6c733e9`.
-- Do not remove data/domain modules under `src/data/**`; both React apps use those
-  framework-independent contracts.
+### RM-650 — Accessibility, RTL, responsive QA
+
+1. Read this file, Phase 6 in `TRACKER.md`, and `tasks/RM-620.md`.
+2. Claim only RM-650 and create its task record.
+3. Walk keyboard/focus/labels/contrast/direction/portals/sizing/layouts across
+   member and hidden admin surfaces at mobile and desktop widths.
+
+## Risks / constraints
+
+- The member budget has only 8.56 kB JS gzip and 12.40 kB transfer headroom;
+  keep the production-manifest gate on every dependency or entry change.
 - Do not rename/expose the hidden admin entry or add a member-app link.
-- The large shared production chunk warning is known; optimization and final
-  bundle documentation are RM-630 after cleanup.
+- RM-660 requires explicit owner authorization before any staging/live reads or
+  writes. Do not deploy from the migration branch.
 
 ## Claim protocol
 
-Confirm this two-entry cutover handoff, flip only RM-620 to `IN PROGRESS`, create
-its task record, rewrite this file with active scope/read set/risks, and run the
-smallest useful baseline check. Do not append a chronological session log.
+Flip only the selected next task to `IN PROGRESS`, create its task record,
+rewrite this file for active scope/read set/risks, and run the smallest useful
+baseline check.

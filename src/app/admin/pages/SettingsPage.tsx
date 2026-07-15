@@ -19,9 +19,8 @@ interface AdminSettingsPageProps {
 }
 
 /**
- * Admin Settings `#/settings` (inventory §3.5) — the React twin of the legacy
- * [`settingsPage`](../../../ui/admin/pages/settings.ts): the global du3a editor
- * plus the shared reading-scale control (**P11**, reused not forked).
+ * Admin Settings `#/settings` (inventory §3.5): the global du3a editor plus the
+ * shared reading-scale control (**P11**, reused not forked).
  *
  * The reading-scale disclosure state is lifted to `AdminRouteContent` (like the
  * member app) so it persists across route navigation; the du3a draft lives in

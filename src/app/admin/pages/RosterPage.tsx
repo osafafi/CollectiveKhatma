@@ -15,9 +15,8 @@ import { isNameUnique } from '@/domain/validation';
 import type { Person } from '@/domain/types';
 
 /**
- * Admin Roster `#/roster` (inventory §3.2) — the React twin of the legacy
- * [`rosterPage`](../../../ui/admin/pages/roster.ts): search-as-you-type over the
- * member list, per-person controls (pages/round, pause, remove), and the
+ * Admin Roster `#/roster` (inventory §3.2): search-as-you-type over the member
+ * list, per-person controls (pages/round, pause, remove), and the
  * add-member form.
  *
  * Drafts (the search text and the add-form fields) are component-local state;

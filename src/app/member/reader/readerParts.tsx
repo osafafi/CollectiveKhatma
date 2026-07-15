@@ -8,8 +8,7 @@ import { ayahEndMarker } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 
 /**
- * Shared building blocks for the two React mushaf readers — the React twin of
- * [`src/ui/member/reader.ts`](../../../ui/member/reader.ts). Each reader owns its
+ * Shared building blocks for the two mushaf readers. Each reader owns its
  * current page (browse from the URL, assigned from keyed component state); these
  * parts render the sticky chrome, the prev/next nav row, and the async page body
  * with its stale-navigation guard. Pure paging helpers live in `readerPaging.ts`.

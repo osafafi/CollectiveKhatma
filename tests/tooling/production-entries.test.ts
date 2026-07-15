@@ -3,11 +3,9 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { UserConfig } from 'vite';
 import viteConfig, { entryFiles } from '../../vite.config';
-import reactSpikeConfig from '../../vite.react-spike.config';
 
 const root = resolve(import.meta.dirname, '../..');
 const config = viteConfig as UserConfig;
-const spikeConfig = reactSpikeConfig as UserConfig;
 
 describe('production and React preview entry isolation', () => {
   it('keeps React transformation and Fast Refresh in the Vite plugin chain', () => {
@@ -44,12 +42,10 @@ describe('production and React preview entry isolation', () => {
     }
   });
 
-  it('keeps the explicit non-deployable preview build for budget measurement', () => {
-    expect(spikeConfig.build?.outDir).toBe('dist-react-spike');
-    expect(spikeConfig.build?.manifest).toBe(true);
-    expect(spikeConfig.build?.rollupOptions?.input).toEqual({
-      member: resolve(root, entryFiles.reactPreview.member),
-      admin: resolve(root, entryFiles.reactPreview.admin),
+  it('emits a production manifest for bundle-budget measurement', () => {
+    expect(config.build?.manifest).toBe(true);
+    expect(config.build?.rollupOptions?.output).toMatchObject({
+      manualChunks: expect.any(Function),
     });
   });
 

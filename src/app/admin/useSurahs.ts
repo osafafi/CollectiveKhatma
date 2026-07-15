@@ -4,8 +4,7 @@ import type { Surah } from '@/content/quran/types';
 
 /**
  * Load the 114 surahs (Arabic names + page spans) once for the admin's
- * name-based pickers — the React twin of the legacy admin boot `getSurahs()`
- * load in [`src/ui/admin/render.ts`](../../ui/admin/render.ts).
+ * name-based pickers.
  *
  * Returns `null` until the (cached) fetch resolves and stays `null` if it fails,
  * matching the legacy behavior: the surah checklist and the surah-name capacity

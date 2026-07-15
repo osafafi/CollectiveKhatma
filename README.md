@@ -1,6 +1,6 @@
 # Quran Khatma Tracker
 
-A static, framework-free **TypeScript** web app for organizing collective Quran
+A static **React + TypeScript** web app for organizing collective Quran
 khatmas (group readings where the 604 pages are split among members). It
 replaces a manual, WhatsApp-based process with automatic page assignment and
 live progress tracking, built for a **non-tech-savvy, senior** audience.
@@ -10,22 +10,21 @@ unguessable-URL **admin app** — talking directly to **Firebase/Firestore** wit
 no server or Cloud Functions. See [REQUIREMENTS.md](REQUIREMENTS.md) for the full
 product spec and [ARCHITECTURE.md](ARCHITECTURE.md) for how the code is organized.
 
-> **Status:** Stage 1 — scaffolding & infrastructure. The toolchain, layered
-> architecture, theme, and a live end-to-end "walking skeleton" are in place.
-> Features (assignment algorithm, reading flow, admin dashboard) come next; see
-> [What's built vs. deferred](#whats-built-vs-deferred).
+> **Status:** The member and hidden admin production entries run on React. The
+> migration branch is in final cleanup and end-to-end validation; see the
+> [migration tracker](docs/react-migration/TRACKER.md).
 
 ## Tech stack
 
-| Concern     | Choice                                                                 |
-| ----------- | ---------------------------------------------------------------------- |
-| Language    | TypeScript (strict)                                                    |
-| UI          | Plain HTML + [Tailwind CSS v4](https://tailwindcss.com) (no framework) |
-| Build/dev   | [Vite](https://vite.dev) (multi-page app)                              |
-| Backend     | Firebase / Cloud Firestore (client SDK only — no Cloud Functions)      |
-| Tests       | [Vitest](https://vitest.dev)                                           |
-| Lint/format | ESLint (flat config) + Prettier                                        |
-| Hosting     | Static site → GitHub Pages                                             |
+| Concern     | Choice                                                            |
+| ----------- | ----------------------------------------------------------------- |
+| Language    | TypeScript (strict)                                               |
+| UI          | React + Material UI (MUI), Redux Toolkit, React Router            |
+| Build/dev   | [Vite](https://vite.dev) (multi-page app)                         |
+| Backend     | Firebase / Cloud Firestore (client SDK only — no Cloud Functions) |
+| Tests       | [Vitest](https://vitest.dev)                                      |
+| Lint/format | ESLint (flat config) + Prettier                                   |
+| Hosting     | Static site → GitHub Pages                                        |
 
 ## Prerequisites
 
@@ -61,33 +60,25 @@ seeded roster live; the admin page is at `/admin-nano.html` (see
 > Without the emulator running, the app still loads — the roster simply shows
 > "no members yet" (Firestore returns an empty offline snapshot).
 
-### React migration previews
-
-On the `reactmigration` branch, the same development server also exposes the
-isolated React foundations at `/react-preview.html` (member) and
-`/admin-react-preview.html` (admin). These pages are development-only: the
-production input list still contains only `index.html` and `admin-nano.html`, so
-`npm run build`, `npm run preview`, and the deployment workflow cannot publish
-the React previews before the controlled cutover. Use
-`npm run check:bundle-budgets` for the explicit non-deployable React build and
-the accepted member/admin initial-load checks.
+The production member and hidden admin pages both mount React. Development-only
+preview aliases remain available for local comparison and are excluded from the
+deployable Vite inputs; bundle budgets are measured from the production manifest.
 
 ## npm scripts
 
-| Script                         | What it does                                                       |
-| ------------------------------ | ------------------------------------------------------------------ |
-| `npm run dev`                  | Vite dev server with hot reload                                    |
-| `npm run build`                | Typecheck, then build the static site to `dist/`                   |
-| `npm run build:react-spike`    | Build only the non-deployable React entries for measurement        |
-| `npm run check:bundle-budgets` | Build the React spike and enforce member/admin initial-load limits |
-| `npm run preview`              | Serve the built `dist/` locally                                    |
-| `npm run typecheck`            | `tsc --noEmit`                                                     |
-| `npm run lint`                 | ESLint (includes the layer guardrails)                             |
-| `npm run format`               | Prettier write                                                     |
-| `npm test`                     | Run the Vitest unit tests                                          |
-| `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)             |
-| `npm run seed`                 | Seed roster + default du3a into the running emulator               |
-| `npm run build:quran`          | (Re)generate the bundled Quran dataset under `public/quran/`       |
+| Script                         | What it does                                                  |
+| ------------------------------ | ------------------------------------------------------------- |
+| `npm run dev`                  | Vite dev server with hot reload                               |
+| `npm run build`                | Typecheck, then build the static site to `dist/`              |
+| `npm run check:bundle-budgets` | Build production and enforce member/admin initial-load limits |
+| `npm run preview`              | Serve the built `dist/` locally                               |
+| `npm run typecheck`            | `tsc --noEmit`                                                |
+| `npm run lint`                 | ESLint (includes the layer guardrails)                        |
+| `npm run format`               | Prettier write                                                |
+| `npm test`                     | Run the Vitest unit tests                                     |
+| `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)        |
+| `npm run seed`                 | Seed roster + default du3a into the running emulator          |
+| `npm run build:quran`          | (Re)generate the bundled Quran dataset under `public/quran/`  |
 
 ## Firebase setup
 
@@ -176,7 +167,8 @@ a page range, a whole chapter, or both.
   non-commercial use; keep attribution.
 - **Font:** [Amiri Quran](https://github.com/alif-type/amiri) (SIL OFL 1.1),
   bundled at [`src/theme/fonts/AmiriQuran.woff2`](src/theme/fonts/AmiriQuran.woff2)
-  and wired via `@font-face` in [`src/theme/theme.css`](src/theme/theme.css). It
+  and wired via `@font-face` in
+  [`src/theme/globalStyles.ts`](src/theme/globalStyles.ts). It
   renders the Uthmani text with its symbols (ornate ayah medallions, pause/waqf
   marks). To use the official **KFGQPC Uthmanic Hafs** font instead, drop it in
   beside that file and update the `src` (mind its license).
@@ -184,16 +176,10 @@ a page range, a whole chapter, or both.
   [`src/content/quran/symbols.ts`](src/content/quran/symbols.ts); reading text
   reflows and scales with the font-size slider.
 
-## What's built vs. deferred
+## What is built
 
-**Built now (Stage 1):** project + build/deploy toolchain, Tailwind v4 theme,
-centralized Arabic strings, the layered architecture with enforced boundaries,
-Firestore wiring + emulator + seed, security rules, the full bundled Quran
-dataset + Uthmani font with rendered symbols, a live member/roster slice, and
-this documentation.
-
-**Deferred (later stages):** the page-assignment algorithm, the daily reading
-flow and one-tap "done", group progress, the admin dashboard
-(roster/khatma management, corrections, urgency escalation), du3a completion
-screen, the full paged reading/browsing UI, and the font-size slider control.
-Backlogged items are listed in [REQUIREMENTS.md](REQUIREMENTS.md#9-out-of-scope-for-v1-explicit-backlog-not-to-be-built-now).
+The app includes the round-based assignment engine, live member reading and
+completion flows, roster and khatma administration, progress dashboards,
+du3a/settings controls, bundled paged Quran reader, browser persistence, and
+responsive Arabic RTL member/admin surfaces. Remaining migration validation is
+tracked in [the React migration tracker](docs/react-migration/TRACKER.md).

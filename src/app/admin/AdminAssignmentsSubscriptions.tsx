@@ -4,8 +4,7 @@ import { useAdminRoute } from '@/app/routing/hooks';
 
 /**
  * Keep the admin's dynamic assignment listeners alive for exactly the set the
- * dashboard and detail page need — the React twin of the legacy
- * `reconcileAssignmentSubs` ([`src/ui/admin/render.ts`](../../ui/admin/render.ts)):
+ * dashboard and detail page need:
  * **every active khatma** (Home + Khatmas need them) **plus** the khatma open on
  * the detail route, which may itself be completed (inventory §1.4 / P9).
  *

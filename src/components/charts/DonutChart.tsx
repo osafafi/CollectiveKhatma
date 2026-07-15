@@ -10,13 +10,8 @@ export interface DonutChartProps {
 
 /**
  * A donut showing one completion percentage, with the value as a hero number in
- * the middle — the React twin of the legacy `donutChart`
- * ([`src/ui/shared/charts.ts`](../../ui/shared/charts.ts)). The single source of
- * identity is the accompanying title, so no legend is needed.
- *
- * Track = `palette.divider`, fill = `palette.primary` — the colors come from the
- * MUI theme because the React tree does not load `theme.css`, so the legacy
- * `var(--color-…)` tokens do not exist here.
+ * the middle. The single source of identity is the accompanying title, so no
+ * legend is needed. Track and fill colors come from the MUI theme.
  */
 export function DonutChart({ percent, size = 112 }: DonutChartProps) {
   const theme = useTheme();

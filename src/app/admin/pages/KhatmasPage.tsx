@@ -46,9 +46,8 @@ import {
 } from '@/domain/types';
 
 /**
- * Admin Khatmas `#/khatmas` (inventory §3.3) — the React twin of the legacy
- * [`khatmasPage`](../../../ui/admin/pages/khatmas.ts). List-first: every khatma
- * (active before completed) links to its detail page, and a gated create form
+ * Admin Khatmas `#/khatmas` (inventory §3.3). List-first: every khatma (active
+ * before completed) links to its detail page, and a gated create form
  * collects the series name, scope, member picker, per-member additive capacity,
  * reciter, and optional backfill.
  *
