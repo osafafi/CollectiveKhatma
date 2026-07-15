@@ -112,10 +112,10 @@ the app is validated end to end without changing `main` prematurely.
 
 ## Phase 7 — Merge readiness and controlled handoff to main
 
-| ID     | Task                                | Owner          | Status      | Depends on                     | Concise acceptance/evidence                                                         |
-| ------ | ----------------------------------- | -------------- | ----------- | ------------------------------ | ----------------------------------------------------------------------------------- |
-| RM-700 | Final clean quality suite           | Codex          | NOT STARTED | RM-630, RM-640, RM-650, RM-670 | Clean install, typecheck, lint, all tests, build, and CI pass.                      |
-| RM-710 | Review delta against current `main` | Joint          | NOT STARTED | RM-700                         | Changes since `6992007` reconciled without unrelated overwrite.                     |
-| RM-720 | Joint code/behavior review          | Codex + Claude | NOT STARTED | RM-710                         | Boundaries, subscriptions, parity, dead code, docs, and risks jointly reviewed.     |
-| RM-730 | Merge summary and rollback plan     | Codex          | NOT STARTED | RM-720                         | Summary covers changes, verification, bundles, data compatibility, risks, rollback. |
-| RM-740 | Owner approval and merge to `main`  | Project owner  | NOT STARTED | RM-730                         | Explicit owner authorization is obtained before merge.                              |
+| ID     | Task                                | Owner          | Status      | Depends on                     | Concise acceptance/evidence                                                          |
+| ------ | ----------------------------------- | -------------- | ----------- | ------------------------------ | ------------------------------------------------------------------------------------ |
+| RM-700 | Final clean quality suite           | Joint          | DONE        | RM-630, RM-640, RM-650, RM-670 | Clean `npm ci`; typecheck, lint, 225 tests, build, and bundle budgets pass (RM-700). |
+| RM-710 | Review delta against current `main` | Joint          | NOT STARTED | RM-700                         | Changes since `6992007` reconciled without unrelated overwrite.                      |
+| RM-720 | Joint code/behavior review          | Codex + Claude | NOT STARTED | RM-710                         | Boundaries, subscriptions, parity, dead code, docs, and risks jointly reviewed.      |
+| RM-730 | Merge summary and rollback plan     | Codex          | NOT STARTED | RM-720                         | Summary covers changes, verification, bundles, data compatibility, risks, rollback.  |
+| RM-740 | Owner approval and merge to `main`  | Project owner  | NOT STARTED | RM-730                         | Explicit owner authorization is obtained before merge.                               |
