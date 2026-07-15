@@ -64,7 +64,7 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="quran">
-      <StickyChrome>
+      <StickyChrome> 
         <Typography
           component="h1"
           color="primary.main"
@@ -72,6 +72,10 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
         >
           {strings.reader.browseTitle}
         </Typography>
+        <JumpControls page={page} onJump={goToPage} />
+      </StickyChrome>
+
+      <QuranPageContent page={page} />
         <ReaderNav
           onPrev={() => goToPage(page - 1)}
           onNext={() => goToPage(page + 1)}
@@ -79,10 +83,6 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
           atEnd={page >= TOTAL_PAGES}
           indicator={indicator}
         />
-        <JumpControls page={page} onJump={goToPage} />
-      </StickyChrome>
-
-      <QuranPageContent page={page} />
     </Stack>
   );
 }
@@ -131,9 +131,15 @@ function JumpControls({
   return (
     <Stack
       direction="row"
-      spacing={2}
+      spacing={5}
       useFlexGap
-      sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+      sx={{
+        flexWrap: 'nowrap',
+        alignItems: 'end',
+        justifyContent: 'center',
+        width: '100%',
+        // overflow: 'hidden',
+      }}
     >
       <JumpSelect label={strings.reader.surah} options={surahOptions} onJump={onJump} />
       <JumpSelect label={strings.reader.juz} options={juzOptions} onJump={onJump} />
@@ -198,6 +204,7 @@ function PageJumpInput({
   return (
     <TextField
       type="number"
+      label={strings.reader.page}
       size="small"
       value={draft}
       onChange={(event) => setDraft(event.target.value)}

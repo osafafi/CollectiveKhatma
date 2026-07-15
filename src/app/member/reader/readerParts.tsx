@@ -65,7 +65,7 @@ export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderN
         disabled={atStart}
         sx={{ opacity: atStart ? 0.4 : 1 }}
       >
-        {strings.reader.prev} ›
+        ‹ {strings.reader.prev}
       </AppButton>
       <Typography
         component="span"
@@ -85,7 +85,7 @@ export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderN
         disabled={atEnd}
         sx={{ opacity: atEnd ? 0.4 : 1 }}
       >
-        ‹ {strings.reader.next}
+        {strings.reader.next} ›
       </AppButton>
     </Stack>
   );
