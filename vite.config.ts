@@ -29,7 +29,7 @@ export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
 
   // React owns JSX transformation and development Fast Refresh. Tailwind stays
-  // enabled until both legacy entries have completed their React cutovers.
+  // enabled through cutover and is removed with the legacy UI in RM-620.
   plugins: [react(), tailwindcss()],
 
   resolve: {
@@ -39,7 +39,7 @@ export default defineConfig({
   },
 
   build: {
-    // Production remains a two-entry legacy build until the controlled cutover.
+    // Production remains a two-entry build throughout the controlled cutover.
     // The React preview HTML files are intentionally absent: Vite serves them
     // during development, but `npm run build` cannot publish them to dist/.
     rollupOptions: {

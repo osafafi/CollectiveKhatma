@@ -30,7 +30,7 @@ describe('production and React preview entry isolation', () => {
     );
   });
 
-  it('keeps the production build restricted to the two legacy entries', () => {
+  it('keeps the production build restricted to the two deployable entries', () => {
     const input = config.build?.rollupOptions?.input;
 
     expect(input).toEqual({
@@ -44,7 +44,7 @@ describe('production and React preview entry isolation', () => {
     }
   });
 
-  it('measures React entries only in the explicit non-deployable spike build', () => {
+  it('keeps the explicit non-deployable preview build for budget measurement', () => {
     expect(spikeConfig.build?.outDir).toBe('dist-react-spike');
     expect(spikeConfig.build?.manifest).toBe(true);
     expect(spikeConfig.build?.rollupOptions?.input).toEqual({
@@ -53,7 +53,7 @@ describe('production and React preview entry isolation', () => {
     });
   });
 
-  it('keeps legacy and React HTML files wired to their own entry modules', async () => {
+  it('wires both production pages to React without publishing preview HTML', async () => {
     const [memberProduction, adminProduction, memberPreview, adminPreview] =
       await Promise.all([
         readFile(resolve(root, entryFiles.production.member), 'utf8'),
@@ -62,8 +62,10 @@ describe('production and React preview entry isolation', () => {
         readFile(resolve(root, entryFiles.reactPreview.admin), 'utf8'),
       ]);
 
-    expect(memberProduction).toContain('src="/src/member.ts"');
-    expect(adminProduction).toContain('src="/src/admin.ts"');
+    expect(memberProduction).toContain('src="/src/app/entries/member.tsx"');
+    expect(memberProduction).not.toContain('src="/src/member.ts"');
+    expect(adminProduction).toContain('src="/src/app/entries/admin.tsx"');
+    expect(adminProduction).not.toContain('src="/src/admin.ts"');
     expect(memberPreview).toContain('src="/src/app/entries/member.tsx"');
     expect(adminPreview).toContain('src="/src/app/entries/admin.tsx"');
   });

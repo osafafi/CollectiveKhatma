@@ -98,8 +98,8 @@ do not disrupt in-progress forms.
 
 | ID     | Task                               | Owner                     | Status      | Depends on     | Concise acceptance/evidence                                                                 |
 | ------ | ---------------------------------- | ------------------------- | ----------- | -------------- | ------------------------------------------------------------------------------------------- |
-| RM-600 | Cut over member entry to React     | Joint                     | NOT STARTED | RM-460         | Production member entry mounts React and smoke/build checks pass.                           |
-| RM-610 | Cut over admin entry to React      | Joint                     | NOT STARTED | RM-570, RM-600 | Hidden admin entry mounts React without route/build-input regression.                       |
+| RM-600 | Cut over member entry to React     | Joint                     | DONE        | RM-460         | React production entry; build/smoke pass; 341.62/387.73 kB within 350/400 kB budgets.       |
+| RM-610 | Cut over admin entry to React      | Joint                     | DONE        | RM-570, RM-600 | React hidden entry; route/build smoke passes; 342.32/388.43 kB within 375/425 kB budgets.   |
 | RM-620 | Remove legacy UI and Tailwind      | Joint                     | NOT STARTED | RM-610         | Legacy renderers/Tailwind are gone; retained CSS is independent; no dead imports.           |
 | RM-630 | Optimize and document bundles      | Codex                     | NOT STARTED | RM-620, RM-040 | Route splitting/imports reviewed and final sizes recorded against budgets.                  |
 | RM-640 | Emulator cross-client validation   | Joint                     | NOT STARTED | RM-610         | Two clients verify realtime reads/writes/distribution/completion/reload/reconnect/cleanup.  |
