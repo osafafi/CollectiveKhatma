@@ -1,5 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { appTheme, createAppTheme, tokens } from '@/theme/muiTheme';
+import { retainedGlobalStyles } from '@/theme/globalStyles';
+
+type Rgb = readonly [number, number, number];
+
+function rgb(hex: string): Rgb {
+  const value = hex.replace('#', '');
+  return [0, 2, 4].map((offset) =>
+    Number.parseInt(value.slice(offset, offset + 2), 16),
+  ) as unknown as Rgb;
+}
+
+function relativeLuminance(color: Rgb): number {
+  const [red, green, blue] = color.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+}
+
+function contrastRatio(foreground: Rgb, background: Rgb): number {
+  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function composite(foreground: Rgb, background: Rgb, alpha: number): Rgb {
+  return foreground.map((channel, index) =>
+    Math.round(channel * alpha + background[index]! * (1 - alpha)),
+  ) as unknown as Rgb;
+}
 
 describe('MUI theme — token mapping (RM-210)', () => {
   it('is right-to-left', () => {
@@ -31,7 +61,9 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(tokens.color.primaryStrong).toBe('#0a5348');
     expect(tokens.color.accent).toBe('#c9a24a');
     expect(tokens.color.success).toBe('#2f7d55');
+    expect(tokens.color.successStrong).toBe('#256444');
     expect(tokens.color.warn).toBe('#b45309');
+    expect(tokens.color.warnStrong).toBe('#904207');
     expect(tokens.color.danger).toBe('#b23a2e');
     expect(tokens.color.border).toBe('#e5ddcb');
     // Theme-map R3 resolved: the gold accent and the amber warn are now distinct.
@@ -45,6 +77,35 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(appTheme.palette.success.contrastText).toBe('#ffffff');
     expect(appTheme.palette.warning.contrastText).toBe('#ffffff');
     expect(appTheme.palette.error.contrastText).toBe('#ffffff');
+  });
+
+  it('keeps text, tinted statuses, and keyboard focus above WCAG contrast floors', () => {
+    const backgrounds = [rgb(tokens.color.bg), rgb(tokens.color.surface)];
+    const normalTextColors = [
+      rgb(tokens.color.ink),
+      rgb(tokens.color.muted),
+      rgb(tokens.color.primary),
+      rgb(tokens.color.danger),
+    ];
+
+    for (const background of backgrounds) {
+      for (const foreground of normalTextColors) {
+        expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
+      }
+      for (const statusColor of [
+        rgb(tokens.color.successStrong),
+        rgb(tokens.color.warnStrong),
+      ]) {
+        const tintedBackground = composite(statusColor, background, 0.1);
+        expect(contrastRatio(statusColor, tintedBackground)).toBeGreaterThanOrEqual(4.5);
+      }
+
+      const focusRing = composite(rgb(tokens.color.primary), background, 0.7);
+      expect(contrastRatio(focusRing, background)).toBeGreaterThanOrEqual(3);
+    }
+
+    const styles = retainedGlobalStyles as Record<string, Record<string, string>>;
+    expect(styles[':focus-visible']!.outline).toBe('3px solid rgba(14, 111, 97, 0.7)');
   });
 
   it('uses the app 4px spacing unit', () => {

@@ -21,6 +21,8 @@ export const tokens = {
     muted: '#5c6b62', // warm sage gray — AA (5.5:1) on surface
     primary: '#0e6f61', // calm emerald "Quran green"
     primaryStrong: '#0a5348', // hover/press dark tone
+    successStrong: '#256444', // accessible text on pale success status surfaces
+    warnStrong: '#904207', // accessible text on pale warning status surfaces
     accent: '#c9a24a', // gold highlight (dua/reciter, chart "pending"); dark text
     success: '#2f7d55', // natural leaf green
     warn: '#b45309', // amber caution — kept distinct from the red danger tone
@@ -66,9 +68,17 @@ export function createAppTheme(): Theme {
         main: tokens.color.accent,
         contrastText: tokens.color.ink,
       },
-      success: { main: tokens.color.success, contrastText: tokens.color.white },
-      // NOTE (theme-map R3): warn shares its hex with accent by design today.
-      warning: { main: tokens.color.warn, contrastText: tokens.color.white },
+      success: {
+        main: tokens.color.success,
+        dark: tokens.color.successStrong,
+        contrastText: tokens.color.white,
+      },
+      // Warning amber remains distinct from the lighter gold accent (theme-map R3).
+      warning: {
+        main: tokens.color.warn,
+        dark: tokens.color.warnStrong,
+        contrastText: tokens.color.white,
+      },
       error: { main: tokens.color.danger, contrastText: tokens.color.white },
       background: {
         default: tokens.color.bg, // warm paper

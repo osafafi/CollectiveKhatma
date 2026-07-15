@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { AppHashRouter } from '@/app/routing/AppHashRouter';
 import { MemberShell } from '@/app/member/MemberShell';
 import { AdminShell } from '@/app/admin/AdminShell';
+import {
+  appNavLayout,
+  appShellContentSx,
+  appShellFrameSx,
+} from '@/components/navigation/layoutContracts';
 import { strings } from '@/content/strings.ar';
 
 /** Mirror the hash-routing tests: drive HashRouter via the real location hash. */
@@ -78,6 +84,22 @@ describe('Member shell navigation (RM-310)', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
+  it('follows the logical RTL navigation order by keyboard', async () => {
+    const user = userEvent.setup();
+    renderMember();
+    const nav = screen.getByRole('navigation', { name: strings.common.appName });
+
+    for (const label of [
+      strings.nav.khatmas,
+      strings.nav.quran,
+      strings.nav.personal,
+      strings.nav.settings,
+    ]) {
+      await user.tab();
+      expect(within(nav).getByRole('link', { name: label })).toHaveFocus();
+    }
+  });
+
   it('keeps the khatmas tab active across its nested khatma and reader routes', () => {
     renderMember('#/khatma/k1/read');
     const nav = screen.getByRole('navigation', { name: strings.common.appName });
@@ -88,6 +110,33 @@ describe('Member shell navigation (RM-310)', () => {
     expect(
       within(nav).getByRole('link', { name: strings.nav.settings }),
     ).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('Responsive shell contracts (RM-650)', () => {
+  it('clears the mobile tab bar and reserves the RTL desktop rail', () => {
+    expect(appShellFrameSx.paddingInlineStart).toEqual({ lg: '96px' });
+    expect(appShellContentSx).toMatchObject({
+      width: '100%',
+      pb: { xs: 28, lg: 8 },
+    });
+    expect(appNavLayout).toEqual({
+      mobile: {
+        insetInline: 0,
+        bottom: 0,
+        borderTopWidth: '1px',
+        maxListWidth: 576,
+        flexDirection: 'row',
+        minTargetHeight: '3.5rem',
+      },
+      desktop: {
+        insetInlineStart: 0,
+        top: 0,
+        height: '100%',
+        railWidth: 96,
+        flexDirection: 'column',
+      },
+    });
   });
 });
 

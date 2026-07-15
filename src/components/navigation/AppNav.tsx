@@ -2,6 +2,7 @@ import { Box, Link } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { ShellTab } from './types';
 import { NavIcon } from './NavIcon';
+import { appNavLayout } from './layoutContracts';
 
 /**
  * Responsive primary navigation (RM-310).
@@ -41,13 +42,13 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
         borderStyle: 'solid',
         borderWidth: 0,
         // Mobile bottom bar (full width, top border) → desktop right rail.
-        insetInline: { xs: 0, lg: 'auto' },
-        bottom: { xs: 0, lg: 'auto' },
-        borderTopWidth: { xs: '1px', lg: 0 },
-        insetInlineStart: { lg: 0 },
-        top: { lg: 0 },
-        height: { lg: '100%' },
-        width: { lg: 96 },
+        insetInline: { xs: appNavLayout.mobile.insetInline, lg: 'auto' },
+        bottom: { xs: appNavLayout.mobile.bottom, lg: 'auto' },
+        borderTopWidth: { xs: appNavLayout.mobile.borderTopWidth, lg: 0 },
+        insetInlineStart: { lg: appNavLayout.desktop.insetInlineStart },
+        top: { lg: appNavLayout.desktop.top },
+        height: { lg: appNavLayout.desktop.height },
+        width: { lg: appNavLayout.desktop.railWidth },
         borderInlineEndWidth: { lg: '1px' },
       }}
     >
@@ -60,9 +61,12 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
           display: 'flex',
           alignItems: 'stretch',
           // Mobile: centered evenly-spaced row → desktop: top-aligned column.
-          maxWidth: { xs: 576, lg: 'none' },
+          maxWidth: { xs: appNavLayout.mobile.maxListWidth, lg: 'none' },
           mx: { xs: 'auto', lg: 0 },
-          flexDirection: { xs: 'row', lg: 'column' },
+          flexDirection: {
+            xs: appNavLayout.mobile.flexDirection,
+            lg: appNavLayout.desktop.flexDirection,
+          },
           justifyContent: { xs: 'space-around', lg: 'flex-start' },
           height: { lg: '100%' },
           gap: { lg: 1 },
@@ -87,7 +91,7 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
                   gap: 1,
                   px: 2,
                   py: 2,
-                  minHeight: '3.5rem',
+                  minHeight: appNavLayout.mobile.minTargetHeight,
                   fontSize: '0.75rem', // text-xs
                   fontWeight: 600,
                   color: active ? 'primary.main' : 'text.secondary',

@@ -28,10 +28,10 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
   // Visible keyboard focus ring (RM-460 accessibility refresh). `:focus-visible`
   // only fires for keyboard/AT navigation, so pointer users see no outline while
   // keyboard users get a clear, high-contrast emerald ring. The color is the
-  // refreshed primary (#0e6f61) at 55% alpha; kept literal here so this stays a
-  // theme-free stylesheet.
+  // refreshed primary (#0e6f61) at 70% alpha, which keeps at least 3:1 contrast
+  // against both app backgrounds; kept literal here so this stays theme-free.
   ':focus-visible': {
-    outline: '3px solid rgba(14, 111, 97, 0.55)',
+    outline: '3px solid rgba(14, 111, 97, 0.7)',
     outlineOffset: '2px',
     borderRadius: '4px',
   },

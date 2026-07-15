@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
@@ -288,6 +289,29 @@ describe('Queued confirmation pattern (RM-320)', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('Second question');
     await user.click(screen.getByRole('button', { name: 'إلغاء' }));
     expect(screen.getByLabelText('queue result')).toHaveTextContent('true,false');
+  });
+
+  it('keeps a portalled RTL dialog keyboard-bound and restores trigger focus', async () => {
+    const user = userEvent.setup();
+    const { container } = renderConfirmations();
+    const ask = screen.getByRole('button', { name: 'Ask' });
+
+    await user.tab();
+    expect(ask).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    const dialog = screen.getByRole('dialog', { name: 'Remove member' });
+    expect(container).not.toContainElement(dialog);
+    expect(document.documentElement).toHaveAttribute('dir', 'rtl');
+    expect(dialog.className).toMatch(/mui-rtl-/);
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: 'Remove' })).toHaveFocus(),
+    );
+
+    await user.keyboard('{Escape}');
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+    expect(ask).toHaveFocus();
+    expect(screen.getByLabelText('result')).toHaveTextContent('false');
   });
 });
 

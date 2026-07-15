@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Breakpoint } from '@mui/material/styles';
 import type { ShellTab } from './types';
 import { AppNav } from './AppNav';
+import { appShellContentSx, appShellFrameSx } from './layoutContracts';
 
 /**
  * Responsive application shell (RM-310): a centered content column plus the
@@ -40,17 +41,12 @@ export function AppShell<R>({
         no effect on mobile, where the nav is a bottom bar. Kept on its own
         wrapper so it never collides with the column's own horizontal padding.
       */}
-      <Box sx={{ paddingInlineStart: { lg: '96px' } }}>
+      <Box sx={appShellFrameSx}>
         <Box
           component="main"
           sx={{
-            mx: 'auto',
-            width: '100%',
+            ...appShellContentSx,
             maxWidth: contentMaxWidth,
-            px: 4,
-            pt: 4,
-            // Clear the fixed bottom bar on mobile; relax once it becomes a rail.
-            pb: { xs: 28, lg: 8 },
           }}
         >
           {children}

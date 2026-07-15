@@ -65,9 +65,9 @@ function toneColor(theme: Theme, tone: StatusTone): string {
     case 'primary':
       return theme.palette.primary.main;
     case 'success':
-      return theme.palette.success.main;
+      return theme.palette.success.dark;
     case 'warning':
-      return theme.palette.warning.main;
+      return theme.palette.warning.dark;
     case 'danger':
       return theme.palette.error.main;
     default:
