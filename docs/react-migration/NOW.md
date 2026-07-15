@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                     |
 | Branch base                           | `6992007` (`main` at migration start, still unmoved) |
 | Last completed task                   | RM-730 — merge summary and rollback plan             |
-| Last completed commit                 | pending commit of RM-730 docs                        |
+| Last completed commit                 | `61022ba` (RM-730 merge summary and rollback plan)   |
 | Active migration task                 | None                                                 |
 | Current phase                         | Phase 7 — merge readiness and controlled handoff     |
 | Next recommended task                 | RM-740 — owner approval and merge (owner-gated)      |
