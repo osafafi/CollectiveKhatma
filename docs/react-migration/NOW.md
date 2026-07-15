@@ -9,41 +9,44 @@
 | ------------------------------------- | ------------------------------------------------ |
 | Integration branch                    | `reactmigration`                                 |
 | Branch base                           | `6992007` (`main` at migration start)            |
-| Last completed task                   | RM-700 — final clean quality suite (Phase 7)     |
-| Last completed commit                 | `8026f8c` (RM-700 final clean quality suite)     |
+| Last completed task                   | RM-710 — review delta against current `main`     |
+| Last completed commit                 | _pending handoff-hash commit (RM-710)_           |
 | Active migration task                 | None                                             |
 | Current phase                         | Phase 7 — merge readiness and controlled handoff |
-| Next recommended task                 | RM-710 — review delta against current `main`     |
+| Next recommended task                 | RM-720 — joint code/behavior review              |
 | Authorization-gated task              | RM-660 — staging/live smoke test                 |
 | Open decisions affecting current work | OD-04 by RM-740                                  |
 | Last updated                          | 2026-07-15                                       |
 
-RM-700 ran the complete quality suite from a clean install and it is green end to
-end: `npm ci`, typecheck, lint, all tests, build, and bundle budgets all pass,
-mirroring CI on the Node 24 LTS line. No source changes were needed. Phase 6 code
-and QA remain complete; only the authorization-gated staging smoke test (RM-660)
-sits outside the Phase 7 merge path.
+RM-710 reviewed the full delta of `reactmigration` against `main`. `main` is
+still at the base `6992007` (0 commits to reconcile), so there is no unrelated
+overwrite; the branch fast-forwards into `main` conflict-free. The 226-file delta
+(+20,847/−4,352) is all intentional migration work, and the preserved layers
+(domain, data, Quran content, Firestore rules/indexes) are unchanged.
 
-## Completed — RM-700 (final clean quality suite)
+## Completed — RM-710 (delta review)
 
-- Clean install: `npm ci` — 1032 packages, ~55 s, exit 0.
-- `npm run typecheck` — clean. `npm run lint` — clean.
-- `npm test` — 39 files passed, 1 skipped; 225 tests passed, 1 skipped.
-- `VITE_FIREBASE_PROJECT_ID=demo-khatma npm run build` — built, no oversized-chunk
-  warning. `node scripts/check-bundle-budgets.mjs` — both surfaces within budget
-  (member 341.59/387.75 kB, admin 344.72/390.98 kB).
-- `git diff --check` — clean. Details in `tasks/RM-700.md`.
-- Non-blocking: `EBADENGINE` (local `v24.14.0` vs. pinned `24.18.0`; CI runs
-  `24.18.0` via `.nvmrc`) and 9 moderate dev-tooling advisories (accepted
-  Firebase-tooling risk in `PLAN.md`). No dependency/source change made.
+- Topology: base `6992007` = current `main`; `reactmigration` HEAD `f32c847`
+  descends linearly (56 commits); `git rev-list --count reactmigration..main` = 0;
+  FF-able into `main`.
+- Delta: 179 A / 28 D / 19 M. Deletions are pure legacy (`src/ui/` tree,
+  `admin.ts`/`member.ts`, `theme.css`, 2 legacy UI tests). Additions are the React
+  app/tests/docs/toolchain. Modifications are config, docs, entry HTML, theme.
+- Preserved: `src/domain`, `src/data`, `src/content/quran`, `firestore.rules`,
+  `firestore.indexes.json` all unchanged. `strings.ar.ts` is additive UI strings
+  only; `seed-emulator.ts` is a comment-only fix. No secrets/artifacts added; OD-01
+  honored (production build = `index.html` + `admin-nano.html` only). Detail in
+  `tasks/RM-710.md`.
 
 ## Next-session options
 
-### RM-710 — Review delta against current `main`
+### RM-720 — Joint code/behavior review
 
-Reconcile all changes since base `6992007` against current `main` without
-unrelated overwrite. Depends on RM-700 (now DONE). Read set: this file,
-`tasks/` records as needed, TRACKER Phase 7, and `PLAN.md` merge-readiness gates.
+Depends on RM-710 (DONE). Jointly review boundaries, subscriptions, parity, dead
+code, docs, and risks. Read set: this file, `tasks/RM-710.md`, TRACKER Phase 7,
+`PLAN.md` merge-readiness gates. Carry-forwards from RM-710: confirm the two dev
+preview entries and root `REACT_MIGRATION_*.md` artifacts are the intended
+retained set (dev/historical by design, not orphaned legacy).
 
 ### RM-660 — Authorized staging/live smoke test
 
