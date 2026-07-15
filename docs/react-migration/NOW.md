@@ -10,7 +10,7 @@
 | Integration branch                    | `reactmigration`                                      |
 | Branch base                           | `6992007` (`main` at migration start)                 |
 | Last completed code tasks             | RM-640 and RM-650                                     |
-| Last completed code commit            | Pending completion commit (based on `ae7546a`)        |
+| Last completed code commit            | `d87d0af`                                              |
 | Active migration task                 | None                                                  |
 | Current phase                         | Phase 6 — cutover, cleanup, and end-to-end validation |
 | Next recommended task                 | RM-670 — Update all project documentation             |
