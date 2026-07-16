@@ -21,6 +21,7 @@ import { toArabicDigits } from '@/content/quran/symbols';
 import type { Assignment, Khatma, Person } from '@/domain/types';
 import {
   buildQuranPageEntries,
+  pageIndexAtGridPoint,
   pageFocusScale,
   type QuranPageEntry,
   type QuranPageState,
@@ -49,6 +50,8 @@ interface ActivePress {
   index: number;
   x: number;
   y: number;
+  target: HTMLElement;
+  activated: boolean;
 }
 
 export interface QuranPageGridProps {
@@ -83,6 +86,7 @@ export function QuranPageGrid({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const pressTimer = useRef<number | undefined>(undefined);
   const activePress = useRef<ActivePress | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
   const generatedId = useId().replace(/:/g, '');
   const detailsId = `quran-page-map-${generatedId}`;
   const activeEntry = activeIndex === null ? undefined : entries[activeIndex];
@@ -97,23 +101,33 @@ export function QuranPageGrid({
   const stopPress = () => {
     if (pressTimer.current !== undefined) window.clearTimeout(pressTimer.current);
     pressTimer.current = undefined;
+    const press = activePress.current;
     activePress.current = null;
+    if (press?.target.hasPointerCapture?.(press.pointerId)) {
+      press.target.releasePointerCapture(press.pointerId);
+    }
     setActiveIndex(null);
   };
 
   const startPress = (event: PointerEvent<HTMLElement>, index: number) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     stopPress();
+    const pointerId = event.pointerId;
     activePress.current = {
-      pointerId: event.pointerId,
+      pointerId,
       index,
       x: event.clientX,
       y: event.clientY,
+      target: event.currentTarget,
+      activated: false,
     };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
     pressTimer.current = window.setTimeout(
       () => {
-        setActiveIndex(index);
+        const press = activePress.current;
+        if (!press || press.pointerId !== pointerId) return;
+        press.activated = true;
+        press.target.setPointerCapture?.(press.pointerId);
+        setActiveIndex(press.index);
         pressTimer.current = undefined;
       },
       Math.max(0, longPressMs),
@@ -123,12 +137,24 @@ export function QuranPageGrid({
   const movePress = (event: PointerEvent<HTMLElement>) => {
     const press = activePress.current;
     if (!press || press.pointerId !== event.pointerId) return;
-    if (
-      Math.abs(event.clientX - press.x) > PRESS_MOVE_TOLERANCE ||
-      Math.abs(event.clientY - press.y) > PRESS_MOVE_TOLERANCE
-    ) {
-      stopPress();
+    if (!press.activated) {
+      if (
+        Math.abs(event.clientX - press.x) > PRESS_MOVE_TOLERANCE ||
+        Math.abs(event.clientY - press.y) > PRESS_MOVE_TOLERANCE
+      ) {
+        stopPress();
+      }
+      return;
     }
+
+    event.preventDefault();
+    const nextIndex = pageIndexFromPointer(
+      gridRef.current,
+      event.clientX,
+      event.clientY,
+      entries.length,
+    );
+    if (nextIndex !== null) setActiveIndex(nextIndex);
   };
 
   const endPress = (event: PointerEvent<HTMLElement>) => {
@@ -136,7 +162,7 @@ export function QuranPageGrid({
   };
 
   const onGridKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const current = activeIndex ?? 0;
+    const current = activeIndex ?? (event.key === 'ArrowLeft' ? -1 : 0);
     let next: number | null;
     switch (event.key) {
       case 'ArrowLeft':
@@ -206,14 +232,16 @@ export function QuranPageGrid({
           <PageMapLegend counts={counts} />
           <Box
             role="grid"
+            ref={gridRef}
             tabIndex={0}
             aria-label={`${strings.admin.pageMapHeading}. ${strings.admin.pageMapKeyboardHint}`}
             data-testid="quran-page-grid"
-            onFocus={() =>
-              setActiveIndex((index) => index ?? (entries.length ? 0 : null))
-            }
             onBlur={stopPress}
             onKeyDown={onGridKeyDown}
+            onPointerMove={movePress}
+            onPointerUp={endPress}
+            onPointerCancel={endPress}
+            onContextMenu={(event) => event.preventDefault()}
             sx={{
               display: 'grid',
               gridTemplateColumns: `repeat(${DEFAULT_COLUMNS}, minmax(0, 1fr))`,
@@ -222,7 +250,7 @@ export function QuranPageGrid({
               maxWidth: 560,
               mx: 'auto',
               p: 3,
-              touchAction: 'pan-y',
+              touchAction: activeIndex === null ? 'pan-y' : 'none',
               userSelect: 'none',
               WebkitTouchCallout: 'none',
               borderRadius: 2,
@@ -253,11 +281,7 @@ export function QuranPageGrid({
                   data-scale={scale.toFixed(3)}
                   data-active={active ? 'true' : undefined}
                   onPointerDown={(event) => startPress(event, index)}
-                  onPointerMove={movePress}
-                  onPointerUp={endPress}
-                  onPointerCancel={endPress}
                   onLostPointerCapture={endPress}
-                  onContextMenu={(event) => event.preventDefault()}
                   sx={{
                     position: 'relative',
                     display: 'block',
@@ -317,6 +341,29 @@ export function QuranPageGrid({
       </AccordionDetails>
     </Accordion>
   );
+}
+
+function pageIndexFromPointer(
+  grid: HTMLDivElement | null,
+  clientX: number,
+  clientY: number,
+  pageCount: number,
+): number | null {
+  if (!grid) return null;
+  const rect = grid.getBoundingClientRect();
+  const style = window.getComputedStyle(grid);
+  const pixels = (value: string): number => Number.parseFloat(value) || 0;
+  return pageIndexAtGridPoint(clientX, clientY, pageCount, DEFAULT_COLUMNS, {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    paddingLeft: pixels(style.paddingLeft),
+    paddingRight: pixels(style.paddingRight),
+    paddingTop: pixels(style.paddingTop),
+    columnGap: pixels(style.columnGap),
+    rowGap: pixels(style.rowGap),
+    direction: style.direction === 'rtl' ? 'rtl' : 'ltr',
+  });
 }
 
 function countStates(entries: readonly QuranPageEntry[]): Record<QuranPageState, number> {

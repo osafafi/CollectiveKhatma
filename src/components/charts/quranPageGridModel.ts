@@ -9,6 +9,18 @@ export interface QuranPageEntry {
   memberId?: string;
 }
 
+export interface PageGridLayout {
+  left: number;
+  right: number;
+  top: number;
+  paddingLeft: number;
+  paddingRight: number;
+  paddingTop: number;
+  columnGap: number;
+  rowGap: number;
+  direction: 'ltr' | 'rtl';
+}
+
 /**
  * Builds the page map from the same assignment state used by the progress
  * charts. A completed chunk wins over a current assignment; released chunks
@@ -92,4 +104,38 @@ export function pageFocusScale(
 
   const peak = Math.max(1, maxScale);
   return 1 + (peak - 1) * (1 - distance / (neighbors + 1));
+}
+
+/** Resolve a pointer position to the untransformed page box beneath it. */
+export function pageIndexAtGridPoint(
+  clientX: number,
+  clientY: number,
+  pageCount: number,
+  columns: number,
+  layout: PageGridLayout,
+): number | null {
+  if (pageCount <= 0 || columns <= 0) return null;
+
+  const contentLeft = layout.left + layout.paddingLeft;
+  const contentRight = layout.right - layout.paddingRight;
+  const contentWidth = contentRight - contentLeft;
+  const cellSize =
+    (contentWidth - Math.max(0, columns - 1) * layout.columnGap) / columns;
+  if (cellSize <= 0 || clientX < contentLeft || clientX >= contentRight) return null;
+
+  const rows = Math.ceil(pageCount / columns);
+  const contentTop = layout.top + layout.paddingTop;
+  const contentBottom =
+    contentTop + rows * cellSize + Math.max(0, rows - 1) * layout.rowGap;
+  if (clientY < contentTop || clientY >= contentBottom) return null;
+
+  const horizontalOffset =
+    layout.direction === 'rtl' ? contentRight - clientX : clientX - contentLeft;
+  const column = Math.min(
+    columns - 1,
+    Math.floor(horizontalOffset / (cellSize + layout.columnGap)),
+  );
+  const row = Math.floor((clientY - contentTop) / (cellSize + layout.rowGap));
+  const index = row * columns + column;
+  return index < pageCount ? index : null;
 }

@@ -209,7 +209,7 @@ describe('QuranPageGrid', () => {
     );
   });
 
-  it('reveals diagonal details and scales neighboring boxes during a long press', () => {
+  it('moves the focus wave and details while dragging after a long press', () => {
     renderThemed(
       <QuranPageGrid
         khatma={GRID_KHATMA}
@@ -221,6 +221,17 @@ describe('QuranPageGrid', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: strings.admin.pageMapHeading }));
     const grid = screen.getByRole('grid');
+    vi.spyOn(grid, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: 300,
+      top: 0,
+      bottom: 300,
+      width: 300,
+      height: 300,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
     const page = (number: number) =>
       grid.querySelector(`[data-page="${number}"]`) as HTMLElement;
 
@@ -241,8 +252,66 @@ describe('QuranPageGrid', () => {
       expect(page(6)).toHaveAttribute('data-scale', '1.000');
       expect(screen.getByText('٣ · Maryam')).toBeInTheDocument();
 
-      fireEvent.pointerUp(page(3), { pointerId: 1, pointerType: 'touch' });
+      fireEvent.pointerMove(grid, {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 249,
+        clientY: 16,
+      });
+      expect(page(4)).toHaveAttribute('data-active', 'true');
+      expect(screen.getByText('٤ · Maryam')).toBeInTheDocument();
+
+      fireEvent.pointerUp(grid, { pointerId: 1, pointerType: 'touch' });
       expect(page(3)).not.toHaveAttribute('data-active');
+      expect(page(4)).not.toHaveAttribute('data-active');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ignores a tap and still cancels before activation so a swipe can scroll', () => {
+    renderThemed(
+      <QuranPageGrid
+        khatma={GRID_KHATMA}
+        assignments={GRID_ASSIGNMENTS}
+        roster={GRID_ROSTER}
+        longPressMs={100}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: strings.admin.pageMapHeading }));
+    const grid = screen.getByRole('grid');
+    const page3 = grid.querySelector('[data-page="3"]') as HTMLElement;
+
+    fireEvent.focus(grid);
+    expect(page3).not.toHaveAttribute('data-active');
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerDown(page3, {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 40,
+        clientY: 40,
+      });
+      fireEvent.pointerUp(grid, { pointerId: 1, pointerType: 'touch' });
+      act(() => vi.advanceTimersByTime(100));
+      expect(page3).not.toHaveAttribute('data-active');
+
+      fireEvent.pointerDown(page3, {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 40,
+        clientY: 40,
+      });
+      fireEvent.pointerMove(grid, {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 40,
+        clientY: 60,
+      });
+      act(() => vi.advanceTimersByTime(100));
+
+      expect(page3).not.toHaveAttribute('data-active');
     } finally {
       vi.useRealTimers();
     }

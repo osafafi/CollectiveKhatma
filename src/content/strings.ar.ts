@@ -149,7 +149,7 @@ export const strings = {
     legendPending: 'قيد القراءة',
     legendRemaining: 'متبقية',
     pageMapHeading: 'خريطة صفحات القرآن',
-    pageMapHoldHint: 'اضغطي مطولاً على أي مربع لعرض الصفحة والقارئة',
+    pageMapHoldHint: 'اضغطي مطولاً ثم اسحبي للتنقل بين الصفحات',
     pageMapKeyboardHint: 'استخدمي السهمين للتنقل بين الصفحات',
     pageWord: 'الصفحة',
     warningYellowWord: 'تحذير أول',

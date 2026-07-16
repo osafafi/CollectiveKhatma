@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildQuranPageEntries,
+  pageIndexAtGridPoint,
   pageFocusScale,
 } from '@/components/charts/quranPageGridModel';
 import type { Assignment, Khatma } from '@/domain/types';
@@ -52,5 +53,24 @@ describe('Quran page grid model', () => {
     expect(pageFocusScale(3, 5, 2, 24, 3.4)).toBeCloseTo(1.8);
     expect(pageFocusScale(2, 5, 2, 24, 3.4)).toBe(1);
     expect(pageFocusScale(24, 23, 2, 24, 3.4)).toBe(1);
+  });
+
+  it('maps drag coordinates to page indexes in the RTL grid', () => {
+    const layout = {
+      left: 0,
+      right: 240,
+      top: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+      paddingTop: 0,
+      columnGap: 0,
+      rowGap: 0,
+      direction: 'rtl' as const,
+    };
+
+    expect(pageIndexAtGridPoint(235, 5, 48, 24, layout)).toBe(0);
+    expect(pageIndexAtGridPoint(205, 5, 48, 24, layout)).toBe(3);
+    expect(pageIndexAtGridPoint(205, 15, 48, 24, layout)).toBe(27);
+    expect(pageIndexAtGridPoint(-1, 5, 48, 24, layout)).toBeNull();
   });
 });
