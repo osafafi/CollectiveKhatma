@@ -2,10 +2,14 @@ import { Stack, Typography } from '@mui/material';
 import { AppButton } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { useMemberIdentity } from './memberIdentityContext';
+import { useWriteOperation } from '@/app/operations';
+
 
 /** Identity-only portion of the personal route; RM-420 adds its insight content. */
 export function MemberIdentitySummary() {
   const { member, switchMember } = useMemberIdentity();
+  const updatePerson = useWriteOperation('updatePerson');
+  
 
   return (
     <Stack component="section" spacing={1}>
@@ -19,6 +23,14 @@ export function MemberIdentitySummary() {
       <AppButton quiet variant="text" onClick={switchMember} sx={{ alignSelf: 'start' }}>
         {strings.member.switchPerson}
       </AppButton>
+      <AppButton
+        variant="outlined"
+        onClick={() => {
+          if (!member?.id) return;
+          void updatePerson.execute(member.id, { enabled: !member.enabled });
+        }}>
+          {member?.enabled ? strings.admin.disable : strings.admin.enable}
+        </AppButton>
     </Stack>
   );
 }
