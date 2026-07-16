@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Box, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { selectRoster, useAppSelector } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
@@ -11,7 +20,8 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { isNameUnique } from '@/domain/validation';
+import { DuplicatePersonNameError } from '@/data/roster';
+import { isNameUnique, normalizeName } from '@/domain/validation';
 import type { Person } from '@/domain/types';
 
 /**
@@ -53,7 +63,7 @@ export function AdminRosterPage() {
         ) : (
           <Stack component="ul" spacing={0} sx={{ listStyle: 'none', m: 0, p: 0 }}>
             {matches.map((person) => (
-              <PersonRow key={person.id} person={person} />
+              <PersonRow key={person.id} person={person} roster={roster} />
             ))}
           </Stack>
         )}
@@ -70,10 +80,11 @@ export function AdminRosterPage() {
  * the legacy feedback granularity (inventory §5 quirk 5): none of these surface a
  * success/error status.
  */
-function PersonRow({ person }: { person: Person }) {
+function PersonRow({ person, roster }: { person: Person; roster: readonly Person[] }) {
   const updatePerson = useWriteOperation('updatePerson');
   const removePerson = useWriteOperation('removePerson');
   const { confirm } = useConfirmation();
+  const [renameOpen, setRenameOpen] = useState(false);
 
   const onRemove = async () => {
     const confirmed = await confirm({
@@ -96,18 +107,42 @@ function PersonRow({ person }: { person: Person }) {
         py: 2,
       }}
     >
-      <Typography
-        component="span"
+      <Box
         sx={{
           flex: 1,
-          fontWeight: 600,
-          ...(person.enabled
-            ? undefined
-            : { color: 'text.secondary', textDecoration: 'line-through' }),
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          minWidth: 160,
         }}
       >
-        {person.emoji || ''} {person.name}
-      </Typography>
+        <Typography
+          component="span"
+          sx={{
+            fontWeight: 600,
+            ...(person.enabled
+              ? undefined
+              : { color: 'text.secondary', textDecoration: 'line-through' }),
+          }}
+        >
+          {person.emoji || ''} {person.name}
+        </Typography>
+        <IconButton
+          size="small"
+          title={strings.admin.rename}
+          aria-label={`${strings.admin.rename}: ${person.name}`}
+          onClick={() => setRenameOpen(true)}
+        >
+          <Box
+            component="svg"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            sx={{ width: 20, height: 20, fill: 'currentColor' }}
+          >
+            <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
+          </Box>
+        </IconButton>
+      </Box>
 
       {person.enabled ? null : (
         <StatusChip tone="neutral" size="small" label={strings.admin.disabledBadge} />
@@ -130,7 +165,108 @@ function PersonRow({ person }: { person: Person }) {
       <AppButton variant="text" quiet color="error" onClick={() => void onRemove()}>
         {strings.admin.remove}
       </AppButton>
+
+      <RenamePersonDialog
+        open={renameOpen}
+        person={person}
+        roster={roster}
+        onClose={() => setRenameOpen(false)}
+      />
     </Box>
+  );
+}
+
+function RenamePersonDialog({
+  open,
+  person,
+  roster,
+  onClose,
+}: {
+  open: boolean;
+  person: Person;
+  roster: readonly Person[];
+  onClose: () => void;
+}) {
+  const renamePerson = useWriteOperation('renamePerson');
+  const [name, setName] = useState(person.name);
+  const [error, setError] = useState('');
+
+  const close = () => {
+    if (renamePerson.isPending) return;
+    setName(person.name);
+    setError('');
+    onClose();
+  };
+
+  const onConfirm = async () => {
+    const normalized = normalizeName(name);
+    if (!normalized) {
+      setError(strings.admin.nameRequired);
+      return;
+    }
+    const otherMembers = roster.filter((candidate) => candidate.id !== person.id);
+    if (!isNameUnique(normalized, otherMembers)) {
+      setError(strings.admin.nameTaken);
+      return;
+    }
+    if (normalized === person.name) {
+      close();
+      return;
+    }
+
+    setError('');
+    const result = await renamePerson.execute(person.id, normalized);
+    if (result.status === 'success') {
+      setName(normalized);
+      onClose();
+      return;
+    }
+    setError(
+      result.error instanceof DuplicatePersonNameError
+        ? strings.admin.nameTaken
+        : strings.admin.saveError,
+    );
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      fullWidth
+      maxWidth="xs"
+      aria-labelledby={`rename-person-${person.id}`}
+    >
+      <DialogTitle id={`rename-person-${person.id}`}>
+        {strings.admin.renameHeading}
+      </DialogTitle>
+      <DialogContent>
+        <AppTextField
+          autoFocus
+          label={strings.admin.namePlaceholder}
+          value={name}
+          error={Boolean(error)}
+          helperText={error || undefined}
+          onChange={(event) => {
+            setName(event.target.value);
+            if (error) setError('');
+          }}
+          sx={{ mt: 1 }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <AppButton
+          variant="text"
+          color="inherit"
+          disabled={renamePerson.isPending}
+          onClick={close}
+        >
+          {strings.common.cancel}
+        </AppButton>
+        <AppButton disabled={renamePerson.isPending} onClick={() => void onConfirm()}>
+          {strings.common.confirm}
+        </AppButton>
+      </DialogActions>
+    </Dialog>
   );
 }
 

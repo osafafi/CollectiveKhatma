@@ -8,7 +8,7 @@ import {
   useAppSelector,
 } from '@/app/store';
 import { ErrorState } from '@/components/feedback';
-import { ProgressBar, SurfaceCard } from '@/components/primitives';
+import { KhatmaSeriesArtwork, ProgressBar, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import {
@@ -93,6 +93,13 @@ function KhatmaSeriesCard({ group, memberId }: { group: SeriesGroup; memberId: s
     <SurfaceCard
       href={memberHash.khatma(khatma.id)}
       linkLabel={`${strings.member.openKhatma}: ${title}`}
+      media={
+        <KhatmaSeriesArtwork
+          variant="media"
+          imageName={khatma.imageName}
+          alt={`${strings.admin.seriesImageAlt}: ${title}`}
+        />
+      }
       sx={{ height: '100%' }}
     >
       <Stack spacing={2}>

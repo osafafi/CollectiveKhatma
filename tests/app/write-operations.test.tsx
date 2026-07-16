@@ -19,9 +19,10 @@ import {
   releaseMemberChunk,
   removeMemberFromKhatma,
   renameSeries,
+  setSeriesImage,
   updateKhatma,
 } from '@/data/khatmas';
-import { addPerson, removePerson, updatePerson } from '@/data/roster';
+import { addPerson, removePerson, renamePerson, updatePerson } from '@/data/roster';
 
 function deferred<Value>() {
   let resolve!: (value: Value | PromiseLike<Value>) => void;
@@ -37,10 +38,12 @@ describe('write operations', () => {
   it('exposes every existing mutation through the UI-facing data adapter', () => {
     expect(writeOperations).toEqual({
       addPerson,
+      renamePerson,
       updatePerson,
       removePerson,
       setDu3aText,
       createKhatma,
+      setSeriesImage,
       updateKhatma,
       renameSeries,
       completeKhatma,

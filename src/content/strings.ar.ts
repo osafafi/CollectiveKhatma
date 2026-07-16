@@ -173,6 +173,8 @@ export const strings = {
     pagesPerDayLabel: 'صفحة/جولة',
     nameTaken: 'هذا الاسم مستخدم بالفعل',
     nameRequired: 'الرجاء إدخال الاسم',
+    rename: 'إعادة تسمية العضو',
+    renameHeading: 'تعديل اسم العضو',
     disable: 'إيقاف مؤقت',
     enable: 'تفعيل',
     disabledBadge: 'موقوفة مؤقتًا',
@@ -198,6 +200,14 @@ export const strings = {
     createButton: 'إنشاء الختمة',
     selectMembers: 'اختاري عضوًا واحدًا على الأقل',
     createError: 'تعذّر إنشاء الختمة، تحقّقي من المدخلات',
+    seriesImageLabel: 'صورة سلسلة الختمة',
+    chooseSeriesImage: 'اختيار من الصور',
+    seriesImageOptional: 'اختيارية · تُستخدم الصورة الافتراضية عند عدم الاختيار',
+    selectedSeriesImage: 'الصورة المختارة',
+    seriesImageGalleryHeading: 'اختيار صورة سلسلة الختمة',
+    useSeriesPlaceholder: 'استخدام الصورة الافتراضية',
+    noSeriesImages: 'لا توجد صور إضافية في مجلد صور الختمات بعد.',
+    seriesImageAlt: 'صورة سلسلة الختمة',
 
     // Khatmas list + per-khatma page
     khatmasHeading: 'كل الختمات',

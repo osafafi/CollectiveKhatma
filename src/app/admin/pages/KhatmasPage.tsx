@@ -21,11 +21,13 @@ import {
   type CreateKhatmaPrefill,
 } from '@/app/admin/createKhatmaPrefillContext';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
+import { SeriesImagePicker } from '@/app/admin/SeriesImagePicker';
 import {
   AppButton,
   AppCheckboxField,
   AppSelectField,
   AppTextField,
+  KhatmaSeriesArtwork,
   StatusChip,
   SurfaceCard,
   type SelectOption,
@@ -124,6 +126,12 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         py: 2,
       }}
     >
+      <KhatmaSeriesArtwork
+        variant="avatar"
+        imageName={khatma.imageName}
+        alt={strings.admin.seriesImageAlt}
+        size={48}
+      />
       <Typography component="span" sx={{ flex: 1, fontWeight: 600 }} color="primary.main">
         {seriesTitle(khatma, toArabicDigits)}
       </Typography>
@@ -163,6 +171,8 @@ interface CreateDraft {
   reciterId: string;
   createdDate: string;
   seriesNumberOverride: string;
+  /** null = inherit a matching series; empty string = explicitly use placeholder. */
+  imageName: string | null;
 }
 
 function emptyCreateDraft(): CreateDraft {
@@ -177,6 +187,7 @@ function emptyCreateDraft(): CreateDraft {
     reciterId: '',
     createdDate: '',
     seriesNumberOverride: '',
+    imageName: null,
   };
 }
 
@@ -185,6 +196,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
   const scopeMaps = useQuranScopeMaps();
   const surahs = useSurahs();
   const createKhatma = useWriteOperation('createKhatma');
+  const setSeriesImage = useWriteOperation('setSeriesImage');
   const { peekPrefill, clearPrefill } = useCreateKhatmaPrefill();
 
   // Seed synchronously from any `startNext` prefill (no flash of the collapsed
@@ -211,6 +223,13 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
   }
 
   const selected = roster.filter((person) => draft.memberIds.has(person.id));
+  const matchingSeries = findSeriesByName(khatmas, draft.seriesName);
+  const matchingImageName = matchingSeries
+    ? khatmas.find(
+        (candidate) =>
+          candidate.seriesId === matchingSeries.seriesId && candidate.imageName,
+      )?.imageName
+    : undefined;
 
   const toggleMember = (person: Person, checked: boolean) => {
     setDraft((current) => {
@@ -277,6 +296,20 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       : pickDuaReciter(ids, khatmas);
     const capacities = buildCapacities(draft, ids);
     const createdAt = dateToEpoch(draft.createdDate);
+    const inheritedImageName = khatmas.find(
+      (candidate) => candidate.seriesId === seriesId && candidate.imageName,
+    )?.imageName;
+    const imageName = draft.imageName ?? inheritedImageName;
+
+    // An explicit choice while continuing a series applies to all of its
+    // existing khatmas as well as the new one. null means "leave it inherited".
+    if (existing && draft.imageName !== null) {
+      const imageResult = await setSeriesImage.execute(seriesId, draft.imageName);
+      if (imageResult.status === 'failure') {
+        setError(strings.admin.createError);
+        return;
+      }
+    }
 
     const result = await createKhatma.execute({
       seriesId,
@@ -288,6 +321,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       remainingPages: pool,
       duaReciterId: reciter,
       capacities,
+      ...(imageName ? { imageName } : {}),
       ...(createdAt !== undefined ? { createdAt } : {}),
     });
 
@@ -318,6 +352,11 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           }
         />
         <SeriesContinuationNote khatmas={khatmas} name={draft.seriesName} />
+        <SeriesImagePicker
+          value={draft.imageName ?? matchingImageName ?? ''}
+          disabled={createKhatma.isPending || setSeriesImage.isPending}
+          onChange={(imageName) => setDraft((current) => ({ ...current, imageName }))}
+        />
 
         <FieldGroup label={strings.admin.scopeLabel}>
           <ScopeControls draft={draft} setDraft={setDraft} surahs={surahs} />
@@ -399,7 +438,10 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           useFlexGap
           sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <AppButton onClick={() => void onCreate()}>
+          <AppButton
+            disabled={createKhatma.isPending || setSeriesImage.isPending}
+            onClick={() => void onCreate()}
+          >
             {strings.admin.createButton}
           </AppButton>
           <AppButton

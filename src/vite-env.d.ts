@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __KHATMA_SERIES_IMAGES__: readonly string[];
+
 /**
  * Typed access to the Firebase web config and dev flags exposed via Vite's
  * `import.meta.env`. These VITE_* values are injected at build time.

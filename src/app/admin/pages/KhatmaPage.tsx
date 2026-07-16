@@ -14,11 +14,13 @@ import { useAdminNavigate } from '@/app/routing/hooks';
 import { useSurahs } from '@/app/admin/useSurahs';
 import { useCreateKhatmaPrefill } from '@/app/admin/createKhatmaPrefillContext';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
+import { SeriesImagePicker } from '@/app/admin/SeriesImagePicker';
 import { DonutChart, QuranPageGrid } from '@/components/charts';
 import {
   AppButton,
   AppSelectField,
   AppTextField,
+  KhatmaSeriesArtwork,
   ProgressBar,
   StatusChip,
   SurfaceCard,
@@ -140,7 +142,18 @@ function HeaderCard({
   return (
     <SurfaceCard>
       <Stack spacing={3}>
-        <Stack direction="row" spacing={4} sx={{ alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          spacing={3}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <KhatmaSeriesArtwork
+            variant="avatar"
+            imageName={khatma.imageName}
+            alt={strings.admin.seriesImageAlt}
+            size={88}
+          />
           <DonutChart percent={percent} size={88} />
           <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
             <Typography component="h1" variant="h2" color="primary.main">
@@ -179,12 +192,14 @@ function EditCard({ khatma }: { khatma: Khatma }) {
   const [name, setName] = useState(khatma.seriesName);
   const [number, setNumber] = useState(String(khatma.seriesNumber));
   const [date, setDate] = useState(dateToInput(khatma.createdAt));
+  const [imageName, setImageName] = useState(khatma.imageName ?? '');
   const [status, setStatus] = useState<{
     tone: 'success' | 'error';
     text: string;
   } | null>(null);
   const renameSeries = useWriteOperation('renameSeries');
   const updateKhatma = useWriteOperation('updateKhatma');
+  const setSeriesImage = useWriteOperation('setSeriesImage');
 
   const onSave = async () => {
     setStatus(null);
@@ -214,6 +229,13 @@ function EditCard({ khatma }: { khatma: Khatma }) {
         return;
       }
     }
+    if (imageName !== (khatma.imageName ?? '')) {
+      const result = await setSeriesImage.execute(khatma.seriesId, imageName);
+      if (result.status === 'failure') {
+        setStatus({ tone: 'error', text: strings.admin.saveError });
+        return;
+      }
+    }
     setStatus({ tone: 'success', text: strings.admin.saved });
   };
 
@@ -224,6 +246,11 @@ function EditCard({ khatma }: { khatma: Khatma }) {
           label={strings.admin.seriesNamePlaceholder}
           value={name}
           onChange={(event) => setName(event.target.value)}
+        />
+        <SeriesImagePicker
+          value={imageName}
+          disabled={setSeriesImage.isPending}
+          onChange={setImageName}
         />
         <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <AppTextField
@@ -249,7 +276,14 @@ function EditCard({ khatma }: { khatma: Khatma }) {
           useFlexGap
           sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <AppButton onClick={() => void onSave()}>{strings.admin.saveKhatma}</AppButton>
+          <AppButton
+            disabled={
+              renameSeries.isPending || updateKhatma.isPending || setSeriesImage.isPending
+            }
+            onClick={() => void onSave()}
+          >
+            {strings.admin.saveKhatma}
+          </AppButton>
           {status ? (
             <Typography
               role={status.tone === 'error' ? 'alert' : 'status'}

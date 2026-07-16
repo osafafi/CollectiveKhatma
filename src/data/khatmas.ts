@@ -1,6 +1,7 @@
 import {
   arrayUnion,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -80,6 +81,7 @@ export async function createKhatma(input: CreateKhatmaInput): Promise<string> {
     roundCount: 0,
     duaReciterId: input.duaReciterId,
     capacities: input.capacities,
+    ...(input.imageName?.trim() ? { imageName: input.imageName.trim() } : {}),
     status: 'active',
     createdAt: input.createdAt ?? Date.now(),
   });
@@ -126,6 +128,17 @@ export async function renameSeries(seriesId: string, newName: string): Promise<v
   if (snap.empty) return;
   const batch = writeBatch(db);
   snap.forEach((d) => batch.update(d.ref, { seriesName: newName }));
+  await batch.commit();
+}
+
+/** Assign one public-folder image (or the empty placeholder choice) across a series. */
+export async function setSeriesImage(seriesId: string, imageName: string): Promise<void> {
+  const snap = await getDocs(query(khatmasCol, where('seriesId', '==', seriesId)));
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  snap.forEach((entry) =>
+    batch.update(entry.ref, imageName ? { imageName } : { imageName: deleteField() }),
+  );
   await batch.commit();
 }
 

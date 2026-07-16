@@ -12,6 +12,7 @@ import { memberHash } from '@/app/routing/routes';
 import { ErrorState } from '@/components/feedback';
 import {
   AppButton,
+  KhatmaSeriesArtwork,
   NoticeBanner,
   ProgressView,
   SurfaceCard,
@@ -143,9 +144,17 @@ function KhatmaLandingContent({
         {strings.member.khatmasHeading}
       </AppButton>
 
-      <Typography component="h1" variant="h2" color="primary.main">
-        {seriesTitle(khatma, toArabicDigits)}
-      </Typography>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <KhatmaSeriesArtwork
+          variant="avatar"
+          imageName={khatma.imageName}
+          alt={strings.admin.seriesImageAlt}
+          size={72}
+        />
+        <Typography component="h1" variant="h2" color="primary.main">
+          {seriesTitle(khatma, toArabicDigits)}
+        </Typography>
+      </Stack>
       <RoundLine khatma={khatma} />
 
       {warning !== 'none' ? (
@@ -335,7 +344,6 @@ function GroupProgressCard({
         </Typography>
       ) : null}
       <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
-
     </SurfaceCard>
   );
 }

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
@@ -28,12 +28,14 @@ const maryam: Person = {
 /** Stub every roster mutation so tests never reach Firestore. */
 function mockRosterOperations(): WriteOperations & {
   addPerson: ReturnType<typeof vi.fn>;
+  renamePerson: ReturnType<typeof vi.fn>;
   updatePerson: ReturnType<typeof vi.fn>;
   removePerson: ReturnType<typeof vi.fn>;
 } {
   return {
     ...writeOperations,
     addPerson: vi.fn<WriteOperations['addPerson']>().mockResolvedValue('new-id'),
+    renamePerson: vi.fn<WriteOperations['renamePerson']>().mockResolvedValue(undefined),
     updatePerson: vi.fn<WriteOperations['updatePerson']>().mockResolvedValue(undefined),
     removePerson: vi.fn<WriteOperations['removePerson']>().mockResolvedValue(undefined),
   };
@@ -128,6 +130,36 @@ describe('admin Roster (RM-510)', () => {
 
     await user.click(screen.getByRole('button', { name: strings.admin.disable }));
     expect(operations.updatePerson).toHaveBeenCalledWith('p1', { enabled: false });
+  });
+
+  it('renames from an icon-triggered modal and blocks an existing normalized name', async () => {
+    const { user, operations } = renderRoster([amina, maryam]);
+
+    await user.click(
+      screen.getByRole('button', { name: `${strings.admin.rename}: ${amina.name}` }),
+    );
+    const dialog = screen.getByRole('dialog', { name: strings.admin.renameHeading });
+    const nameField = within(dialog).getByLabelText(strings.admin.namePlaceholder);
+    expect(nameField).toHaveValue('Amina');
+
+    await user.clear(nameField);
+    await user.type(nameField, '  MARYAM  ');
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+    expect(within(dialog).getByText(strings.admin.nameTaken)).toBeVisible();
+    expect(operations.renamePerson).not.toHaveBeenCalled();
+
+    await user.clear(nameField);
+    await user.type(nameField, '  Sara   Noor  ');
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+
+    await waitFor(() =>
+      expect(operations.renamePerson).toHaveBeenCalledWith('p1', 'Sara Noor'),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
   it('removes a member only after the confirmation is approved', async () => {

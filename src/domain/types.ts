@@ -92,6 +92,8 @@ export interface Khatma {
   seriesId: string;
   /** Series display name (e.g. "أهل القرآن") — the number is appended in the UI. */
   seriesName: string;
+  /** Optional filename from public/khatma-images. Omitted series use the placeholder. */
+  imageName?: string;
   /** 1-based position in the series; incremented at each rollover. */
   seriesNumber: number;
   /** Pages the khatma covers (default 604). Equals the resolved scope size. */

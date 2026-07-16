@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience as MemberRoutesExperience } from '@/app/member/MemberApp';
@@ -88,6 +88,7 @@ describe('member khatma routes (RM-410)', () => {
       seriesNumber: 1,
       totalPages: 4,
       remainingPages: [],
+      imageName: 'green-arch.svg',
       createdAt: 1,
     });
     const latest = makeKhatma('latest', {
@@ -138,13 +139,21 @@ describe('member khatma routes (RM-410)', () => {
     expect(firstLink).toHaveAttribute('href', '#/khatma/first');
     expect(within(firstLink).getByText('٥٠٪')).toBeVisible();
     expect(within(firstLink).getByText(/٢ صفحات/)).toBeVisible();
+    expect(
+      within(firstLink).getByRole('img', {
+        name: `${strings.admin.seriesImageAlt}: ${firstTitle}`,
+      }),
+    ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
 
     const doneTitle = seriesTitle(done, toArabicDigits);
-    expect(
-      screen.getByRole('link', {
-        name: `${strings.member.openKhatma}: ${doneTitle}`,
-      }),
-    ).toHaveTextContent(strings.member.doneToday);
+    const doneLink = screen.getByRole('link', {
+      name: `${strings.member.openKhatma}: ${doneTitle}`,
+    });
+    expect(doneLink).toHaveTextContent(strings.member.doneToday);
+    expect(within(doneLink).getByRole('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('/khatma-images/placeholder.svg'),
+    );
     expect(screen.queryByText(seriesTitle(irrelevant, toArabicDigits))).toBeNull();
     expect(screen.getAllByRole('link', { name: /فتح الختمة/ })).toHaveLength(2);
 
@@ -154,9 +163,15 @@ describe('member khatma routes (RM-410)', () => {
     expect(harness.subscriptions.assignment(irrelevant.id).counts().active).toBe(0);
 
     await harness.user.click(firstLink);
+    await waitFor(() =>
+      expect(document.querySelector('[data-route="khatma"]')).toBeInTheDocument(),
+    );
     expect(
       screen.getByRole('heading', { name: seriesTitle(first, toArabicDigits) }),
     ).toBeVisible();
+    expect(
+      screen.getByRole('img', { name: strings.admin.seriesImageAlt }),
+    ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
   });
 
   it('updates card targeting in realtime and reconciles assignment listeners', async () => {

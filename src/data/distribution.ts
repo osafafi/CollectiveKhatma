@@ -32,6 +32,8 @@ export class AlreadyDistributedError extends Error {
 export interface RolloverSeed {
   seriesId: string;
   seriesName: string;
+  /** Optional public-folder artwork inherited by rollover khatmas. */
+  imageName?: string;
   /** The next number in the series (current max + 1). */
   seriesNumber: number;
   totalPages: number;
@@ -264,6 +266,7 @@ export function runDistribution(
       tx.set(newRef, {
         seriesId: rolloverSeed.seriesId,
         seriesName: rolloverSeed.seriesName,
+        ...(rolloverSeed.imageName ? { imageName: rolloverSeed.imageName } : {}),
         seriesNumber: rolloverSeed.seriesNumber,
         totalPages: rolloverSeed.totalPages,
         scope: rolloverSeed.scope,

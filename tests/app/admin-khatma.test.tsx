@@ -1,4 +1,9 @@
-import { screen, waitFor } from '@testing-library/react';
+import {
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
@@ -87,6 +92,9 @@ function mockOperations() {
   return {
     ...writeOperations,
     renameSeries: vi.fn<WriteOperations['renameSeries']>().mockResolvedValue(undefined),
+    setSeriesImage: vi
+      .fn<WriteOperations['setSeriesImage']>()
+      .mockResolvedValue(undefined),
     updateKhatma: vi.fn<WriteOperations['updateKhatma']>().mockResolvedValue(undefined),
     completeKhatma: vi
       .fn<WriteOperations['completeKhatma']>()
@@ -171,6 +179,33 @@ describe('admin Khatma detail (RM-530)', () => {
 
     await waitFor(() =>
       expect(operations.renameSeries).toHaveBeenCalledWith('ahl', 'أهل الذكر'),
+    );
+    expect(await screen.findByText(strings.admin.saved)).toBeVisible();
+  });
+
+  it('assigns edited public artwork to the whole khatma series', async () => {
+    const { user, operations } = renderDetail('k', {
+      roster: [amina],
+      khatmas: [makeKhatma('k')],
+      assignments: { k: [makeAssignment(amina.id)] },
+    });
+    await user.click(
+      screen.getByRole('button', { name: strings.admin.chooseSeriesImage }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: strings.admin.seriesImageGalleryHeading,
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'green-arch.svg' }));
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole('dialog', { name: strings.admin.seriesImageGalleryHeading }),
+    );
+    await user.click(screen.getByRole('button', { name: strings.admin.saveKhatma }));
+
+    await waitFor(() =>
+      expect(operations.setSeriesImage).toHaveBeenCalledWith('ahl', 'green-arch.svg'),
     );
     expect(await screen.findByText(strings.admin.saved)).toBeVisible();
   });

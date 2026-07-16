@@ -3,6 +3,7 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -11,9 +12,26 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { DEFAULT_PAGES_PER_DAY, type Person } from '@/domain/types';
+import { isNameUnique, normalizeName } from '@/domain/validation';
 import { db } from './firebase';
 
 const rosterCol = collection(db, 'roster');
+
+/** A latest-roster duplicate guard so UI validation failures stay friendly. */
+export class DuplicatePersonNameError extends Error {
+  constructor() {
+    super('A roster member already uses this name');
+    this.name = 'DuplicatePersonNameError';
+  }
+}
+
+async function assertNameAvailable(name: string, excludedId?: string): Promise<void> {
+  const snap = await getDocs(rosterCol);
+  const people = snap.docs
+    .filter((entry) => entry.id !== excludedId)
+    .map((entry) => ({ name: String(entry.data().name ?? '') }));
+  if (!isNameUnique(name, people)) throw new DuplicatePersonNameError();
+}
 
 /**
  * Live-subscribe to the global roster, ordered by name. Returns an unsubscribe
@@ -40,9 +58,11 @@ export function subscribeRoster(
 export async function addPerson(
   input: Pick<Person, 'name'> & Partial<Pick<Person, 'note' | 'emoji' | 'pagesPerDay'>>,
 ): Promise<string> {
+  const name = normalizeName(input.name);
+  await assertNameAvailable(name);
   const ref = doc(rosterCol);
   await setDoc(ref, {
-    name: input.name,
+    name,
     ...(input.note ? { note: input.note } : {}),
     ...(input.emoji?.trim() ? { emoji: input.emoji.trim() } : {}),
     completedPages: [],
@@ -58,17 +78,25 @@ export async function addPerson(
  * (`pagesPerDay`, adjustable any time), and `enabled` (temporarily pausing them
  * from assignment without removing them — REQUIREMENTS §5+).
  */
-export function updatePerson(
+export async function updatePerson(
   id: string,
   changes: Partial<Pick<Person, 'name' | 'note' | 'emoji' | 'pagesPerDay' | 'enabled'>>,
 ): Promise<void> {
+  const name = changes.name === undefined ? undefined : normalizeName(changes.name);
+  if (name !== undefined) await assertNameAvailable(name, id);
   const { emoji, ...otherChanges } = changes;
-  return updateDoc(doc(rosterCol, id), {
+  await updateDoc(doc(rosterCol, id), {
     ...otherChanges,
+    ...(name === undefined ? {} : { name }),
     ...('emoji' in changes
       ? { emoji: emoji?.trim() ? emoji.trim() : deleteField() }
       : {}),
   });
+}
+
+/** Rename through the duplicate-guarded person update path. */
+export function renamePerson(id: string, name: string): Promise<void> {
+  return updatePerson(id, { name });
 }
 
 /** Remove a person from the roster. */

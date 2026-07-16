@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Green arch</title>
+  <desc id="desc">A decorative Islamic arch with a gold star</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#153f35"/>
+      <stop offset="1" stop-color="#2e725d"/>
+    </linearGradient>
+    <pattern id="stars" width="80" height="80" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="14" r="3" fill="#f4dfaa" opacity=".55"/>
+      <circle cx="56" cy="48" r="2" fill="#f4dfaa" opacity=".38"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <rect width="1200" height="675" fill="url(#stars)"/>
+  <path d="M345 675V354c0-149 114-263 255-299 141 36 255 150 255 299v321" fill="#f6f0db" opacity=".96"/>
+  <path d="M420 675V385c0-109 74-196 180-236 106 40 180 127 180 236v290" fill="#235b4b"/>
+  <path d="M600 210l20 43 47 6-34 32 9 46-42-23-42 23 9-46-34-32 47-6z" fill="#d9ae55"/>
+  <path d="M470 512h260M500 560h200" stroke="#d9ae55" stroke-width="12" stroke-linecap="round" opacity=".75"/>
+</svg>

@@ -93,6 +93,7 @@ src/
 
 - `seriesId`: string (stable across the series)
 - `seriesName`: string (e.g. "أهل القرآن")
+- `imageName`: optional string (shared filename from `public/khatma-images/`)
 - `seriesNumber`: number (sequential: 1, 2, 3...)
 - `totalPages`: number
 - `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)

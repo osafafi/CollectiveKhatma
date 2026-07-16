@@ -87,6 +87,7 @@ Represents a single open-ended, numbered group reading session.
 
 - `seriesId`: string (stable identifier across series)
 - `seriesName`: string (e.g. "أهل القرآن")
+- `imageName`: optional string (shared filename from `public/khatma-images/`; the UI uses `placeholder.svg` when absent)
 - `seriesNumber`: number (e.g., 1, 2, 3...)
 - `totalPages`: number
 - `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)

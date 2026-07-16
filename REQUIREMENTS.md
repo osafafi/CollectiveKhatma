@@ -85,9 +85,9 @@ no passwords, no app-store installs for members.
 
 - One **global roster** of people, maintained by the admin, independent of
   any specific khatma/group. Each person is a single persistent record.
-- **Names must be unique across the entire roster.** The admin cannot add
-  two people with the same display name — the app enforces this at
-  creation time. Any distinguishing detail (e.g. "husband of Sara") is
+- **Names must be unique across the entire roster.** The admin cannot add or
+  rename two people to the same normalized display name — the app enforces this
+  at creation and rename time. Any distinguishing detail (e.g. "husband of Sara") is
   stored as a separate metadata/note field, never as part of the name
   members tap to identify themselves.
 - A khatma is created by picking a subset of members from this global
@@ -118,6 +118,7 @@ Khatmas belong to named series and operate without fixed schedules, durations, o
 
 - **Open-Ended Lifecycle**: A khatma has no `startDate` or `durationDays`. It is completed only when all pages in its page scope are successfully read.
 - **Named Series & Numbering**: Khatmas are organized into series with stable `seriesId` identifiers. As one khatma finishes, the next one continues the sequence (e.g., "أهل القرآن 1" → "أهل القرآن 2").
+- **Optional Series Artwork**: The admin may choose one repository image from `public/khatma-images/` per series. It appears as card media or a compact avatar by context, is inherited by later khatmas, and falls back to the bundled public placeholder when absent.
 - **Admin-Triggered Daily Rounds**: Instead of split schedules, the admin manually triggers a daily distribution round by clicking a button. 
 - **Auto-Flagging & Held Pages**:
   - Members who fail to finish their assigned pages before the next distribution round are flagged.

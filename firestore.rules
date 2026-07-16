@@ -73,6 +73,7 @@ service cloud.firestore {
         && d.scope is map
         && d.capacities is map
         && d.duaReciterId is string
+        && (!('imageName' in d) || d.imageName is string)
         && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
         && (!('completedAt' in d) || d.completedAt is number);
     }

@@ -370,6 +370,7 @@ function DistributeAction({
       rolloverSeed: {
         seriesId: group.seriesId,
         seriesName: group.seriesName,
+        ...(group.latest.imageName ? { imageName: group.latest.imageName } : {}),
         seriesNumber: nextSeriesNumber(allKhatmas, group.seriesId),
         totalPages: pool.length,
         scope: khatma.scope,

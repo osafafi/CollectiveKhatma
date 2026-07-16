@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import { publicKhatmaImages } from './scripts/khatma-image-catalog';
 
 /**
  * The admin app is a SEPARATE static entry with an unguessable filename. This
@@ -58,6 +59,10 @@ export default defineConfig({
 
   // React owns JSX transformation and development Fast Refresh.
   plugins: [react()],
+
+  define: {
+    __KHATMA_SERIES_IMAGES__: JSON.stringify(publicKhatmaImages(import.meta.dirname)),
+  },
 
   resolve: {
     alias: {
