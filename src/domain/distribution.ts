@@ -438,23 +438,20 @@ export interface LoosePageRecall {
 
 /**
  * Recall loose pages for redistribution while preserving whole-surah and
- * whole-juz allocations. Legacy page-only chunks can be recalled safely;
- * legacy mixed-unit chunks are left untouched because their split is unknown.
+ * whole-juz allocations.
  */
 export function recallLoosePagesFromAssignment(
   assignment: Assignment,
   remainingPages: number[],
-  capacity: MemberCapacity,
 ): LoosePageRecall | undefined {
   for (let i = assignment.rounds.length - 1; i >= 0; i--) {
     const chunk = assignment.rounds[i]!;
     if (chunk.pages.length === 0 || chunk.released === true) continue;
     if (assignment.doneByRound[chunk.round] !== undefined) continue;
 
-    const loosePages =
-      chunk.loosePages ??
-      (capacity.surahs === 0 && capacity.juz === 0 ? chunk.pages : []);
-    const recalled = new Set(loosePages.filter((page) => chunk.pages.includes(page)));
+    const recalled = new Set(
+      chunk.loosePages.filter((page) => chunk.pages.includes(page)),
+    );
     if (recalled.size === 0) return undefined;
 
     const pages = chunk.pages.filter((page) => !recalled.has(page));
@@ -463,9 +460,9 @@ export function recallLoosePagesFromAssignment(
       ...chunk,
       pages,
       loosePages: [],
-      redistributedPages: [
-        ...new Set([...(chunk.redistributedPages ?? []), ...recalled]),
-      ].sort((a, b) => a - b),
+      redistributedPages: [...new Set([...chunk.redistributedPages, ...recalled])].sort(
+        (a, b) => a - b,
+      ),
       ...(pages.length === 0 ? { released: true as const } : {}),
     };
     return {

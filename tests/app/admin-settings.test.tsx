@@ -32,7 +32,8 @@ function renderSettings(
   data: RenderWithAppProvidersOptions['data'] = { roster: [amina], khatmas: [] },
   options: Omit<RenderWithAppProvidersOptions, 'route' | 'data'> = {},
 ) {
-  const operations = (options.operations as SettingsOperations) ?? mockSettingsOperations();
+  const operations =
+    (options.operations as SettingsOperations) ?? mockSettingsOperations();
   const harness = renderWithAppProviders(<AdminExperience />, {
     route: '/settings',
     data,
@@ -132,11 +133,15 @@ describe('admin Settings (RM-540)', () => {
   it('keeps the reading-scale disclosure open across route navigation', async () => {
     const { user } = renderSettings({ roster: [amina], khatmas: [] });
 
-    await user.click(within(document.querySelector('details')!).getByText(strings.settings.title));
+    await user.click(
+      within(document.querySelector('details')!).getByText(strings.settings.title),
+    );
     expect(document.querySelector('details')).toHaveAttribute('open');
 
     await user.click(screen.getByRole('link', { name: strings.admin.navHome }));
-    expect(screen.getByRole('heading', { name: strings.admin.homeHeading })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: strings.admin.homeHeading }),
+    ).toBeVisible();
 
     await user.click(screen.getByRole('link', { name: strings.admin.navSettings }));
     expect(document.querySelector('details')).toHaveAttribute('open');

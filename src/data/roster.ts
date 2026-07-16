@@ -1,11 +1,12 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -13,17 +14,6 @@ import { DEFAULT_PAGES_PER_DAY, type Person } from '@/domain/types';
 import { db } from './firebase';
 
 const rosterCol = collection(db, 'roster');
-
-/** Fill in fields added after the first roster docs were written (back-compat). */
-function fromStored(id: string, data: Omit<Person, 'id'>): Person {
-  return {
-    ...data,
-    id,
-    completedPages: data.completedPages ?? [],
-    pagesPerDay: data.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
-    enabled: data.enabled ?? true,
-  };
-}
 
 /**
  * Live-subscribe to the global roster, ordered by name. Returns an unsubscribe
@@ -37,7 +27,8 @@ export function subscribeRoster(
   const q = query(rosterCol, orderBy('name'));
   return onSnapshot(
     q,
-    (snap) => onChange(snap.docs.map((d) => fromStored(d.id, d.data() as Omit<Person, 'id'>))),
+    (snap) =>
+      onChange(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Person, 'id'>) }))),
     (error) => onError?.(error),
   );
 }
@@ -47,11 +38,13 @@ export function subscribeRoster(
  * (`pagesPerDay`) at creation; new people start enabled. Returns the new id.
  */
 export async function addPerson(
-  input: Pick<Person, 'name'> & Partial<Pick<Person, 'note' | 'pagesPerDay'>>,
+  input: Pick<Person, 'name'> & Partial<Pick<Person, 'note' | 'emoji' | 'pagesPerDay'>>,
 ): Promise<string> {
-  const ref = await addDoc(rosterCol, {
+  const ref = doc(rosterCol);
+  await setDoc(ref, {
     name: input.name,
     ...(input.note ? { note: input.note } : {}),
+    ...(input.emoji?.trim() ? { emoji: input.emoji.trim() } : {}),
     completedPages: [],
     pagesPerDay: input.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
     enabled: true,
@@ -67,9 +60,15 @@ export async function addPerson(
  */
 export function updatePerson(
   id: string,
-  changes: Partial<Pick<Person, 'name' | 'note' | 'pagesPerDay' | 'enabled'>>,
+  changes: Partial<Pick<Person, 'name' | 'note' | 'emoji' | 'pagesPerDay' | 'enabled'>>,
 ): Promise<void> {
-  return updateDoc(doc(rosterCol, id), changes);
+  const { emoji, ...otherChanges } = changes;
+  return updateDoc(doc(rosterCol, id), {
+    ...otherChanges,
+    ...('emoji' in changes
+      ? { emoji: emoji?.trim() ? emoji.trim() : deleteField() }
+      : {}),
+  });
 }
 
 /** Remove a person from the roster. */

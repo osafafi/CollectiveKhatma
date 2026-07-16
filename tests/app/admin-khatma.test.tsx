@@ -17,9 +17,21 @@ const loader = vi.hoisted(() => ({
 }));
 vi.mock('@/content/quran/loader', () => loader);
 
-const INDEX: QuranIndex = { totalPages: 604, surahToPages: { 1: [1, 1] }, juzToPages: { 1: [1, 21] } };
+const INDEX: QuranIndex = {
+  totalPages: 604,
+  surahToPages: { 1: [1, 1] },
+  juzToPages: { 1: [1, 21] },
+};
 const SURAHS: Surah[] = [
-  { id: 1, name: 'الفاتحة', pageStart: 1, pageEnd: 1, versesCount: 7, bismillahPre: false, revelation: 'meccan' },
+  {
+    id: 1,
+    name: 'الفاتحة',
+    pageStart: 1,
+    pageEnd: 1,
+    versesCount: 7,
+    bismillahPre: false,
+    revelation: 'meccan',
+  },
 ];
 
 const amina: Person = {
@@ -41,6 +53,8 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 6,
     scope: { kind: 'range', fromPage: 1, toPage: 6 },
     memberIds: [amina.id],
+    capacities: { [amina.id]: { pages: 2, surahs: 0, juz: 0 } },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [3, 4, 5, 6],
     roundCount: 1,
@@ -50,7 +64,13 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
 }
 
 function round(roundNumber: number, pages: number[]): RoundChunk {
-  return { round: roundNumber, date: '2026-07-14', pages };
+  return {
+    round: roundNumber,
+    date: '2026-07-14',
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+  };
 }
 
 function makeAssignment(
@@ -68,7 +88,9 @@ function mockOperations() {
     ...writeOperations,
     renameSeries: vi.fn<WriteOperations['renameSeries']>().mockResolvedValue(undefined),
     updateKhatma: vi.fn<WriteOperations['updateKhatma']>().mockResolvedValue(undefined),
-    completeKhatma: vi.fn<WriteOperations['completeKhatma']>().mockResolvedValue(undefined),
+    completeKhatma: vi
+      .fn<WriteOperations['completeKhatma']>()
+      .mockResolvedValue(undefined),
     deleteKhatma: vi.fn<WriteOperations['deleteKhatma']>().mockResolvedValue(undefined),
     addMemberToKhatma: vi
       .fn<WriteOperations['addMemberToKhatma']>()
@@ -80,7 +102,9 @@ function mockOperations() {
       .fn<WriteOperations['removeMemberFromKhatma']>()
       .mockResolvedValue(undefined),
     markRoundDone: vi.fn<WriteOperations['markRoundDone']>().mockResolvedValue(undefined),
-    clearRoundDone: vi.fn<WriteOperations['clearRoundDone']>().mockResolvedValue(undefined),
+    clearRoundDone: vi
+      .fn<WriteOperations['clearRoundDone']>()
+      .mockResolvedValue(undefined),
     clearWarning: vi.fn<WriteOperations['clearWarning']>().mockResolvedValue(undefined),
   };
 }
@@ -145,7 +169,9 @@ describe('admin Khatma detail (RM-530)', () => {
     await user.type(nameField, 'أهل الذكر');
     await user.click(screen.getByRole('button', { name: strings.admin.saveKhatma }));
 
-    await waitFor(() => expect(operations.renameSeries).toHaveBeenCalledWith('ahl', 'أهل الذكر'));
+    await waitFor(() =>
+      expect(operations.renameSeries).toHaveBeenCalledWith('ahl', 'أهل الذكر'),
+    );
     expect(await screen.findByText(strings.admin.saved)).toBeVisible();
   });
 
@@ -156,7 +182,9 @@ describe('admin Khatma detail (RM-530)', () => {
       assignments: { k: [makeAssignment(amina.id, [round(1, [1, 2])])] },
     });
 
-    await user.click(screen.getByRole('button', { name: new RegExp(strings.admin.chunkPending) }));
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(strings.admin.chunkPending) }),
+    );
     expect(operations.markRoundDone).toHaveBeenCalledWith('k', 'p1', 1);
   });
 
@@ -191,7 +219,7 @@ describe('admin Khatma detail (RM-530)', () => {
     });
 
     await user.click(screen.getByRole('button', { name: strings.admin.saveCapacity }));
-    // No explicit capacity on the khatma → the roster default (2 pages) is written.
+    // The explicitly stored capacity is written back unchanged.
     expect(operations.updateKhatma).toHaveBeenCalledWith('k', {
       capacities: { p1: { pages: 2, surahs: 0, juz: 0 } },
     });
@@ -242,7 +270,9 @@ describe('admin Khatma detail (RM-530)', () => {
     const nameField = await screen.findByLabelText(strings.admin.seriesNamePlaceholder);
     expect(nameField).toHaveValue('أهل القرآن');
     expect(screen.getByRole('checkbox', { name: amina.name })).toBeChecked();
-    expect(screen.getByRole('button', { name: strings.admin.createButton })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: strings.admin.createButton }),
+    ).toBeVisible();
   });
 
   it('shows only start-next and history for a completed khatma', () => {

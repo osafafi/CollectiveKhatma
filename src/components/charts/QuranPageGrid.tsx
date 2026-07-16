@@ -18,7 +18,9 @@ import {
 } from '@mui/material';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
+import { personAvatar } from '@/domain/personAppearance';
 import type { Assignment, Khatma, Person } from '@/domain/types';
+import { tokens } from '@/theme/muiTheme';
 import {
   buildQuranPageEntries,
   pageIndexAtGridPoint,
@@ -78,6 +80,10 @@ export function QuranPageGrid({
   const entries = useMemo(
     () => buildQuranPageEntries(khatma, assignments),
     [assignments, khatma],
+  );
+  const peopleById = useMemo(
+    () => new Map(roster.map((person) => [person.id, person])),
+    [roster],
   );
   const namesById = useMemo(
     () => new Map(roster.map((person) => [person.id, person.name])),
@@ -266,9 +272,10 @@ export function QuranPageGrid({
               );
               const active = index === activeIndex;
               const distance = activeIndex === null ? 0 : Math.abs(index - activeIndex);
-              const memberName = entry.memberId
-                ? (namesById.get(entry.memberId) ?? entry.memberId)
-                : undefined;
+              const member = entry.memberId ? peopleById.get(entry.memberId) : undefined;
+              const memberName = member?.name ?? entry.memberId;
+              const avatar = member ? personAvatar(member) : undefined;
+              const usesEmoji = Boolean(member?.emoji?.trim());
 
               return (
                 <Box
@@ -278,6 +285,7 @@ export function QuranPageGrid({
                   key={entry.page}
                   data-page={entry.page}
                   data-page-state={entry.state}
+                  data-member-id={entry.memberId}
                   data-scale={scale.toFixed(3)}
                   data-active={active ? 'true' : undefined}
                   onPointerDown={(event) => startPress(event, index)}
@@ -327,6 +335,31 @@ export function QuranPageGrid({
                       {memberName
                         ? `${toArabicDigits(entry.page)} · ${memberName}`
                         : toArabicDigits(entry.page)}
+                    </Box>
+                  ) : avatar ? (
+                    <Box
+                      component="span"
+                      data-reader-avatar={avatar}
+                      data-avatar-source={usesEmoji ? 'emoji' : 'initials'}
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: pageTextColor(entry.state),
+                        fontFamily: usesEmoji ? 'system-ui, sans-serif' : 'inherit',
+                        fontSize: usesEmoji
+                          ? 'clamp(0.4rem, 1.7vw, 0.68rem)'
+                          : 'clamp(0.32rem, 1.35vw, 0.52rem)',
+                        fontWeight: usesEmoji ? 400 : 800,
+                        letterSpacing: usesEmoji ? 0 : '-0.08em',
+                        lineHeight: 1,
+                        overflow: 'hidden',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {avatar}
                     </Box>
                   ) : null}
                 </Box>
@@ -411,9 +444,9 @@ function PageMapLegend({ counts }: { counts: Record<QuranPageState, number> }) {
 function pageColor(state: QuranPageState): string {
   switch (state) {
     case 'done':
-      return 'primary.main';
+      return tokens.color.primary;
     case 'assigned':
-      return 'secondary.main';
+      return tokens.color.accent;
     case 'remaining':
       return 'grey.300';
   }
@@ -422,9 +455,9 @@ function pageColor(state: QuranPageState): string {
 function pageBorderColor(state: QuranPageState): string {
   switch (state) {
     case 'done':
-      return 'primary.dark';
+      return tokens.color.primaryStrong;
     case 'assigned':
-      return 'secondary.dark';
+      return mixHex(tokens.color.accent, tokens.color.ink, 0.24);
     case 'remaining':
       return 'grey.400';
   }
@@ -437,12 +470,37 @@ function pageTextColor(state: QuranPageState): string {
 function pageLabelColor(state: QuranPageState): string {
   switch (state) {
     case 'done':
-      return 'primary.dark';
+      return pageBorderColor(state);
     case 'assigned':
-      return 'secondary.main';
+      return pageColor(state);
     case 'remaining':
       return 'grey.100';
   }
+}
+
+/** Blend two semantic theme colors. */
+function mixHex(baseColor: string, tintColor: string, tintWeight: number): string {
+  const base = hexChannels(baseColor);
+  const tint = hexChannels(tintColor);
+  if (!base || !tint) return baseColor;
+  const weight = Math.max(0, Math.min(1, tintWeight));
+  return `#${base
+    .map((channel, index) =>
+      Math.round(channel * (1 - weight) + (tint[index] ?? channel) * weight)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+function hexChannels(color: string): [number, number, number] | undefined {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
+  if (!match) return undefined;
+  return [
+    Number.parseInt(match[1]!, 16),
+    Number.parseInt(match[2]!, 16),
+    Number.parseInt(match[3]!, 16),
+  ];
 }
 
 function pageDescription(

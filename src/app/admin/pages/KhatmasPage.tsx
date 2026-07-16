@@ -38,7 +38,6 @@ import { khatmaProgress } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
 import { findSeriesByName, nextSeriesNumber, seriesTitle } from '@/domain/series';
 import {
-  DEFAULT_PAGES_PER_DAY,
   type Khatma,
   type MemberCapacity,
   type PageScope,
@@ -220,8 +219,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       if (checked) {
         memberIds.add(person.id);
         // First-selected member defaults to one juz (solo reader); later members
-        // to their roster pace — locked in when the member is first picked, as the
-        // legacy `??=` fallback does.
+        // use their roster pace. The choice is stored as soon as they are selected.
         memberCaps[person.id] =
           memberIds.size === 1
             ? { pages: 0, surahs: 0, juz: 1 }
@@ -236,9 +234,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
 
   const setCapacity = (memberId: string, patch: Partial<MemberCapacity>) => {
     setDraft((current) => {
-      // A prefilled member (startNext) may lack an entry if the source khatma left
-      // them on the roster default; fall back to it, as the legacy `??=` does.
-      const base = current.memberCaps[memberId] ?? groupFallback(roster, memberId);
+      const base = requiredDraftCapacity(current, memberId);
       return {
         ...current,
         memberCaps: { ...current.memberCaps, [memberId]: { ...base, ...patch } },
@@ -279,7 +275,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
     const reciter = draft.memberIds.has(draft.reciterId)
       ? draft.reciterId
       : pickDuaReciter(ids, khatmas);
-    const capacities = buildCapacities(roster, draft, ids);
+    const capacities = buildCapacities(draft, ids);
     const createdAt = dateToEpoch(draft.createdDate);
 
     const result = await createKhatma.execute({
@@ -291,7 +287,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       memberIds: ids,
       remainingPages: pool,
       duaReciterId: reciter,
-      ...(Object.keys(capacities).length > 0 ? { capacities } : {}),
+      capacities,
       ...(createdAt !== undefined ? { createdAt } : {}),
     });
 
@@ -339,8 +335,8 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
                   onChange={(checked) => toggleMember(person, checked)}
                   label={
                     person.enabled
-                      ? person.name
-                      : `${person.name} (${strings.admin.disabledBadge})`
+                      ? `${person.emoji || ''} ${person.name}`
+                      : `${person.emoji || ''} ${person.name} (${strings.admin.disabledBadge})`
                   }
                 />
               ))}
@@ -355,9 +351,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
                 <CapacityRow
                   key={person.id}
                   person={person}
-                  capacity={
-                    draft.memberCaps[person.id] ?? groupFallback(roster, person.id)
-                  }
+                  capacity={requiredDraftCapacity(draft, person.id)}
                   surahs={surahs}
                   onChange={(patch) => setCapacity(person.id, patch)}
                 />
@@ -552,7 +546,7 @@ function CapacityRow({
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
       <Typography component="span" sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}>
-        {person.name}
+        {person.emoji || ''} {person.name}
       </Typography>
       <AppTextField
         type="number"
@@ -618,22 +612,21 @@ function buildScope(draft: CreateDraft): PageScope | null {
   }
 }
 
-/** The default capacity for a member without an explicit entry: their roster pace. */
-function groupFallback(roster: readonly Person[], memberId: string): MemberCapacity {
-  const person = roster.find((candidate) => candidate.id === memberId);
-  return { pages: person?.pagesPerDay ?? DEFAULT_PAGES_PER_DAY, surahs: 0, juz: 0 };
-}
-
 function buildCapacities(
-  roster: readonly Person[],
   draft: CreateDraft,
   ids: string[],
 ): Record<string, MemberCapacity> {
   const out: Record<string, MemberCapacity> = {};
   for (const id of ids) {
-    out[id] = draft.memberCaps[id] ?? groupFallback(roster, id);
+    out[id] = requiredDraftCapacity(draft, id);
   }
   return out;
+}
+
+function requiredDraftCapacity(draft: CreateDraft, memberId: string): MemberCapacity {
+  const capacity = draft.memberCaps[memberId];
+  if (!capacity) throw new Error(`Missing draft capacity for member ${memberId}`);
+  return capacity;
 }
 
 function draftFromPrefill(prefill: CreateKhatmaPrefill): CreateDraft {

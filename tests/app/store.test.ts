@@ -36,6 +36,8 @@ const khatma: Khatma = {
   totalPages: 604,
   scope: { kind: 'full' },
   memberIds: [person.id],
+  capacities: { [person.id]: { pages: 2, surahs: 0, juz: 0 } },
+  duaReciterId: person.id,
   status: 'active',
   remainingPages: [2, 3],
   roundCount: 1,
@@ -44,7 +46,15 @@ const khatma: Khatma = {
 
 const assignment: Assignment = {
   memberId: person.id,
-  rounds: [{ round: 1, date: '2026-07-13', pages: [1] }],
+  rounds: [
+    {
+      round: 1,
+      date: '2026-07-13',
+      pages: [1],
+      loosePages: [1],
+      redistributedPages: [],
+    },
+  ],
   doneByRound: {},
   missedStreak: 0,
 };

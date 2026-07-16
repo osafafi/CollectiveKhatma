@@ -77,6 +77,8 @@ const khatma: Khatma = {
   totalPages: 604,
   scope: { kind: 'full' },
   memberIds: [person.id],
+  capacities: { [person.id]: { pages: 2, surahs: 0, juz: 0 } },
+  duaReciterId: person.id,
   status: 'active',
   remainingPages: [1],
   roundCount: 0,

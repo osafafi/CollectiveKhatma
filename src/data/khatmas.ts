@@ -15,14 +15,8 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
-import type { Khatma, MemberCapacity } from '@/domain/types';
-import {
-  assignmentDoc,
-  assignmentsCol,
-  emptyAssignment,
-  fromStored,
-  type StoredAssignment,
-} from './assignments';
+import type { Assignment, Khatma, MemberCapacity } from '@/domain/types';
+import { assignmentDoc, assignmentsCol, emptyAssignment } from './assignments';
 import { db } from './firebase';
 
 /** Firestore collection handle for khatmas. */
@@ -84,8 +78,8 @@ export async function createKhatma(input: CreateKhatmaInput): Promise<string> {
     memberIds: input.memberIds,
     remainingPages: input.remainingPages,
     roundCount: 0,
-    ...(input.duaReciterId ? { duaReciterId: input.duaReciterId } : {}),
-    ...(input.capacities ? { capacities: input.capacities } : {}),
+    duaReciterId: input.duaReciterId,
+    capacities: input.capacities,
     status: 'active',
     createdAt: input.createdAt ?? Date.now(),
   });
@@ -145,19 +139,19 @@ export function completeKhatma(id: string): Promise<void> {
 
 /**
  * Add a roster member to a running khatma (REQUIREMENTS §5): joins the member
- * list, optionally records their per-khatma capacity, and creates their empty
+ * list, records their per-khatma capacity, and creates their empty
  * assignment doc — they get their first chunk at the next distribution, with no
  * warning penalty.
  */
 export async function addMemberToKhatma(
   khatmaId: string,
   memberId: string,
-  capacity?: MemberCapacity,
+  capacity: MemberCapacity,
 ): Promise<void> {
   const batch = writeBatch(db);
   batch.update(doc(khatmasCol, khatmaId), {
     memberIds: arrayUnion(memberId),
-    ...(capacity ? { [`capacities.${memberId}`]: capacity } : {}),
+    [`capacities.${memberId}`]: capacity,
   });
   batch.set(doc(assignmentsCol(khatmaId), memberId), emptyAssignment(memberId), {
     merge: true,
@@ -182,7 +176,7 @@ export async function releaseMemberChunk(
     const aSnap = await tx.get(aRef);
     if (!kSnap.exists() || !aSnap.exists()) return;
     const khatma = kSnap.data() as Omit<Khatma, 'id'>;
-    const assignment = fromStored(aSnap.data() as StoredAssignment);
+    const assignment = aSnap.data() as Assignment;
     const release = releaseChunk(assignment, khatma.remainingPages);
     if (!release) return;
     const rounds = assignment.rounds.map((c) =>
@@ -213,14 +207,14 @@ export async function removeMemberFromKhatma(
     const khatma = kSnap.data() as Omit<Khatma, 'id'>;
     let held: number[] = [];
     if (aSnap.exists()) {
-      const assignment = fromStored(aSnap.data() as StoredAssignment);
+      const assignment = aSnap.data() as Assignment;
       for (const c of assignment.rounds) {
         if (c.released !== true) held = held.concat(c.pages);
       }
     }
     const remainingPages = [...khatma.remainingPages, ...held].sort((a, b) => a - b);
     const memberIds = khatma.memberIds.filter((id) => id !== memberId);
-    const capacities = { ...(khatma.capacities ?? {}) };
+    const capacities = { ...khatma.capacities };
     delete capacities[memberId];
     tx.update(kRef, { remainingPages, memberIds, capacities });
     if (aSnap.exists()) tx.delete(aRef);

@@ -14,6 +14,11 @@ const khatma: Khatma = {
   totalPages: 6,
   scope: { kind: 'range', fromPage: 1, toPage: 6 },
   memberIds: ['p1', 'p2'],
+  capacities: {
+    p1: { pages: 2, surahs: 0, juz: 0 },
+    p2: { pages: 2, surahs: 0, juz: 0 },
+  },
+  duaReciterId: 'p1',
   status: 'active',
   remainingPages: [5, 6],
   roundCount: 2,
@@ -23,13 +28,29 @@ const khatma: Khatma = {
 const assignments: Assignment[] = [
   {
     memberId: 'p1',
-    rounds: [{ round: 1, date: '2026-07-14', pages: [1, 2] }],
+    rounds: [
+      {
+        round: 1,
+        date: '2026-07-14',
+        pages: [1, 2],
+        loosePages: [1, 2],
+        redistributedPages: [],
+      },
+    ],
     doneByRound: { 1: 10 },
     missedStreak: 0,
   },
   {
     memberId: 'p2',
-    rounds: [{ round: 2, date: '2026-07-15', pages: [3, 4] }],
+    rounds: [
+      {
+        round: 2,
+        date: '2026-07-15',
+        pages: [3, 4],
+        loosePages: [3, 4],
+        redistributedPages: [],
+      },
+    ],
     doneByRound: {},
     missedStreak: 0,
   },

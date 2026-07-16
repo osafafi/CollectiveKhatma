@@ -76,7 +76,10 @@ function PersonRow({ person }: { person: Person }) {
   const { confirm } = useConfirmation();
 
   const onRemove = async () => {
-    const confirmed = await confirm({ message: strings.admin.confirmRemove, tone: 'danger' });
+    const confirmed = await confirm({
+      message: strings.admin.confirmRemove,
+      tone: 'danger',
+    });
     if (confirmed) void removePerson.execute(person.id);
   };
 
@@ -103,7 +106,7 @@ function PersonRow({ person }: { person: Person }) {
             : { color: 'text.secondary', textDecoration: 'line-through' }),
         }}
       >
-        {person.name}
+        {person.emoji || ''} {person.name}
       </Typography>
 
       {person.enabled ? null : (
@@ -134,13 +137,13 @@ function PersonRow({ person }: { person: Person }) {
 /**
  * Add-member form. Validation (`nameRequired`, `nameTaken`) is client-side and
  * shown; the `addPerson` write itself is fire-and-forget (inventory §5 quirk 5).
- * On success the name/note/error reset but the pages/round value is kept, exactly
- * as the legacy `onAddPerson` does.
+ * On success the name/note/emoji/error reset but the pages/round value is kept.
  */
 function AddPersonForm({ roster }: { roster: readonly Person[] }) {
   const addPerson = useWriteOperation('addPerson');
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
+  const [emoji, setEmoji] = useState('');
   const [pagesPerDay, setPagesPerDay] = useState('2');
   const [error, setError] = useState('');
 
@@ -159,10 +162,12 @@ function AddPersonForm({ roster }: { roster: readonly Person[] }) {
     void addPerson.execute({
       name: trimmedName,
       note: note.trim() || undefined,
+      ...(emoji.trim() ? { emoji: emoji.trim() } : {}),
       pagesPerDay: resolvedPages,
     });
     setName('');
     setNote('');
+    setEmoji('');
     setError('');
   };
 
@@ -180,7 +185,20 @@ function AddPersonForm({ roster }: { roster: readonly Person[] }) {
           value={note}
           onChange={(event) => setNote(event.target.value)}
         />
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <AppTextField
+          label={strings.settings.avatarLabel}
+          helperText={strings.settings.avatarHelper}
+          value={emoji}
+          fieldWidth={180}
+          onChange={(event) => setEmoji(event.target.value)}
+          slotProps={{ htmlInput: { maxLength: 16 } }}
+        />
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <AppTextField
             type="number"
             label={strings.admin.pagesPerDayLabel}

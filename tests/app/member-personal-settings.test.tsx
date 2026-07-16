@@ -1,7 +1,8 @@
 import { screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience } from '@/app/member/MemberApp';
+import { writeOperations, type WriteOperations } from '@/app/operations';
 import { formatPercent } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
@@ -88,6 +89,30 @@ describe('member personal and settings routes (RM-420)', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '5');
     expect(document.documentElement).toHaveAttribute('data-reading-scale', '5');
     expect(localStorage.getItem('khatma.readingScale')).toBe('5');
+  });
+
+  it('lets the selected member save an optional emoji avatar', async () => {
+    const updatePerson = vi
+      .fn<WriteOperations['updatePerson']>()
+      .mockResolvedValue(undefined);
+    const harness = renderMember({
+      route: '/settings',
+      data: { roster: [amina] },
+      operations: { ...writeOperations, updatePerson },
+    });
+
+    expect(screen.getByLabelText(strings.settings.avatarPreview)).toHaveTextContent('A');
+    const field = screen.getByLabelText(strings.settings.avatarLabel);
+    await harness.user.type(field, '🌙');
+    expect(screen.getByLabelText(strings.settings.avatarPreview)).toHaveTextContent('🌙');
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.settings.saveAvatar }),
+    );
+
+    expect(updatePerson).toHaveBeenCalledWith('person-1', { emoji: '🌙' });
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      strings.settings.avatarSaved,
+    );
   });
 
   it('navigates between both routes and preserves the settings disclosure state', async () => {

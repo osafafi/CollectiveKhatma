@@ -14,7 +14,7 @@ export function MemberIdentitySummary() {
       </Typography>
       <Typography color="text.secondary">{strings.member.greeting}</Typography>
       <Typography component="p" variant="h3">
-        {member?.name ?? ''}
+        {member?.emoji ?? ''} {member?.name ?? ''} 
       </Typography>
       <AppButton quiet variant="text" onClick={switchMember} sx={{ alignSelf: 'start' }}>
         {strings.member.switchPerson}

@@ -50,14 +50,19 @@ function renderRoster(
     ...options,
     operations,
   });
-  return { ...harness, operations: operations as ReturnType<typeof mockRosterOperations> };
+  return {
+    ...harness,
+    operations: operations as ReturnType<typeof mockRosterOperations>,
+  };
 }
 
 describe('admin Roster (RM-510)', () => {
   it('lists members, badging only the disabled ones', () => {
     renderRoster([amina, maryam]);
 
-    expect(screen.getByRole('heading', { name: strings.admin.rosterHeading })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: strings.admin.rosterHeading }),
+    ).toBeVisible();
 
     // Maryam is paused: her row carries the disabled badge; Amina's does not.
     const aminaRow = screen.getByText('Amina').closest('li')!;
@@ -69,7 +74,9 @@ describe('admin Roster (RM-510)', () => {
   it('filters by name substring as-you-type and keeps the search caret focused (P4)', async () => {
     const { user } = renderRoster([amina, maryam]);
 
-    const search = screen.getByRole('searchbox', { name: strings.admin.searchPlaceholder });
+    const search = screen.getByRole('searchbox', {
+      name: strings.admin.searchPlaceholder,
+    });
     await user.click(search);
     await user.type(search, 'Mar');
 
@@ -144,7 +151,9 @@ describe('admin Roster (RM-510)', () => {
 
     // Blank name is rejected before any write.
     await user.click(addButton);
-    expect(await screen.findByRole('alert')).toHaveTextContent(strings.admin.nameRequired);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      strings.admin.nameRequired,
+    );
     expect(operations.addPerson).not.toHaveBeenCalled();
 
     // A duplicate name is rejected too.
@@ -158,15 +167,18 @@ describe('admin Roster (RM-510)', () => {
     await user.clear(nameField);
     await user.type(nameField, '  Sara  ');
     await user.type(screen.getByLabelText(strings.admin.notePlaceholder), 'friend');
+    await user.type(screen.getByLabelText(strings.settings.avatarLabel), '🌙');
     await user.click(addButton);
 
     expect(operations.addPerson).toHaveBeenCalledWith({
       name: 'Sara',
       note: 'friend',
+      emoji: '🌙',
       pagesPerDay: 2,
     });
     // Name/note reset on success (no lingering validation alert).
     expect(nameField).toHaveValue('');
+    expect(screen.getByLabelText(strings.settings.avatarLabel)).toHaveValue('');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

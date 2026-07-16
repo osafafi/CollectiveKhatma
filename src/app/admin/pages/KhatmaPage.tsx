@@ -27,7 +27,7 @@ import {
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import type { Surah } from '@/content/quran/types';
-import { defaultCapacity } from '@/domain/assignment';
+import { requiredCapacity } from '@/domain/assignment';
 import { warningLevel } from '@/domain/distribution';
 import { isRoundDone, khatmaProgress, latestReadableChunk } from '@/domain/progress';
 import { completedInSeries, seriesTitle } from '@/domain/series';
@@ -60,7 +60,12 @@ export function AdminKhatmaPage({ id }: { id: string }) {
 
   if (!khatma) {
     return (
-      <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
+      <Stack
+        component="section"
+        spacing={4}
+        data-react-surface="admin"
+        data-route="khatma"
+      >
         <BackLink />
         <SurfaceCard>
           <Typography color="text.secondary">
@@ -174,9 +179,10 @@ function EditCard({ khatma }: { khatma: Khatma }) {
   const [name, setName] = useState(khatma.seriesName);
   const [number, setNumber] = useState(String(khatma.seriesNumber));
   const [date, setDate] = useState(dateToInput(khatma.createdAt));
-  const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(
-    null,
-  );
+  const [status, setStatus] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
   const renameSeries = useWriteOperation('renameSeries');
   const updateKhatma = useWriteOperation('updateKhatma');
 
@@ -192,7 +198,11 @@ function EditCard({ khatma }: { khatma: Khatma }) {
     }
     const changes: Partial<Pick<Khatma, 'seriesNumber' | 'createdAt'>> = {};
     const parsedNumber = parseInt(number, 10);
-    if (Number.isInteger(parsedNumber) && parsedNumber > 0 && parsedNumber !== khatma.seriesNumber) {
+    if (
+      Number.isInteger(parsedNumber) &&
+      parsedNumber > 0 &&
+      parsedNumber !== khatma.seriesNumber
+    ) {
       changes.seriesNumber = parsedNumber;
     }
     const ms = dateToEpoch(date);
@@ -233,7 +243,12 @@ function EditCard({ khatma }: { khatma: Khatma }) {
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </Stack>
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <AppButton onClick={() => void onSave()}>{strings.admin.saveKhatma}</AppButton>
           {status ? (
             <Typography
@@ -309,7 +324,7 @@ function MemberRow({
   surahs: readonly Surah[] | null;
 }) {
   const person = roster.find((candidate) => candidate.id === assignment.memberId);
-  const name = person?.name ?? assignment.memberId;
+  const name = person ? `${person.emoji || ''} ${person.name}` : assignment.memberId;
   const level = warningLevel(assignment.missedStreak);
   const chunk = latestReadableChunk(assignment);
   const done = chunk ? isRoundDone(assignment, chunk.round) : false;
@@ -352,7 +367,10 @@ function MemberRow({
     <Box sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}>
       <Stack spacing={1}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-          <Typography component="span" sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}>
+          <Typography
+            component="span"
+            sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}
+          >
             {name}
           </Typography>
           {level !== 'none' ? (
@@ -371,9 +389,19 @@ function MemberRow({
               </AppButton>
             </>
           ) : null}
-          <ChunkChip assignment={assignment} chunk={chunk} done={done} onToggle={onToggleChunk} />
+          <ChunkChip
+            assignment={assignment}
+            chunk={chunk}
+            done={done}
+            onToggle={onToggleChunk}
+          />
           {pending ? (
-            <AppButton variant="text" quiet color="inherit" onClick={() => void onReturnToPool()}>
+            <AppButton
+              variant="text"
+              quiet
+              color="inherit"
+              onClick={() => void onReturnToPool()}
+            >
               {strings.admin.returnToPool}
             </AppButton>
           ) : null}
@@ -432,7 +460,7 @@ function CapacityEditor({
   person: Person;
   surahs: readonly Surah[] | null;
 }) {
-  const start = khatma.capacities?.[person.id] ?? defaultCapacity(person);
+  const start = requiredCapacity(khatma, person.id);
   const [pages, setPages] = useState(String(start.pages));
   const [surah, setSurah] = useState(start.surahs);
   const [juz, setJuz] = useState(String(start.juz));
@@ -445,7 +473,7 @@ function CapacityEditor({
       juz: toCount(juz),
     };
     void updateKhatma.execute(khatma.id, {
-      capacities: { ...(khatma.capacities ?? {}), [person.id]: capacity },
+      capacities: { ...khatma.capacities, [person.id]: capacity },
     });
   };
 
@@ -591,12 +619,16 @@ function ControlsCard({ khatma, roster }: { khatma: Khatma; roster: readonly Per
             options={reciterOptions}
             fieldWidth={240}
             // Fire-and-forget write on change (quirk 5) — matches the legacy controlsCard.
-            onChange={(value) => void updateKhatma.execute(khatma.id, { duaReciterId: value })}
+            onChange={(value) =>
+              void updateKhatma.execute(khatma.id, { duaReciterId: value })
+            }
           />
         ) : null}
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <StartNextButton khatma={khatma} />
-          <AppButton onClick={() => void onComplete()}>{strings.admin.markComplete}</AppButton>
+          <AppButton onClick={() => void onComplete()}>
+            {strings.admin.markComplete}
+          </AppButton>
           <AppButton variant="text" quiet color="error" onClick={() => void onDelete()}>
             {strings.admin.remove}
           </AppButton>
@@ -629,12 +661,12 @@ function StartNextButton({ khatma }: { khatma: Khatma }) {
       scope: khatma.scope,
       memberIds: [...khatma.memberIds],
       memberCaps: Object.fromEntries(
-        Object.entries(khatma.capacities ?? {}).map(([memberId, capacity]) => [
+        Object.entries(khatma.capacities).map(([memberId, capacity]) => [
           memberId,
           { ...capacity },
         ]),
       ),
-      reciterId: khatma.duaReciterId ?? '',
+      reciterId: khatma.duaReciterId,
     });
     navigate({ name: 'khatmas' });
   };

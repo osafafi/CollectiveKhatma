@@ -140,6 +140,11 @@ const GRID_KHATMA: Khatma = {
   totalPages: 6,
   scope: { kind: 'range', fromPage: 1, toPage: 6 },
   memberIds: ['p1', 'p2'],
+  capacities: {
+    p1: { pages: 2, surahs: 0, juz: 0 },
+    p2: { pages: 2, surahs: 0, juz: 0 },
+  },
+  duaReciterId: 'p1',
   status: 'active',
   remainingPages: [5, 6],
   roundCount: 2,
@@ -149,13 +154,29 @@ const GRID_KHATMA: Khatma = {
 const GRID_ASSIGNMENTS: Assignment[] = [
   {
     memberId: 'p1',
-    rounds: [{ round: 1, date: '2026-07-14', pages: [1, 2] }],
+    rounds: [
+      {
+        round: 1,
+        date: '2026-07-14',
+        pages: [1, 2],
+        loosePages: [1, 2],
+        redistributedPages: [],
+      },
+    ],
     doneByRound: { 1: 10 },
     missedStreak: 0,
   },
   {
     memberId: 'p2',
-    rounds: [{ round: 2, date: '2026-07-15', pages: [3, 4] }],
+    rounds: [
+      {
+        round: 2,
+        date: '2026-07-15',
+        pages: [3, 4],
+        loosePages: [3, 4],
+        redistributedPages: [],
+      },
+    ],
     doneByRound: {},
     missedStreak: 0,
   },
@@ -165,6 +186,7 @@ const GRID_ROSTER: Person[] = [
   {
     id: 'p1',
     name: 'Amina',
+    emoji: '🌷',
     completedPages: [],
     pagesPerDay: 2,
     enabled: true,
@@ -209,6 +231,38 @@ describe('QuranPageGrid', () => {
     );
   });
 
+  it('shows chosen emoji or initials while preserving uniform state colors', () => {
+    const bothDone: Assignment[] = [
+      GRID_ASSIGNMENTS[0]!,
+      { ...GRID_ASSIGNMENTS[1]!, doneByRound: { 2: 20 } },
+    ];
+    renderThemed(
+      <QuranPageGrid khatma={GRID_KHATMA} assignments={bothDone} roster={GRID_ROSTER} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: strings.admin.pageMapHeading }));
+    const grid = screen.getByRole('grid');
+    const aminaPage = grid.querySelector('[data-page="1"]') as HTMLElement;
+    const maryamPage = grid.querySelector('[data-page="3"]') as HTMLElement;
+
+    expect(aminaPage).toHaveAttribute('data-page-state', 'done');
+    expect(maryamPage).toHaveAttribute('data-page-state', 'done');
+    expect(aminaPage.querySelector('[data-reader-avatar]')).toHaveAttribute(
+      'data-reader-avatar',
+      '🌷',
+    );
+    expect(maryamPage.querySelector('[data-reader-avatar]')).toHaveAttribute(
+      'data-reader-avatar',
+      'M',
+    );
+    expect(maryamPage.querySelector('[data-reader-avatar]')).toHaveAttribute(
+      'data-avatar-source',
+      'initials',
+    );
+    expect(getComputedStyle(aminaPage).backgroundColor).toBe(
+      getComputedStyle(maryamPage).backgroundColor,
+    );
+  });
+
   it('moves the focus wave and details while dragging after a long press', () => {
     renderThemed(
       <QuranPageGrid
@@ -237,6 +291,7 @@ describe('QuranPageGrid', () => {
 
     vi.useFakeTimers();
     try {
+      expect(page(3).querySelector('[data-reader-avatar]')).toHaveTextContent('M');
       fireEvent.pointerDown(page(3), {
         pointerId: 1,
         pointerType: 'touch',
@@ -247,6 +302,7 @@ describe('QuranPageGrid', () => {
       act(() => vi.advanceTimersByTime(100));
 
       expect(page(3)).toHaveAttribute('data-active', 'true');
+      expect(page(3).querySelector('[data-reader-avatar]')).toBeNull();
       expect(page(2)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(1)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(6)).toHaveAttribute('data-scale', '1.000');

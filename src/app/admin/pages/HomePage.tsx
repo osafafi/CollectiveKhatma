@@ -19,7 +19,7 @@ import {
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
-import { defaultCapacity, resolvePageScope } from '@/domain/assignment';
+import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { currentChunk, khatmaProgress } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
@@ -375,7 +375,7 @@ function DistributeAction({
         scope: khatma.scope,
         memberIds: khatma.memberIds,
         duaReciterId: pickDuaReciter(khatma.memberIds, allKhatmas),
-        ...(khatma.capacities ? { capacities: khatma.capacities } : {}),
+        capacities: khatma.capacities,
         pool: isNewestActive ? pool : [],
       },
     });
@@ -422,7 +422,7 @@ function distributionMembers(
     .filter((person): person is Person => person !== undefined)
     .map((person) => ({
       id: person.id,
-      capacity: khatma.capacities?.[person.id] ?? defaultCapacity(person),
+      capacity: requiredCapacity(khatma, person.id),
       completedPages: person.completedPages,
       enabled: person.enabled,
     }));

@@ -22,7 +22,15 @@ const maryam: Person = { ...amina, id: 'person-2', name: 'Maryam' };
 
 const completedAssignment: Assignment = {
   memberId: amina.id,
-  rounds: [{ round: 1, date: '2026-07-14', pages: [1, 2] }],
+  rounds: [
+    {
+      round: 1,
+      date: '2026-07-14',
+      pages: [1, 2],
+      loosePages: [1, 2],
+      redistributedPages: [],
+    },
+  ],
   doneByRound: { 1: Date.UTC(2026, 6, 14) },
   missedStreak: 0,
 };
@@ -36,6 +44,11 @@ function completedKhatma(overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 2,
     scope: { kind: 'range', fromPage: 1, toPage: 2 },
     memberIds: [amina.id, maryam.id],
+    capacities: {
+      [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+      [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+    },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [],
     roundCount: 1,

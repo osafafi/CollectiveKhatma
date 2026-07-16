@@ -87,6 +87,35 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
           expect(
             selectPersonById(memberClient.store.getState(), personId!),
           ).toBeDefined();
+          expect(
+            selectPersonById(adminClient.store.getState(), personId!)?.emoji,
+          ).toBeUndefined();
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
+      await updatePerson(personId, { emoji: '📖' });
+      await vi.waitFor(
+        () => {
+          expect(selectPersonById(adminClient.store.getState(), personId!)?.emoji).toBe(
+            '📖',
+          );
+          expect(selectPersonById(memberClient.store.getState(), personId!)?.emoji).toBe(
+            '📖',
+          );
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
+      await updatePerson(personId, { emoji: undefined });
+      await vi.waitFor(
+        () => {
+          expect(
+            selectPersonById(adminClient.store.getState(), personId!)?.emoji,
+          ).toBeUndefined();
+          expect(
+            selectPersonById(memberClient.store.getState(), personId!)?.emoji,
+          ).toBeUndefined();
         },
         { timeout: 10_000, interval: 50 },
       );
@@ -99,6 +128,7 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
         scope: { kind: 'range', fromPage: 1, toPage: 2 },
         memberIds: [personId],
         capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+        duaReciterId: personId,
         remainingPages: [1, 2],
       });
       retainAssignments(adminClient, khatmaId);
@@ -139,6 +169,7 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
           scope: { kind: 'range', fromPage: 1, toPage: 2 },
           memberIds: [personId],
           capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          duaReciterId: personId,
           pool: [1, 2],
         },
       });
@@ -217,6 +248,7 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
           scope: { kind: 'range', fromPage: 1, toPage: 2 },
           memberIds: [personId],
           capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          duaReciterId: personId,
           pool: [1, 2],
         },
       });
