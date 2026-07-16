@@ -133,7 +133,7 @@ function CompletionCandidate({
           <Typography component="p" variant="subtitle1">
             {strings.member.reciterLead}:{' '}
             <Typography component="span" sx={{ fontWeight: 600 }}>
-              {reciter?.name ?? ''}
+               {reciter?.emoji || ''} {reciter?.name ?? ''}
             </Typography>
           </Typography>
         )}

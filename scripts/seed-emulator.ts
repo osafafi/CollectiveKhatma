@@ -33,8 +33,8 @@ const db = getFirestore();
 
 /** Roster seed: varied chunk sizes + one paused member (demoing §3–5). */
 const people = [
-  { name: 'فاطمة', pagesPerDay: 5, enabled: true },
-  { name: 'مريم', pagesPerDay: 1, enabled: true },
+  { name: 'فاطمة', emoji: '🌷', pagesPerDay: 5, enabled: true },
+  { name: 'مريم', emoji: '📖', pagesPerDay: 1, enabled: true },
   { name: 'خديجة', pagesPerDay: 20, enabled: true },
   { name: 'زينب', pagesPerDay: 5, enabled: false }, // temporarily disabled
   { name: 'آمنة', pagesPerDay: 5, enabled: true },
@@ -64,16 +64,18 @@ async function seedRoster(): Promise<SeededPerson[]> {
       const data = d.data();
       return {
         id: d.id,
-        name: (data.name as string) ?? d.id,
-        pagesPerDay: (data.pagesPerDay as number) ?? 2,
-        enabled: (data.enabled as boolean) ?? true,
+        name: data.name as string,
+        pagesPerDay: data.pagesPerDay as number,
+        enabled: data.enabled as boolean,
       };
     });
   }
   const seeded: SeededPerson[] = [];
   for (const person of people) {
-    const ref = await db.collection('roster').add({
+    const ref = db.collection('roster').doc();
+    await ref.set({
       name: person.name,
+      ...('emoji' in person ? { emoji: person.emoji } : {}),
       completedPages: [],
       pagesPerDay: person.pagesPerDay,
       enabled: person.enabled,
@@ -143,7 +145,13 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
       if (a) a.missedStreak = streak;
     }
     for (const planned of plan.chunks) {
-      const chunk: RoundChunk = { round: planned.round, date, pages: planned.pages };
+      const chunk: RoundChunk = {
+        round: planned.round,
+        date,
+        pages: planned.pages,
+        loosePages: planned.loosePages,
+        redistributedPages: [],
+      };
       assignments.get(planned.memberId)?.rounds.push(chunk);
     }
     const update = plan.khatmaUpdates[0];
@@ -172,6 +180,12 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
   // Persist the final state in one batch.
   const khatmaRef = db.collection('khatmas').doc(khatmaId);
   const batch = db.batch();
+  const capacities = Object.fromEntries(
+    members.map((member) => [
+      member.id,
+      { pages: member.pagesPerDay, surahs: 0, juz: 0 },
+    ]),
+  );
   batch.set(khatmaRef, {
     seriesId: crypto.randomUUID(),
     seriesName: 'أهل القرآن',
@@ -179,10 +193,11 @@ async function seedKhatma(members: SeededPerson[]): Promise<void> {
     totalPages: pool.length,
     scope,
     memberIds,
+    capacities,
     remainingPages,
     roundCount,
     lastDistributionDate: isoDate(-1),
-    ...(duaReciterId ? { duaReciterId } : {}),
+    duaReciterId,
     status: 'active',
     createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
   });

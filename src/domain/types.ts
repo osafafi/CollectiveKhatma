@@ -3,10 +3,7 @@
  * DOM. These mirror the Firestore collections documented in ARCHITECTURE.md.
  */
 
-/**
- * Daily page capacity assumed for a person when the admin hasn't set one
- * explicitly (legacy roster docs predate the field). See {@link Person.pagesPerDay}.
- */
+/** Default daily page capacity offered when the admin creates a person. */
 export const DEFAULT_PAGES_PER_DAY = 2;
 
 /** A person in the global roster. Firestore: `roster/{id}` */
@@ -16,6 +13,11 @@ export interface Person {
   name: string;
   /** Free-form note (e.g. "husband of Sara"); metadata only, never identity. */
   note?: string;
+  /**
+   * Optional avatar chosen by the person. When absent, avatar surfaces derive
+   * initials from the display name.
+   */
+  emoji?: string;
   /**
    * Lifetime set of page numbers this person has marked done, across every
    * khatma. Feeds the personal "pages of the Quran read" insight only —
@@ -41,8 +43,7 @@ export interface Person {
  * A member's per-round reading capacity within a khatma (REQUIREMENTS §4). The
  * three fields are ADDITIVE: the member receives `pages` loose pages PLUS
  * `surahs` whole surahs PLUS `juz` whole ajzā' each round, all drawn from the
- * front of the khatma's page pool. Stored per-khatma in {@link Khatma.capacities};
- * an absent entry falls back to `{ pages: Person.pagesPerDay, surahs: 0, juz: 0 }`.
+ * front of the khatma's page pool. Stored per-khatma in {@link Khatma.capacities}.
  * A solo full-Quran reader is typically `{ pages: 0, surahs: 0, juz: 1 }`.
  */
 export interface MemberCapacity {
@@ -91,6 +92,8 @@ export interface Khatma {
   seriesId: string;
   /** Series display name (e.g. "أهل القرآن") — the number is appended in the UI. */
   seriesName: string;
+  /** Optional filename from public/khatma-images. Omitted series use the placeholder. */
+  imageName?: string;
   /** 1-based position in the series; incremented at each rollover. */
   seriesNumber: number;
   /** Pages the khatma covers (default 604). Equals the resolved scope size. */
@@ -100,11 +103,11 @@ export interface Khatma {
   /** Roster member ids taking part. */
   memberIds: string[];
   /**
-   * Per-member reading capacity for THIS khatma (memberId -> capacity). Absent
-   * entries fall back to the member's roster default (`Person.pagesPerDay`
-   * pages). Copied forward at rollover so the next khatma keeps the same pace.
+   * Per-member reading capacity for THIS khatma (memberId -> capacity). Every
+   * member id has an entry. Copied forward at rollover so the next khatma keeps
+   * the same pace.
    */
-  capacities?: Record<string, MemberCapacity>;
+  capacities: Record<string, MemberCapacity>;
   status: KhatmaStatus;
   /** Pages not yet held by any live chunk, ascending. Starts as the full pool. */
   remainingPages: number[];
@@ -115,9 +118,9 @@ export interface Khatma {
   /**
    * The single member designated to recite du3a2 al-khatma for THIS khatma.
    * Chosen by rotation at creation/rollover so the duty spreads across cycles
-   * (REQUIREMENTS §7). Optional for legacy docs.
+   * (REQUIREMENTS §7).
    */
-  duaReciterId?: string;
+  duaReciterId: string;
   /** Epoch ms when the khatma was marked completed (drives the series history). */
   completedAt?: number;
   createdAt: number;
@@ -134,13 +137,10 @@ export interface RoundChunk {
   date: string;
   /** Ascending page numbers; may be empty (pool drained that round). */
   pages: number[];
-  /**
-   * The subset of `pages` assigned by loose-page capacity. Optional for legacy
-   * chunks. This allows redistribution without recalling whole surahs or ajza'.
-   */
-  loosePages?: number[];
+  /** The subset of `pages` assigned by loose-page capacity. */
+  loosePages: number[];
   /** Loose pages recalled by a later redistribution, retained as audit history. */
-  redistributedPages?: number[];
+  redistributedPages: number[];
   /**
    * Set when the member missed the round: the pages were returned to the pool
    * and reassigned. The chunk is kept as history; it can never be marked done.

@@ -1,28 +1,36 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { DEFAULT_PAGES_PER_DAY, type Person } from '@/domain/types';
+import { isNameUnique, normalizeName } from '@/domain/validation';
 import { db } from './firebase';
 
 const rosterCol = collection(db, 'roster');
 
-/** Fill in fields added after the first roster docs were written (back-compat). */
-function fromStored(id: string, data: Omit<Person, 'id'>): Person {
-  return {
-    ...data,
-    id,
-    completedPages: data.completedPages ?? [],
-    pagesPerDay: data.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
-    enabled: data.enabled ?? true,
-  };
+/** A latest-roster duplicate guard so UI validation failures stay friendly. */
+export class DuplicatePersonNameError extends Error {
+  constructor() {
+    super('A roster member already uses this name');
+    this.name = 'DuplicatePersonNameError';
+  }
+}
+
+async function assertNameAvailable(name: string, excludedId?: string): Promise<void> {
+  const snap = await getDocs(rosterCol);
+  const people = snap.docs
+    .filter((entry) => entry.id !== excludedId)
+    .map((entry) => ({ name: String(entry.data().name ?? '') }));
+  if (!isNameUnique(name, people)) throw new DuplicatePersonNameError();
 }
 
 /**
@@ -37,7 +45,8 @@ export function subscribeRoster(
   const q = query(rosterCol, orderBy('name'));
   return onSnapshot(
     q,
-    (snap) => onChange(snap.docs.map((d) => fromStored(d.id, d.data() as Omit<Person, 'id'>))),
+    (snap) =>
+      onChange(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Person, 'id'>) }))),
     (error) => onError?.(error),
   );
 }
@@ -47,11 +56,15 @@ export function subscribeRoster(
  * (`pagesPerDay`) at creation; new people start enabled. Returns the new id.
  */
 export async function addPerson(
-  input: Pick<Person, 'name'> & Partial<Pick<Person, 'note' | 'pagesPerDay'>>,
+  input: Pick<Person, 'name'> & Partial<Pick<Person, 'note' | 'emoji' | 'pagesPerDay'>>,
 ): Promise<string> {
-  const ref = await addDoc(rosterCol, {
-    name: input.name,
+  const name = normalizeName(input.name);
+  await assertNameAvailable(name);
+  const ref = doc(rosterCol);
+  await setDoc(ref, {
+    name,
     ...(input.note ? { note: input.note } : {}),
+    ...(input.emoji?.trim() ? { emoji: input.emoji.trim() } : {}),
     completedPages: [],
     pagesPerDay: input.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
     enabled: true,
@@ -65,11 +78,25 @@ export async function addPerson(
  * (`pagesPerDay`, adjustable any time), and `enabled` (temporarily pausing them
  * from assignment without removing them — REQUIREMENTS §5+).
  */
-export function updatePerson(
+export async function updatePerson(
   id: string,
-  changes: Partial<Pick<Person, 'name' | 'note' | 'pagesPerDay' | 'enabled'>>,
+  changes: Partial<Pick<Person, 'name' | 'note' | 'emoji' | 'pagesPerDay' | 'enabled'>>,
 ): Promise<void> {
-  return updateDoc(doc(rosterCol, id), changes);
+  const name = changes.name === undefined ? undefined : normalizeName(changes.name);
+  if (name !== undefined) await assertNameAvailable(name, id);
+  const { emoji, ...otherChanges } = changes;
+  await updateDoc(doc(rosterCol, id), {
+    ...otherChanges,
+    ...(name === undefined ? {} : { name }),
+    ...('emoji' in changes
+      ? { emoji: emoji?.trim() ? emoji.trim() : deleteField() }
+      : {}),
+  });
+}
+
+/** Rename through the duplicate-guarded person update path. */
+export function renamePerson(id: string, name: string): Promise<void> {
+  return updatePerson(id, { name });
 }
 
 /** Remove a person from the roster. */

@@ -79,35 +79,48 @@ src/
 
 ## Firestore Schema & Invariants
 
-### 1. `khatmas/{khatmaId}` (Khatma)
+### 1. `roster/{personId}` (Person)
+
+- `name`: string
+- `note`: optional string
+- `emoji`: optional string (grid avatar; initials are derived from `name` when absent)
+- `completedPages`: number[]
+- `pagesPerDay`: number
+- `enabled`: boolean
+- `createdAt`: number (epoch ms)
+
+### 2. `khatmas/{khatmaId}` (Khatma)
 
 - `seriesId`: string (stable across the series)
 - `seriesName`: string (e.g. "أهل القرآن")
+- `imageName`: optional string (shared filename from `public/khatma-images/`)
 - `seriesNumber`: number (sequential: 1, 2, 3...)
 - `totalPages`: number
 - `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
 - `memberIds`: string[]
-- `capacities`: optional Record<memberId, `{ pages, surahs, juz }`> (per-member ADDITIVE per-round capacity — `surahs` is a specific surah id, 0=none; absent ⇒ roster `pagesPerDay` pages)
+- `capacities`: Record<memberId, `{ pages, surahs, juz }>` (required per-member ADDITIVE per-round capacity — `surahs` is a specific surah id, 0=none)
 - `status`: 'active' | 'completed'
 - `remainingPages`: number[] (pages not yet in any live chunk, ascending)
 - `roundCount`: number (rounds run against this khatma)
 - `lastDistributionDate`: optional string (ISO date YYYY-MM-DD)
-- `duaReciterId`: optional string
+- `duaReciterId`: string
 - `completedAt`: optional number (epoch ms)
 - `createdAt`: number (epoch ms)
 
-### 2. `khatmas/{khatmaId}/assignments/{memberId}` (Assignment)
+### 3. `khatmas/{khatmaId}/assignments/{memberId}` (Assignment)
 
 - `memberId`: string
 - `rounds`: RoundChunk[]
 - `doneByRound`: Record<number, number> (round number -> completedAt epoch ms)
 - `missedStreak`: number (consecutive missed rounds)
 
-### 3. `RoundChunk` (Nested in Assignment.rounds)
+### 4. `RoundChunk` (Nested in Assignment.rounds)
 
 - `round`: number
 - `date`: string (ISO date)
 - `pages`: number[]
+- `loosePages`: number[]
+- `redistributedPages`: number[]
 - `released`: optional true (missed chunk pages returned to pool)
 
 ### Verbatim Invariants
@@ -133,7 +146,7 @@ Returning unread pages is a separate admin action: `releaseMemberChunk` marks th
 ## Gotchas & Conventions
 
 - **No Firestore Nested Arrays**: Saved round chunks are stored as `rounds: Array<{round, date, pages: number[], released?}>` which is standard flat array behavior (no nested arrays).
-- **Per-member capacity is per-khatma**: stored in `Khatma.capacities` (additive pages+surahs+juz), not on the roster `Person` (whose `pagesPerDay` is only the fallback). Copied forward at rollover.
+- **Per-member capacity is per-khatma**: every member has an explicit entry in `Khatma.capacities` (additive pages+surahs+juz). It is copied forward at rollover.
 - **Manual page-return & N+1 while active**: the admin returns an unread member's pages (`releaseMemberChunk`) or removes a member (`removeMemberFromKhatma`, which returns their outstanding pages to the pool); and can create khatma N+1 in a series while N is still active (the engine already supports 1–2 active per series).
 - **No Authentication**: Trust-based community model. Firestore rules validate document shape and paths only.
 - **Hash Routing**: Uses client-side hash routing (`#/home`, `#/roster`, etc.) to run on GitHub Pages.

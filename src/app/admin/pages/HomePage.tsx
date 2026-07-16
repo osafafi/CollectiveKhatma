@@ -9,7 +9,7 @@ import {
 import { useWriteOperation, type OperationState } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
-import { DonutChart, SegmentBar } from '@/components/charts';
+import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
 import {
   AppButton,
   NestedSurface,
@@ -19,7 +19,7 @@ import {
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
-import { defaultCapacity, resolvePageScope } from '@/domain/assignment';
+import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { currentChunk, khatmaProgress } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
@@ -117,6 +117,7 @@ function KhatmaBlock({
     <NestedSurface>
       <Stack spacing={3}>
         <KhatmaMetrics khatma={khatma} assignments={assignments} />
+        <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
         <PendingReaders assignments={assignments} roster={roster} />
         <Warnings assignments={assignments} roster={roster} />
         <DistributeAction
@@ -369,12 +370,13 @@ function DistributeAction({
       rolloverSeed: {
         seriesId: group.seriesId,
         seriesName: group.seriesName,
+        ...(group.latest.imageName ? { imageName: group.latest.imageName } : {}),
         seriesNumber: nextSeriesNumber(allKhatmas, group.seriesId),
         totalPages: pool.length,
         scope: khatma.scope,
         memberIds: khatma.memberIds,
         duaReciterId: pickDuaReciter(khatma.memberIds, allKhatmas),
-        ...(khatma.capacities ? { capacities: khatma.capacities } : {}),
+        capacities: khatma.capacities,
         pool: isNewestActive ? pool : [],
       },
     });
@@ -421,7 +423,7 @@ function distributionMembers(
     .filter((person): person is Person => person !== undefined)
     .map((person) => ({
       id: person.id,
-      capacity: khatma.capacities?.[person.id] ?? defaultCapacity(person),
+      capacity: requiredCapacity(khatma, person.id),
       completedPages: person.completedPages,
       enabled: person.enabled,
     }));

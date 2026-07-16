@@ -1,4 +1,4 @@
-import type { MemberCapacity, PageScope, Person } from './types';
+import type { Khatma, MemberCapacity, PageScope } from './types';
 
 export type { PageScope };
 
@@ -31,20 +31,29 @@ export function resolvePageScope(
     case 'full': {
       const total = scope.totalPages ?? DEFAULT_TOTAL_PAGES;
       if (!Number.isInteger(total) || total < 1) {
-        throw new Error(`resolvePageScope: totalPages must be a positive integer (got ${total})`);
+        throw new Error(
+          `resolvePageScope: totalPages must be a positive integer (got ${total})`,
+        );
       }
       return pageRange(1, total);
     }
     case 'range': {
       const { fromPage, toPage } = scope;
-      if (!Number.isInteger(fromPage) || !Number.isInteger(toPage) || fromPage < 1 || fromPage > toPage) {
+      if (
+        !Number.isInteger(fromPage) ||
+        !Number.isInteger(toPage) ||
+        fromPage < 1 ||
+        fromPage > toPage
+      ) {
         throw new Error(`resolvePageScope: invalid page range ${fromPage}..${toPage}`);
       }
       return pageRange(fromPage, toPage);
     }
     case 'surahs': {
       if (!surahToPages) {
-        throw new Error('resolvePageScope: surahToPages is required to resolve a chapter scope');
+        throw new Error(
+          'resolvePageScope: surahToPages is required to resolve a chapter scope',
+        );
       }
       const pages = new Set<number>();
       for (const id of scope.surahIds) {
@@ -81,8 +90,13 @@ export function buildPageUnitMaps(
 ): PageUnitMaps {
   const surah: Record<number, number> = {};
   const juz: Record<number, number> = {};
-  const fill = (target: Record<number, number>, ranges: Record<number, [number, number]>): void => {
-    for (const id of Object.keys(ranges).map(Number).sort((a, b) => a - b)) {
+  const fill = (
+    target: Record<number, number>,
+    ranges: Record<number, [number, number]>,
+  ): void => {
+    for (const id of Object.keys(ranges)
+      .map(Number)
+      .sort((a, b) => a - b)) {
       const [start, end] = ranges[id]!;
       for (let p = start; p <= end; p++) target[p] = id;
     }
@@ -92,7 +106,14 @@ export function buildPageUnitMaps(
   return { surah, juz };
 }
 
-/** A member's fallback capacity when a khatma has no explicit entry for them. */
-export function defaultCapacity(person: Pick<Person, 'pagesPerDay'>): MemberCapacity {
-  return { pages: person.pagesPerDay, surahs: 0, juz: 0 };
+/** Read a required per-khatma capacity and fail loudly on invalid stored data. */
+export function requiredCapacity(
+  khatma: Pick<Khatma, 'id' | 'capacities'>,
+  memberId: string,
+): MemberCapacity {
+  const capacity = khatma.capacities[memberId];
+  if (!capacity) {
+    throw new Error(`Khatma ${khatma.id} is missing capacity for member ${memberId}`);
+  }
+  return capacity;
 }

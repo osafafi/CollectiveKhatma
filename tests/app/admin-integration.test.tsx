@@ -65,6 +65,8 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 6,
     scope: { kind: 'range', fromPage: 1, toPage: 6 },
     memberIds: [amina.id],
+    capacities: { [amina.id]: { pages: 2, surahs: 0, juz: 0 } },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [1, 2, 3, 4, 5, 6],
     roundCount: 1,

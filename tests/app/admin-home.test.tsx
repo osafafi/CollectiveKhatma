@@ -48,6 +48,11 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 6,
     scope: { kind: 'range', fromPage: 1, toPage: 6 },
     memberIds: [amina.id],
+    capacities: {
+      [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+      [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+    },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [1, 2, 3, 4, 5, 6],
     roundCount: 1,
@@ -66,7 +71,13 @@ function makeAssignment(
 }
 
 function round(roundNumber: number, pages: number[]): RoundChunk {
-  return { round: roundNumber, date: '2026-07-14', pages };
+  return {
+    round: roundNumber,
+    date: '2026-07-14',
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+  };
 }
 
 function renderAdmin(options: RenderWithAppProvidersOptions = {}) {
@@ -134,6 +145,9 @@ describe('admin Home dashboard (RM-500)', () => {
       'href',
       '#/khatmas/k1',
     );
+    expect(
+      screen.getByRole('button', { name: strings.admin.pageMapHeading }),
+    ).toBeVisible();
 
     // Pending readers: only Maryam holds a chunk, shown with exact page ranges.
     const pending = screen.getByText(strings.admin.pendingHeading).closest('div')!;
@@ -180,7 +194,9 @@ describe('admin Home dashboard (RM-500)', () => {
 
     // Confirmation gate: the confirm copy appears; approving runs distribution.
     expect(screen.getByText(strings.admin.confirmDistribute)).toBeVisible();
-    await harness.user.click(screen.getByRole('button', { name: strings.common.confirm }));
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.common.confirm }),
+    );
 
     // Busy-disable prevents a double-press while the write is in flight (P8).
     await waitFor(() => expect(distribute).toBeDisabled());
@@ -243,7 +259,9 @@ describe('admin Home dashboard (RM-500)', () => {
     await harness.user.click(
       await screen.findByRole('button', { name: strings.admin.distribute }),
     );
-    await harness.user.click(screen.getByRole('button', { name: strings.common.confirm }));
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.common.confirm }),
+    );
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(strings.admin.alreadyDistributed);

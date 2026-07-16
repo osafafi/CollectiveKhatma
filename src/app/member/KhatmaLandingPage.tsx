@@ -12,6 +12,7 @@ import { memberHash } from '@/app/routing/routes';
 import { ErrorState } from '@/components/feedback';
 import {
   AppButton,
+  KhatmaSeriesArtwork,
   NoticeBanner,
   ProgressView,
   SurfaceCard,
@@ -29,6 +30,7 @@ import {
 import { completedInSeries, seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import { useMemberIdentity } from './memberIdentityContext';
+import { QuranPageGrid } from '@/components/charts';
 
 /** Member `#/khatma/{id}` landing page. */
 export function KhatmaLandingPage({ khatmaId }: { khatmaId: string }) {
@@ -142,9 +144,17 @@ function KhatmaLandingContent({
         {strings.member.khatmasHeading}
       </AppButton>
 
-      <Typography component="h1" variant="h2" color="primary.main">
-        {seriesTitle(khatma, toArabicDigits)}
-      </Typography>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <KhatmaSeriesArtwork
+          variant="avatar"
+          imageName={khatma.imageName}
+          alt={strings.admin.seriesImageAlt}
+          size={72}
+        />
+        <Typography component="h1" variant="h2" color="primary.main">
+          {seriesTitle(khatma, toArabicDigits)}
+        </Typography>
+      </Stack>
       <RoundLine khatma={khatma} />
 
       {warning !== 'none' ? (
@@ -333,6 +343,7 @@ function GroupProgressCard({
           ⏳ {pendingNames.join('، ')}
         </Typography>
       ) : null}
+      <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
     </SurfaceCard>
   );
 }

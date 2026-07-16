@@ -12,31 +12,8 @@ import {
   type DocumentReference,
   type Unsubscribe,
 } from 'firebase/firestore';
-import type { Assignment, RoundChunk } from '@/domain/types';
+import type { Assignment } from '@/domain/types';
 import { db } from './firebase';
-
-/**
- * Stored shape of an assignment doc. `rounds` is an array of chunk maps —
- * legal in Firestore (only an array directly inside an array is forbidden).
- * Older/partial docs may miss fields, so everything except `memberId` is
- * optional and defaulted on read.
- */
-export interface StoredAssignment {
-  memberId: string;
-  rounds?: RoundChunk[];
-  doneByRound?: Record<string, number>;
-  missedStreak?: number;
-}
-
-/** Map a stored assignment doc back to the domain `Assignment`. */
-export function fromStored(data: StoredAssignment): Assignment {
-  return {
-    memberId: data.memberId,
-    rounds: data.rounds ?? [],
-    doneByRound: data.doneByRound ?? {},
-    missedStreak: data.missedStreak ?? 0,
-  };
-}
 
 /** The all-empty assignment a member starts a khatma with. */
 export function emptyAssignment(memberId: string): Assignment {
@@ -61,7 +38,7 @@ export function subscribeAssignments(
 ): Unsubscribe {
   return onSnapshot(
     assignmentsCol(khatmaId),
-    (snap) => onChange(snap.docs.map((d) => fromStored(d.data() as StoredAssignment))),
+    (snap) => onChange(snap.docs.map((d) => d.data() as Assignment)),
     (error) => onError?.(error),
   );
 }
@@ -72,7 +49,7 @@ export async function getAssignment(
   memberId: string,
 ): Promise<Assignment | undefined> {
   const snap = await getDoc(assignmentDoc(khatmaId, memberId));
-  return snap.exists() ? fromStored(snap.data() as StoredAssignment) : undefined;
+  return snap.exists() ? (snap.data() as Assignment) : undefined;
 }
 
 /**
@@ -108,9 +85,11 @@ export function markRoundDone(
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(assignmentRef);
     if (!snap.exists()) {
-      throw new Error(`markRoundDone: no assignment for ${memberId} in khatma ${khatmaId}`);
+      throw new Error(
+        `markRoundDone: no assignment for ${memberId} in khatma ${khatmaId}`,
+      );
     }
-    const data = fromStored(snap.data() as StoredAssignment);
+    const data = snap.data() as Assignment;
     if (data.doneByRound[round] !== undefined) return; // already done — idempotent
 
     const chunk = data.rounds.find((c) => c.round === round);
@@ -145,7 +124,7 @@ export function clearRoundDone(
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(assignmentRef);
     if (!snap.exists()) return;
-    const data = fromStored(snap.data() as StoredAssignment);
+    const data = snap.data() as Assignment;
     if (data.doneByRound[round] === undefined) return; // not done — nothing to clear
 
     const pages = data.rounds.find((c) => c.round === round)?.pages ?? [];
@@ -161,7 +140,10 @@ export function clearRoundDone(
  * to 0 on every given khatma (pass the series' active khatma ids so the badge
  * disappears everywhere at once).
  */
-export async function clearWarning(khatmaIds: readonly string[], memberId: string): Promise<void> {
+export async function clearWarning(
+  khatmaIds: readonly string[],
+  memberId: string,
+): Promise<void> {
   const batch = writeBatch(db);
   for (const khatmaId of khatmaIds) {
     batch.set(assignmentDoc(khatmaId, memberId), { missedStreak: 0 }, { merge: true });

@@ -1,4 +1,9 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import {
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
@@ -24,8 +29,24 @@ const INDEX: QuranIndex = {
   juzToPages: { 1: [1, 21] },
 };
 const SURAHS: Surah[] = [
-  { id: 1, name: 'الفاتحة', pageStart: 1, pageEnd: 1, versesCount: 7, bismillahPre: false, revelation: 'meccan' },
-  { id: 2, name: 'البقرة', pageStart: 2, pageEnd: 49, versesCount: 286, bismillahPre: true, revelation: 'medinan' },
+  {
+    id: 1,
+    name: 'الفاتحة',
+    pageStart: 1,
+    pageEnd: 1,
+    versesCount: 7,
+    bismillahPre: false,
+    revelation: 'meccan',
+  },
+  {
+    id: 2,
+    name: 'البقرة',
+    pageStart: 2,
+    pageEnd: 49,
+    versesCount: 286,
+    bismillahPre: true,
+    revelation: 'medinan',
+  },
 ];
 
 const amina: Person = {
@@ -47,6 +68,11 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 6,
     scope: { kind: 'range', fromPage: 1, toPage: 6 },
     memberIds: [amina.id],
+    capacities: {
+      [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+      [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+    },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [1, 2, 3, 4, 5, 6],
     roundCount: 1,
@@ -55,10 +81,18 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
   };
 }
 
-function mockOperations(): WriteOperations & { createKhatma: ReturnType<typeof vi.fn> } {
+function mockOperations(): WriteOperations & {
+  createKhatma: ReturnType<typeof vi.fn>;
+  setSeriesImage: ReturnType<typeof vi.fn>;
+} {
   return {
     ...writeOperations,
-    createKhatma: vi.fn<WriteOperations['createKhatma']>().mockResolvedValue('new-khatma'),
+    createKhatma: vi
+      .fn<WriteOperations['createKhatma']>()
+      .mockResolvedValue('new-khatma'),
+    setSeriesImage: vi
+      .fn<WriteOperations['setSeriesImage']>()
+      .mockResolvedValue(undefined),
   };
 }
 
@@ -66,7 +100,8 @@ function renderKhatmas(
   data: RenderWithAppProvidersOptions['data'],
   options: Omit<RenderWithAppProvidersOptions, 'route' | 'data'> = {},
 ) {
-  const operations = (options.operations as ReturnType<typeof mockOperations>) ?? mockOperations();
+  const operations =
+    (options.operations as ReturnType<typeof mockOperations>) ?? mockOperations();
   const harness = renderWithAppProviders(<AdminExperience />, {
     route: '/khatmas',
     data,
@@ -129,7 +164,9 @@ describe('admin Khatmas list/create (RM-520)', () => {
     await user.click(screen.getByRole('button', { name: strings.admin.cancel }));
     expect(screen.queryByLabelText(strings.admin.seriesNamePlaceholder)).toBeNull();
     await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
-    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue('أهل القرآن');
+    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue(
+      'أهل القرآن',
+    );
   });
 
   it('validates a blank name and an empty member selection before writing', async () => {
@@ -138,13 +175,20 @@ describe('admin Khatmas list/create (RM-520)', () => {
 
     // Blank name.
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(strings.admin.seriesNameRequired);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      strings.admin.seriesNameRequired,
+    );
     expect(operations.createKhatma).not.toHaveBeenCalled();
 
     // Named but no members selected.
-    await user.type(screen.getByLabelText(strings.admin.seriesNamePlaceholder), 'أهل القرآن');
+    await user.type(
+      screen.getByLabelText(strings.admin.seriesNamePlaceholder),
+      'أهل القرآن',
+    );
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(strings.admin.selectMembers);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      strings.admin.selectMembers,
+    );
     expect(operations.createKhatma).not.toHaveBeenCalled();
   });
 
@@ -152,7 +196,10 @@ describe('admin Khatmas list/create (RM-520)', () => {
     const { user, operations } = renderKhatmas({ roster: [amina], khatmas: [] });
     await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
 
-    await user.type(screen.getByLabelText(strings.admin.seriesNamePlaceholder), 'أهل القرآن');
+    await user.type(
+      screen.getByLabelText(strings.admin.seriesNamePlaceholder),
+      'أهل القرآن',
+    );
     await user.click(screen.getByRole('checkbox', { name: amina.name }));
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
 
@@ -171,7 +218,38 @@ describe('admin Khatmas list/create (RM-520)', () => {
     expect(input.remainingPages).toHaveLength(604);
 
     // The form resets and closes on success.
-    expect(screen.getByRole('button', { name: strings.admin.createNewButton })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: strings.admin.createNewButton }),
+    ).toBeVisible();
+  });
+
+  it('selects optional public artwork from the image-grid modal', async () => {
+    const { user, operations } = renderKhatmas({ roster: [amina], khatmas: [] });
+    await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
+    await user.type(
+      screen.getByLabelText(strings.admin.seriesNamePlaceholder),
+      'أهل القرآن',
+    );
+    await user.click(screen.getByRole('checkbox', { name: amina.name }));
+    await user.click(
+      screen.getByRole('button', { name: strings.admin.chooseSeriesImage }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: strings.admin.seriesImageGalleryHeading,
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'green-arch.svg' }));
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole('dialog', { name: strings.admin.seriesImageGalleryHeading }),
+    );
+    await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
+
+    await waitFor(() => expect(operations.createKhatma).toHaveBeenCalledTimes(1));
+    expect(operations.createKhatma.mock.calls[0]![0]).toMatchObject({
+      imageName: 'green-arch.svg',
+    });
   });
 
   it('continues an existing series when the name matches, with the next number', async () => {
@@ -180,14 +258,18 @@ describe('admin Khatmas list/create (RM-520)', () => {
       seriesName: 'أهل القرآن',
       seriesNumber: 1,
     });
-    const { user, operations } = renderKhatmas({ roster: [amina, maryam], khatmas: [existing] });
+    const { user, operations } = renderKhatmas({
+      roster: [amina, maryam],
+      khatmas: [existing],
+    });
     await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
-    await user.type(screen.getByLabelText(strings.admin.seriesNamePlaceholder), 'أهل القرآن');
+    await user.type(
+      screen.getByLabelText(strings.admin.seriesNamePlaceholder),
+      'أهل القرآن',
+    );
 
     // The continuation note announces the next number.
-    expect(
-      screen.getByText(`${strings.admin.continuesSeries} ٢`),
-    ).toBeVisible();
+    expect(screen.getByText(`${strings.admin.continuesSeries} ٢`)).toBeVisible();
 
     await user.click(screen.getByRole('checkbox', { name: amina.name }));
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
@@ -198,5 +280,45 @@ describe('admin Khatmas list/create (RM-520)', () => {
       seriesName: 'أهل القرآن',
       seriesNumber: 2,
     });
+  });
+
+  it('applies an explicit placeholder choice across a continued series', async () => {
+    const existing = makeKhatma('first', {
+      seriesId: 'ahl',
+      seriesName: 'أهل القرآن',
+      imageName: 'green-arch.svg',
+    });
+    const { user, operations } = renderKhatmas({
+      roster: [amina],
+      khatmas: [existing],
+    });
+    await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
+    await user.type(
+      screen.getByLabelText(strings.admin.seriesNamePlaceholder),
+      'أهل القرآن',
+    );
+    await user.click(screen.getByRole('checkbox', { name: amina.name }));
+    await user.click(
+      screen.getByRole('button', { name: strings.admin.chooseSeriesImage }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: strings.admin.seriesImageGalleryHeading,
+    });
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.admin.useSeriesPlaceholder }),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: strings.common.confirm }),
+    );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole('dialog', { name: strings.admin.seriesImageGalleryHeading }),
+    );
+    await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
+
+    await waitFor(() =>
+      expect(operations.setSeriesImage).toHaveBeenCalledWith('ahl', ''),
+    );
+    const input = operations.createKhatma.mock.calls[0]![0];
+    expect(input).not.toHaveProperty('imageName');
   });
 });

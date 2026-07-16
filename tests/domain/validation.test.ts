@@ -17,6 +17,10 @@ describe('validation', () => {
     expect(isNameUnique('  فاطمة  ', roster)).toBe(false);
     expect(normalizeName('  a   b  ')).toBe('a b');
   });
+
+  it('compares names without case differences', () => {
+    expect(isNameUnique('AMINA', [{ name: 'Amina' }])).toBe(false);
+  });
 });
 
 describe('progress', () => {

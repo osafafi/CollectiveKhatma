@@ -151,6 +151,14 @@ trust is the accepted security model (REQUIREMENTS §3, §8). Before deploying:
 Read the honest security note in [ARCHITECTURE.md](ARCHITECTURE.md#security)
 before relying on this.
 
+## Khatma series artwork
+
+Put selectable series images in [`public/khatma-images/`](public/khatma-images/).
+Supported image extensions are AVIF, GIF, JPG/JPEG, PNG, SVG, and WebP. Restart
+the dev server or rebuild after adding a file; the admin image-picker modal reads
+the folder automatically. Keep `placeholder.svg`, which is used whenever a
+series has no selected image.
+
 ## Quran data
 
 The full **Madinah mushaf** (King Fahd / KFGQPC layout, Hafs Uthmani) is bundled:

@@ -33,7 +33,15 @@ const INDEX: QuranIndex = {
   juzToPages: { 1: [1, 21] },
 };
 const SURAHS: Surah[] = [
-  { id: 1, name: 'الفاتحة', pageStart: 1, pageEnd: 1, versesCount: 7, bismillahPre: false, revelation: 'meccan' },
+  {
+    id: 1,
+    name: 'الفاتحة',
+    pageStart: 1,
+    pageEnd: 1,
+    versesCount: 7,
+    bismillahPre: false,
+    revelation: 'meccan',
+  },
 ];
 
 const amina: Person = {
@@ -55,6 +63,11 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 6,
     scope: { kind: 'range', fromPage: 1, toPage: 6 },
     memberIds: [amina.id],
+    capacities: {
+      [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+      [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+    },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [1, 2, 3, 4, 5, 6],
     roundCount: 1,
@@ -67,10 +80,7 @@ function makeAssignment(memberId: string): Assignment {
   return { memberId, rounds: [], doneByRound: {}, missedStreak: 0 };
 }
 
-function render(
-  route: string,
-  data: RenderWithAppProvidersOptions['data'],
-) {
+function render(route: string, data: RenderWithAppProvidersOptions['data']) {
   return renderWithAppProviders(<AdminExperience />, {
     route,
     data,
@@ -98,9 +108,13 @@ describe('admin form-draft stability under live snapshots (RM-550)', () => {
     subscriptions.khatmas.emit([makeKhatma('other', { seriesName: 'سلسلة أخرى' })]);
 
     // The typed name, the checked member, and the open form all survive.
-    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue('أهل الذكر');
+    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue(
+      'أهل الذكر',
+    );
     expect(screen.getByRole('checkbox', { name: amina.name })).toBeChecked();
-    expect(screen.getByRole('button', { name: strings.admin.createButton })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: strings.admin.createButton }),
+    ).toBeVisible();
   });
 
   it('P2 — a snapshot renaming the khatma does not overwrite an in-progress edit', async () => {
@@ -118,7 +132,9 @@ describe('admin form-draft stability under live snapshots (RM-550)', () => {
     subscriptions.khatmas.emit([makeKhatma('k', { seriesName: 'اسم من الخادم' })]);
 
     // The edit card keeps the admin's in-progress text (seeded once, P2)…
-    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue('أهل الذكر');
+    expect(screen.getByLabelText(strings.admin.seriesNamePlaceholder)).toHaveValue(
+      'أهل الذكر',
+    );
     // …while the live header reflects the incoming snapshot.
     expect(screen.getByRole('heading', { name: 'اسم من الخادم ١' })).toBeVisible();
   });
@@ -138,9 +154,14 @@ describe('admin form-draft stability under live snapshots (RM-550)', () => {
   });
 
   it('P4 — search caret and focus survive a live roster snapshot', async () => {
-    const { user, subscriptions } = render('/roster', { roster: [amina, maryam], khatmas: [] });
+    const { user, subscriptions } = render('/roster', {
+      roster: [amina, maryam],
+      khatmas: [],
+    });
 
-    const search = screen.getByRole('searchbox', { name: strings.admin.searchPlaceholder });
+    const search = screen.getByRole('searchbox', {
+      name: strings.admin.searchPlaceholder,
+    });
     await user.click(search);
     await user.type(search, 'Am');
     expect(screen.getByText('Amina')).toBeVisible();

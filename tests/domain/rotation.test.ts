@@ -3,15 +3,21 @@ import { pickDuaReciter } from '@/domain/rotation';
 import type { Khatma } from '@/domain/types';
 
 /** Minimal prior-khatma stub carrying just what the rotation reads. */
-function prior(duaReciterId: string, when: number, completed = true): Pick<Khatma, 'duaReciterId' | 'completedAt' | 'createdAt'> {
+function prior(
+  duaReciterId: string,
+  when: number,
+  completed = true,
+): Pick<Khatma, 'duaReciterId' | 'completedAt' | 'createdAt'> {
   return completed
     ? { duaReciterId, completedAt: when, createdAt: when - 1 }
     : { duaReciterId, createdAt: when };
 }
 
 describe('pickDuaReciter', () => {
-  it('returns undefined when there are no candidates', () => {
-    expect(pickDuaReciter([], [])).toBeUndefined();
+  it('rejects an empty candidate list', () => {
+    expect(() => pickDuaReciter([], [])).toThrow(
+      'pickDuaReciter: at least one candidate is required',
+    );
   });
 
   it('returns the first candidate when there is no history', () => {

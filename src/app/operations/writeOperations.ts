@@ -9,17 +9,20 @@ import {
   releaseMemberChunk,
   removeMemberFromKhatma,
   renameSeries,
+  setSeriesImage,
   updateKhatma,
 } from '@/data/khatmas';
-import { addPerson, removePerson, updatePerson } from '@/data/roster';
+import { addPerson, removePerson, renamePerson, updatePerson } from '@/data/roster';
 
 /** Every Firestore mutation available to React features through the data boundary. */
 export interface WriteOperations {
   addPerson: typeof addPerson;
+  renamePerson: typeof renamePerson;
   updatePerson: typeof updatePerson;
   removePerson: typeof removePerson;
   setDu3aText: typeof setDu3aText;
   createKhatma: typeof createKhatma;
+  setSeriesImage: typeof setSeriesImage;
   updateKhatma: typeof updateKhatma;
   renameSeries: typeof renameSeries;
   completeKhatma: typeof completeKhatma;
@@ -36,10 +39,12 @@ export interface WriteOperations {
 /** Production adapter. Tests can replace it through {@link WriteOperationsProvider}. */
 export const writeOperations: WriteOperations = Object.freeze({
   addPerson,
+  renamePerson,
   updatePerson,
   removePerson,
   setDu3aText,
   createKhatma,
+  setSeriesImage,
   updateKhatma,
   renameSeries,
   completeKhatma,

@@ -13,7 +13,7 @@ import type {
   PageScope,
   RoundChunk,
 } from '@/domain/types';
-import { assignmentDoc, fromStored, type StoredAssignment } from './assignments';
+import { assignmentDoc } from './assignments';
 import { db } from './firebase';
 import { khatmasCol } from './khatmas';
 
@@ -32,15 +32,17 @@ export class AlreadyDistributedError extends Error {
 export interface RolloverSeed {
   seriesId: string;
   seriesName: string;
+  /** Optional public-folder artwork inherited by rollover khatmas. */
+  imageName?: string;
   /** The next number in the series (current max + 1). */
   seriesNumber: number;
   totalPages: number;
   scope: PageScope;
   memberIds: string[];
   /** Chosen by `pickDuaReciter` over all prior khatmas — computed by the caller. */
-  duaReciterId?: string;
+  duaReciterId: string;
   /** Per-member capacities carried into the new khatma (memberId -> capacity). */
-  capacities?: Record<string, MemberCapacity>;
+  capacities: Record<string, MemberCapacity>;
   /** The full resolved scope pool (`resolvePageScope(scope)`). */
   pool: number[];
 }
@@ -85,8 +87,7 @@ function nextAssignment(
 
 /**
  * Recall only the loose-page portion of pending chunks. Whole-surah and
- * whole-juz portions stay with their readers. Legacy mixed-unit chunks are
- * preserved conservatively because their page/unit split was not stored.
+ * whole-juz portions stay with their readers.
  */
 interface PageRecallResult {
   changedAssignments: Set<string>;
@@ -96,7 +97,6 @@ interface PageRecallResult {
 
 function recallLoosePages(
   khatmas: Array<Khatma & { assignments: Assignment[] }>,
-  members: readonly DistributionMember[],
 ): PageRecallResult {
   const changedAssignments = new Set<string>();
   const preservedMemberIds = new Set<string>();
@@ -111,17 +111,9 @@ function recallLoosePages(
         ) {
           continue;
         }
-        const capacity = members.find(
-          (member) => member.id === assignment.memberId,
-        )?.capacity;
-        if (!capacity) break;
-        const recall = recallLoosePagesFromAssignment(
-          assignment,
-          khatma.remainingPages,
-          capacity,
-        );
+        const recall = recallLoosePagesFromAssignment(assignment, khatma.remainingPages);
         if (!recall) {
-          if (capacity.surahs > 0 || capacity.juz > 0) {
+          if (chunk.pages.length > 0 && chunk.loosePages.length === 0) {
             preservedMemberIds.add(assignment.memberId);
           }
           break;
@@ -183,14 +175,14 @@ export function runDistribution(
         const snap = await tx.get(assignmentDoc(khatma.id, memberId));
         khatma.assignments.push(
           snap.exists()
-            ? fromStored(snap.data() as StoredAssignment)
+            ? (snap.data() as Assignment)
             : { memberId, rounds: [], doneByRound: {}, missedStreak: 0 },
         );
       }
     }
 
     const pageRecall = redistributePages
-      ? recallLoosePages(khatmas, members)
+      ? recallLoosePages(khatmas)
       : { changedAssignments: new Set<string>(), preservedMemberIds: new Set<string>() };
 
     // --- Plan on the transactional snapshot --------------------------------
@@ -246,6 +238,7 @@ export function runDistribution(
               date: today,
               pages: planned.pages,
               loosePages: planned.loosePages,
+              redistributedPages: [],
             }
           : undefined;
         if (planned) chunkCount++;
@@ -273,6 +266,7 @@ export function runDistribution(
       tx.set(newRef, {
         seriesId: rolloverSeed.seriesId,
         seriesName: rolloverSeed.seriesName,
+        ...(rolloverSeed.imageName ? { imageName: rolloverSeed.imageName } : {}),
         seriesNumber: rolloverSeed.seriesNumber,
         totalPages: rolloverSeed.totalPages,
         scope: rolloverSeed.scope,
@@ -280,8 +274,8 @@ export function runDistribution(
         remainingPages: plan.rollover.remainingPages,
         roundCount: 1,
         lastDistributionDate: today,
-        ...(rolloverSeed.duaReciterId ? { duaReciterId: rolloverSeed.duaReciterId } : {}),
-        ...(rolloverSeed.capacities ? { capacities: rolloverSeed.capacities } : {}),
+        duaReciterId: rolloverSeed.duaReciterId,
+        capacities: rolloverSeed.capacities,
         status: 'active',
         createdAt: Date.now(),
       });
@@ -297,6 +291,7 @@ export function runDistribution(
                 date: today,
                 pages: planned.pages,
                 loosePages: planned.loosePages,
+                redistributedPages: [],
               },
             ]
           : [];

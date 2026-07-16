@@ -74,6 +74,8 @@ Collections and their document shapes (typed in [`src/domain/types.ts`](src/doma
 Represents a global reader in the community roster.
 
 - `name`: string (unique)
+- `emoji`: optional string (person-selected avatar; grid surfaces derive the
+  first letter of every name word when absent)
 - `completedPages`: number[] (deduplicated pages read over lifetime; consulted by distribution to prefer new coverage)
 - `pagesPerDay`: number (capacity check per round)
 - `enabled`: boolean (active/paused flag)
@@ -85,16 +87,17 @@ Represents a single open-ended, numbered group reading session.
 
 - `seriesId`: string (stable identifier across series)
 - `seriesName`: string (e.g. "أهل القرآن")
+- `imageName`: optional string (shared filename from `public/khatma-images/`; the UI uses `placeholder.svg` when absent)
 - `seriesNumber`: number (e.g., 1, 2, 3...)
 - `totalPages`: number
 - `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
 - `memberIds`: string[] (list of participants)
-- `capacities`: optional Record<memberId, `{ pages, surahs, juz }`> (per-member ADDITIVE per-round capacity; absent ⇒ the member's roster `pagesPerDay`. Copied forward at rollover)
+- `capacities`: Record<memberId, `{ pages, surahs, juz }>` (required per-member ADDITIVE per-round capacity, copied forward at rollover)
 - `status`: 'active' | 'completed'
 - `remainingPages`: number[] (pool of pages not yet assigned, sorted ascending)
 - `roundCount`: number (number of distribution rounds triggered)
 - `lastDistributionDate`: optional string (ISO YYYY-MM-DD)
-- `duaReciterId`: optional string (assigned du3a reader)
+- `duaReciterId`: string (assigned du3a reader)
 - `completedAt`: optional number (epoch ms)
 - `createdAt`: number (epoch ms)
 
@@ -112,8 +115,8 @@ Represents a member's reading assignment history for a specific khatma.
 - `round`: number (round identifier)
 - `date`: string (ISO YYYY-MM-DD)
 - `pages`: number[] (pages assigned for this round)
-- `loosePages`: optional number[] (the subset of `pages` from loose-page capacity; the only portion a same-day redistribution recalls — whole surahs/ajzā' stay held)
-- `redistributedPages`: optional number[] (loose pages recalled by a later redistribution, retained as audit history)
+- `loosePages`: number[] (the subset of `pages` from loose-page capacity; the only portion a same-day redistribution recalls — whole surahs/ajzā' stay held)
+- `redistributedPages`: number[] (loose pages recalled by a later redistribution, retained as audit history)
 - `released`: optional true (marks that pages were returned to the pool due to a miss)
 
 ### 4. `content/global` (GlobalContent)

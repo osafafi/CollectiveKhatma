@@ -7,15 +7,28 @@ import {
   khatmaProgress,
   pendingReaders,
 } from '@/domain/progress';
-import type { Assignment } from '@/domain/types';
+import type { Assignment, RoundChunk } from '@/domain/types';
+
+function chunk(
+  round: number,
+  date: string,
+  pages: number[],
+  released?: true,
+): RoundChunk {
+  return {
+    round,
+    date,
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+    ...(released ? { released } : {}),
+  };
+}
 
 // Round 1 done, round 2 (pages 5-6) still pending.
 const partly: Assignment = {
   memberId: 'a',
-  rounds: [
-    { round: 1, date: '2026-07-08', pages: [1, 2] },
-    { round: 2, date: '2026-07-09', pages: [5, 6] },
-  ],
+  rounds: [chunk(1, '2026-07-08', [1, 2]), chunk(2, '2026-07-09', [5, 6])],
   doneByRound: { 1: 1_000 },
   missedStreak: 0,
 };
@@ -23,7 +36,7 @@ const partly: Assignment = {
 // Fully done.
 const finished: Assignment = {
   memberId: 'b',
-  rounds: [{ round: 1, date: '2026-07-08', pages: [10, 11] }],
+  rounds: [chunk(1, '2026-07-08', [10, 11])],
   doneByRound: { 1: 3_000 },
   missedStreak: 0,
 };
@@ -31,7 +44,7 @@ const finished: Assignment = {
 // Missed their round: the chunk was released, so nothing is pending.
 const flagged: Assignment = {
   memberId: 'c',
-  rounds: [{ round: 1, date: '2026-07-08', pages: [20, 21], released: true }],
+  rounds: [chunk(1, '2026-07-08', [20, 21], true)],
   doneByRound: {},
   missedStreak: 1,
 };
@@ -70,7 +83,10 @@ describe('per-assignment progress', () => {
 
 describe('khatmaProgress', () => {
   it('aggregates group completion against the khatma total', () => {
-    const progress = khatmaProgress({ totalPages: 10, remainingPages: [7, 8] }, [partly, finished]);
+    const progress = khatmaProgress({ totalPages: 10, remainingPages: [7, 8] }, [
+      partly,
+      finished,
+    ]);
     expect(progress.donePages).toBe(4);
     expect(progress.totalPages).toBe(10);
     expect(progress.percent).toBe(40);
@@ -78,11 +94,17 @@ describe('khatmaProgress', () => {
   });
 
   it('is complete only when the pool is drained AND nothing is pending', () => {
-    expect(khatmaProgress({ totalPages: 2, remainingPages: [] }, [finished]).complete).toBe(true);
+    expect(
+      khatmaProgress({ totalPages: 2, remainingPages: [] }, [finished]).complete,
+    ).toBe(true);
     // Pool drained but a chunk is still being read.
-    expect(khatmaProgress({ totalPages: 4, remainingPages: [] }, [partly]).complete).toBe(false);
+    expect(khatmaProgress({ totalPages: 4, remainingPages: [] }, [partly]).complete).toBe(
+      false,
+    );
     // Nothing pending but pages remain unassigned.
-    expect(khatmaProgress({ totalPages: 4, remainingPages: [3] }, [finished]).complete).toBe(false);
+    expect(
+      khatmaProgress({ totalPages: 4, remainingPages: [3] }, [finished]).complete,
+    ).toBe(false);
   });
 
   it('is safe for a khatma with no assignments', () => {

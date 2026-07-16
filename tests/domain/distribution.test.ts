@@ -9,7 +9,7 @@ import {
   type DistributionKhatmaState,
   type DistributionMember,
 } from '@/domain/distribution';
-import { buildPageUnitMaps, defaultCapacity } from '@/domain/assignment';
+import { buildPageUnitMaps, requiredCapacity } from '@/domain/assignment';
 import type { Assignment, MemberCapacity, RoundChunk } from '@/domain/types';
 
 const cap = (pages = 0, surahs = 0, juz = 0): MemberCapacity => ({ pages, surahs, juz });
@@ -42,7 +42,14 @@ function coveredMember(
 }
 
 function chunk(round: number, pages: number[], released?: true): RoundChunk {
-  return { round, date: `2026-07-0${round}`, pages, ...(released ? { released } : {}) };
+  return {
+    round,
+    date: `2026-07-0${round}`,
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+    ...(released ? { released } : {}),
+  };
 }
 
 function assignment(
@@ -160,7 +167,7 @@ describe('takeChunk', () => {
   });
 });
 
-describe('buildPageUnitMaps / defaultCapacity', () => {
+describe('buildPageUnitMaps / requiredCapacity', () => {
   it('attributes a shared boundary page to the later surah', () => {
     const u = buildPageUnitMaps({ 1: [1, 2], 2: [2, 3] }, {});
     expect(u.surah[1]).toBe(1);
@@ -168,8 +175,13 @@ describe('buildPageUnitMaps / defaultCapacity', () => {
     expect(u.surah[3]).toBe(2);
   });
 
-  it('defaults capacity to the roster pages-per-day', () => {
-    expect(defaultCapacity({ pagesPerDay: 3 })).toEqual({ pages: 3, surahs: 0, juz: 0 });
+  it('requires an explicit capacity for every khatma member', () => {
+    expect(requiredCapacity({ id: 'k1', capacities: { m1: cap(3) } }, 'm1')).toEqual(
+      cap(3),
+    );
+    expect(() => requiredCapacity({ id: 'k1', capacities: {} }, 'm1')).toThrow(
+      'Khatma k1 is missing capacity for member m1',
+    );
   });
 });
 
@@ -447,7 +459,7 @@ describe('releaseChunk', () => {
 describe('recallLoosePagesFromAssignment', () => {
   it('recalls loose pages but preserves the whole-surah portion', () => {
     const a = assignment('m1', [{ ...chunk(1, [1, 2, 3, 4]), loosePages: [1] }]);
-    const result = recallLoosePagesFromAssignment(a, [5, 6], cap(1, 2, 0));
+    const result = recallLoosePagesFromAssignment(a, [5, 6]);
     expect(result?.remainingPages).toEqual([1, 5, 6]);
     expect(result?.assignment.rounds[0]).toEqual({
       round: 1,
@@ -458,23 +470,21 @@ describe('recallLoosePagesFromAssignment', () => {
     });
   });
 
-  it('recalls all pages from a legacy page-only chunk', () => {
+  it('recalls all pages when the chunk marks all of them as loose', () => {
     const result = recallLoosePagesFromAssignment(
       assignment('m1', [chunk(1, [1, 2])], {}, 2),
       [3, 4],
-      cap(2),
     );
     expect(result?.remainingPages).toEqual([1, 2, 3, 4]);
     expect(result?.assignment.missedStreak).toBe(0);
     expect(result?.assignment.rounds[0]?.released).toBe(true);
   });
 
-  it('does not guess the split of a legacy mixed-unit chunk', () => {
+  it('preserves a whole-unit chunk with no loose pages', () => {
     expect(
       recallLoosePagesFromAssignment(
-        assignment('m1', [chunk(1, [1, 2, 3, 4])]),
+        assignment('m1', [{ ...chunk(1, [1, 2, 3, 4]), loosePages: [] }]),
         [5],
-        cap(1, 2, 0),
       ),
     ).toBeUndefined();
   });

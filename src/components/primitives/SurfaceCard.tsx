@@ -15,6 +15,8 @@ export interface SurfaceCardProps {
   children: ReactNode;
   title?: ReactNode;
   actions?: ReactNode;
+  /** Optional media rendered edge-to-edge above the card content. */
+  media?: ReactNode;
   /** Makes the whole card a hash/native link for list-card navigation. */
   href?: string;
   /** Optional explicit accessible name for a clickable card. */
@@ -28,6 +30,7 @@ export function SurfaceCard({
   children,
   title,
   actions,
+  media,
   href,
   linkLabel,
   headingComponent = 'h2',
@@ -36,21 +39,24 @@ export function SurfaceCard({
   const generatedId = useId();
   const titleId = title ? `surface-card-${generatedId.replace(/:/g, '')}` : undefined;
   const content = (
-    <CardContent sx={{ p: 4, '&:last-child': { pb: 4 } }}>
-      <Stack spacing={3}>
-        {title ? (
-          <Typography id={titleId} component={headingComponent} variant="h3">
-            {title}
-          </Typography>
-        ) : null}
-        {children}
-        {actions ? (
-          <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-            {actions}
-          </Stack>
-        ) : null}
-      </Stack>
-    </CardContent>
+    <>
+      {media}
+      <CardContent sx={{ p: 4, '&:last-child': { pb: 4 } }}>
+        <Stack spacing={3}>
+          {title ? (
+            <Typography id={titleId} component={headingComponent} variant="h3">
+              {title}
+            </Typography>
+          ) : null}
+          {children}
+          {actions ? (
+            <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+              {actions}
+            </Stack>
+          ) : null}
+        </Stack>
+      </CardContent>
+    </>
   );
 
   return (

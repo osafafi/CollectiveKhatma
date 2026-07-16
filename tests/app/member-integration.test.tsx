@@ -79,6 +79,11 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
     totalPages: 604,
     scope: { kind: 'full' },
     memberIds: [amina.id],
+    capacities: {
+      [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+      [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+    },
+    duaReciterId: amina.id,
     status: 'active',
     remainingPages: [30, 31, 32],
     roundCount: 1,
@@ -97,7 +102,13 @@ function makeAssignment(
 }
 
 function round(roundNumber: number, pages: number[]): RoundChunk {
-  return { round: roundNumber, date: '2026-07-14', pages };
+  return {
+    round: roundNumber,
+    date: '2026-07-14',
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+  };
 }
 
 function TestMemberExperience() {

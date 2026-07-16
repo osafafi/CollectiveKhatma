@@ -14,11 +14,13 @@ import { useAdminNavigate } from '@/app/routing/hooks';
 import { useSurahs } from '@/app/admin/useSurahs';
 import { useCreateKhatmaPrefill } from '@/app/admin/createKhatmaPrefillContext';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
-import { DonutChart } from '@/components/charts';
+import { SeriesImagePicker } from '@/app/admin/SeriesImagePicker';
+import { DonutChart, QuranPageGrid } from '@/components/charts';
 import {
   AppButton,
   AppSelectField,
   AppTextField,
+  KhatmaSeriesArtwork,
   ProgressBar,
   StatusChip,
   SurfaceCard,
@@ -27,7 +29,7 @@ import {
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import type { Surah } from '@/content/quran/types';
-import { defaultCapacity } from '@/domain/assignment';
+import { requiredCapacity } from '@/domain/assignment';
 import { warningLevel } from '@/domain/distribution';
 import { isRoundDone, khatmaProgress, latestReadableChunk } from '@/domain/progress';
 import { completedInSeries, seriesTitle } from '@/domain/series';
@@ -60,7 +62,12 @@ export function AdminKhatmaPage({ id }: { id: string }) {
 
   if (!khatma) {
     return (
-      <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
+      <Stack
+        component="section"
+        spacing={4}
+        data-react-surface="admin"
+        data-route="khatma"
+      >
         <BackLink />
         <SurfaceCard>
           <Typography color="text.secondary">
@@ -74,7 +81,7 @@ export function AdminKhatmaPage({ id }: { id: string }) {
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
       <BackLink />
-      <HeaderCard khatma={khatma} assignments={assignments} />
+      <HeaderCard khatma={khatma} assignments={assignments} roster={roster} />
       <EditCard khatma={khatma} />
       {khatma.status === 'active' ? (
         <>
@@ -116,9 +123,11 @@ function BackLink() {
 function HeaderCard({
   khatma,
   assignments,
+  roster,
 }: {
   khatma: Khatma;
   assignments: readonly Assignment[];
+  roster: readonly Person[];
 }) {
   const percent =
     khatma.status === 'completed' ? 100 : khatmaProgress(khatma, assignments).percent;
@@ -133,7 +142,18 @@ function HeaderCard({
   return (
     <SurfaceCard>
       <Stack spacing={3}>
-        <Stack direction="row" spacing={4} sx={{ alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          spacing={3}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <KhatmaSeriesArtwork
+            variant="avatar"
+            imageName={khatma.imageName}
+            alt={strings.admin.seriesImageAlt}
+            size={88}
+          />
           <DonutChart percent={percent} size={88} />
           <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
             <Typography component="h1" variant="h2" color="primary.main">
@@ -156,6 +176,7 @@ function HeaderCard({
           </Stack>
         </Stack>
         <ProgressBar value={percent} label={title} />
+        <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
       </Stack>
     </SurfaceCard>
   );
@@ -171,11 +192,14 @@ function EditCard({ khatma }: { khatma: Khatma }) {
   const [name, setName] = useState(khatma.seriesName);
   const [number, setNumber] = useState(String(khatma.seriesNumber));
   const [date, setDate] = useState(dateToInput(khatma.createdAt));
-  const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(
-    null,
-  );
+  const [imageName, setImageName] = useState(khatma.imageName ?? '');
+  const [status, setStatus] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
   const renameSeries = useWriteOperation('renameSeries');
   const updateKhatma = useWriteOperation('updateKhatma');
+  const setSeriesImage = useWriteOperation('setSeriesImage');
 
   const onSave = async () => {
     setStatus(null);
@@ -189,13 +213,24 @@ function EditCard({ khatma }: { khatma: Khatma }) {
     }
     const changes: Partial<Pick<Khatma, 'seriesNumber' | 'createdAt'>> = {};
     const parsedNumber = parseInt(number, 10);
-    if (Number.isInteger(parsedNumber) && parsedNumber > 0 && parsedNumber !== khatma.seriesNumber) {
+    if (
+      Number.isInteger(parsedNumber) &&
+      parsedNumber > 0 &&
+      parsedNumber !== khatma.seriesNumber
+    ) {
       changes.seriesNumber = parsedNumber;
     }
     const ms = dateToEpoch(date);
     if (ms !== undefined && ms !== khatma.createdAt) changes.createdAt = ms;
     if (Object.keys(changes).length > 0) {
       const result = await updateKhatma.execute(khatma.id, changes);
+      if (result.status === 'failure') {
+        setStatus({ tone: 'error', text: strings.admin.saveError });
+        return;
+      }
+    }
+    if (imageName !== (khatma.imageName ?? '')) {
+      const result = await setSeriesImage.execute(khatma.seriesId, imageName);
       if (result.status === 'failure') {
         setStatus({ tone: 'error', text: strings.admin.saveError });
         return;
@@ -211,6 +246,11 @@ function EditCard({ khatma }: { khatma: Khatma }) {
           label={strings.admin.seriesNamePlaceholder}
           value={name}
           onChange={(event) => setName(event.target.value)}
+        />
+        <SeriesImagePicker
+          value={imageName}
+          disabled={setSeriesImage.isPending}
+          onChange={setImageName}
         />
         <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <AppTextField
@@ -230,8 +270,20 @@ function EditCard({ khatma }: { khatma: Khatma }) {
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </Stack>
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <AppButton onClick={() => void onSave()}>{strings.admin.saveKhatma}</AppButton>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <AppButton
+            disabled={
+              renameSeries.isPending || updateKhatma.isPending || setSeriesImage.isPending
+            }
+            onClick={() => void onSave()}
+          >
+            {strings.admin.saveKhatma}
+          </AppButton>
           {status ? (
             <Typography
               role={status.tone === 'error' ? 'alert' : 'status'}
@@ -306,7 +358,7 @@ function MemberRow({
   surahs: readonly Surah[] | null;
 }) {
   const person = roster.find((candidate) => candidate.id === assignment.memberId);
-  const name = person?.name ?? assignment.memberId;
+  const name = person ? `${person.emoji || ''} ${person.name}` : assignment.memberId;
   const level = warningLevel(assignment.missedStreak);
   const chunk = latestReadableChunk(assignment);
   const done = chunk ? isRoundDone(assignment, chunk.round) : false;
@@ -349,7 +401,10 @@ function MemberRow({
     <Box sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}>
       <Stack spacing={1}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-          <Typography component="span" sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}>
+          <Typography
+            component="span"
+            sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}
+          >
             {name}
           </Typography>
           {level !== 'none' ? (
@@ -368,9 +423,19 @@ function MemberRow({
               </AppButton>
             </>
           ) : null}
-          <ChunkChip assignment={assignment} chunk={chunk} done={done} onToggle={onToggleChunk} />
+          <ChunkChip
+            assignment={assignment}
+            chunk={chunk}
+            done={done}
+            onToggle={onToggleChunk}
+          />
           {pending ? (
-            <AppButton variant="text" quiet color="inherit" onClick={() => void onReturnToPool()}>
+            <AppButton
+              variant="text"
+              quiet
+              color="inherit"
+              onClick={() => void onReturnToPool()}
+            >
               {strings.admin.returnToPool}
             </AppButton>
           ) : null}
@@ -429,7 +494,7 @@ function CapacityEditor({
   person: Person;
   surahs: readonly Surah[] | null;
 }) {
-  const start = khatma.capacities?.[person.id] ?? defaultCapacity(person);
+  const start = requiredCapacity(khatma, person.id);
   const [pages, setPages] = useState(String(start.pages));
   const [surah, setSurah] = useState(start.surahs);
   const [juz, setJuz] = useState(String(start.juz));
@@ -442,7 +507,7 @@ function CapacityEditor({
       juz: toCount(juz),
     };
     void updateKhatma.execute(khatma.id, {
-      capacities: { ...(khatma.capacities ?? {}), [person.id]: capacity },
+      capacities: { ...khatma.capacities, [person.id]: capacity },
     });
   };
 
@@ -588,12 +653,16 @@ function ControlsCard({ khatma, roster }: { khatma: Khatma; roster: readonly Per
             options={reciterOptions}
             fieldWidth={240}
             // Fire-and-forget write on change (quirk 5) — matches the legacy controlsCard.
-            onChange={(value) => void updateKhatma.execute(khatma.id, { duaReciterId: value })}
+            onChange={(value) =>
+              void updateKhatma.execute(khatma.id, { duaReciterId: value })
+            }
           />
         ) : null}
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <StartNextButton khatma={khatma} />
-          <AppButton onClick={() => void onComplete()}>{strings.admin.markComplete}</AppButton>
+          <AppButton onClick={() => void onComplete()}>
+            {strings.admin.markComplete}
+          </AppButton>
           <AppButton variant="text" quiet color="error" onClick={() => void onDelete()}>
             {strings.admin.remove}
           </AppButton>
@@ -626,12 +695,12 @@ function StartNextButton({ khatma }: { khatma: Khatma }) {
       scope: khatma.scope,
       memberIds: [...khatma.memberIds],
       memberCaps: Object.fromEntries(
-        Object.entries(khatma.capacities ?? {}).map(([memberId, capacity]) => [
+        Object.entries(khatma.capacities).map(([memberId, capacity]) => [
           memberId,
           { ...capacity },
         ]),
       ),
-      reciterId: khatma.duaReciterId ?? '',
+      reciterId: khatma.duaReciterId,
     });
     navigate({ name: 'khatmas' });
   };

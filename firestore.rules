@@ -42,13 +42,18 @@ service cloud.firestore {
     }
 
     function isValidPerson(d) {
-      return d.name is string
+      return d.keys().hasOnly([
+          'name', 'note', 'emoji', 'completedPages', 'pagesPerDay',
+          'enabled', 'createdAt'
+        ])
+        && d.name is string
         && d.name.size() > 0
+        && (!('note' in d) || d.note is string)
         && d.completedPages is list
         && d.createdAt is number
-        // Added in Stage 2 — optional so legacy docs still validate.
-        && (!('pagesPerDay' in d) || d.pagesPerDay is number)
-        && (!('enabled' in d) || d.enabled is bool);
+        && d.pagesPerDay is number
+        && d.enabled is bool
+        && (!('emoji' in d) || (d.emoji is string && d.emoji.size() > 0 && d.emoji.size() <= 16));
     }
 
     // Shape-only (types kept lenient to match the client writes; these rules can
@@ -65,16 +70,18 @@ service cloud.firestore {
         && d.remainingPages is list
         && d.roundCount is number
         && d.createdAt is number
-        && (!('scope' in d) || d.scope is map)
-        && (!('capacities' in d) || d.capacities is map)
+        && d.scope is map
+        && d.capacities is map
+        && d.duaReciterId is string
+        && (!('imageName' in d) || d.imageName is string)
         && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
-        && (!('duaReciterId' in d) || d.duaReciterId is string)
         && (!('completedAt' in d) || d.completedAt is number);
     }
 
     function isValidAssignment(d) {
       return d.memberId is string
         && d.rounds is list
+        && d.doneByRound is map
         && d.missedStreak is number;
     }
   }

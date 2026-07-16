@@ -5,6 +5,11 @@ export function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }
 
+/** Canonical form used only for identity comparisons; display casing is preserved. */
+export function canonicalName(name: string): string {
+  return normalizeName(name).toLowerCase();
+}
+
 /**
  * True if `name` is not already taken by someone in the roster. Names must be
  * unique across the whole roster (REQUIREMENTS §4). Comparison is
@@ -14,6 +19,6 @@ export function isNameUnique(
   name: string,
   roster: ReadonlyArray<Pick<Person, 'name'>>,
 ): boolean {
-  const target = normalizeName(name);
-  return !roster.some((p) => normalizeName(p.name) === target);
+  const target = canonicalName(name);
+  return !roster.some((p) => canonicalName(p.name) === target);
 }

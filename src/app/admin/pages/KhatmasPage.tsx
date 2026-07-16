@@ -21,11 +21,13 @@ import {
   type CreateKhatmaPrefill,
 } from '@/app/admin/createKhatmaPrefillContext';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
+import { SeriesImagePicker } from '@/app/admin/SeriesImagePicker';
 import {
   AppButton,
   AppCheckboxField,
   AppSelectField,
   AppTextField,
+  KhatmaSeriesArtwork,
   StatusChip,
   SurfaceCard,
   type SelectOption,
@@ -38,7 +40,6 @@ import { khatmaProgress } from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
 import { findSeriesByName, nextSeriesNumber, seriesTitle } from '@/domain/series';
 import {
-  DEFAULT_PAGES_PER_DAY,
   type Khatma,
   type MemberCapacity,
   type PageScope,
@@ -125,6 +126,12 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         py: 2,
       }}
     >
+      <KhatmaSeriesArtwork
+        variant="avatar"
+        imageName={khatma.imageName}
+        alt={strings.admin.seriesImageAlt}
+        size={48}
+      />
       <Typography component="span" sx={{ flex: 1, fontWeight: 600 }} color="primary.main">
         {seriesTitle(khatma, toArabicDigits)}
       </Typography>
@@ -164,6 +171,8 @@ interface CreateDraft {
   reciterId: string;
   createdDate: string;
   seriesNumberOverride: string;
+  /** null = inherit a matching series; empty string = explicitly use placeholder. */
+  imageName: string | null;
 }
 
 function emptyCreateDraft(): CreateDraft {
@@ -178,6 +187,7 @@ function emptyCreateDraft(): CreateDraft {
     reciterId: '',
     createdDate: '',
     seriesNumberOverride: '',
+    imageName: null,
   };
 }
 
@@ -186,6 +196,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
   const scopeMaps = useQuranScopeMaps();
   const surahs = useSurahs();
   const createKhatma = useWriteOperation('createKhatma');
+  const setSeriesImage = useWriteOperation('setSeriesImage');
   const { peekPrefill, clearPrefill } = useCreateKhatmaPrefill();
 
   // Seed synchronously from any `startNext` prefill (no flash of the collapsed
@@ -212,6 +223,13 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
   }
 
   const selected = roster.filter((person) => draft.memberIds.has(person.id));
+  const matchingSeries = findSeriesByName(khatmas, draft.seriesName);
+  const matchingImageName = matchingSeries
+    ? khatmas.find(
+        (candidate) =>
+          candidate.seriesId === matchingSeries.seriesId && candidate.imageName,
+      )?.imageName
+    : undefined;
 
   const toggleMember = (person: Person, checked: boolean) => {
     setDraft((current) => {
@@ -220,8 +238,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       if (checked) {
         memberIds.add(person.id);
         // First-selected member defaults to one juz (solo reader); later members
-        // to their roster pace — locked in when the member is first picked, as the
-        // legacy `??=` fallback does.
+        // use their roster pace. The choice is stored as soon as they are selected.
         memberCaps[person.id] =
           memberIds.size === 1
             ? { pages: 0, surahs: 0, juz: 1 }
@@ -236,9 +253,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
 
   const setCapacity = (memberId: string, patch: Partial<MemberCapacity>) => {
     setDraft((current) => {
-      // A prefilled member (startNext) may lack an entry if the source khatma left
-      // them on the roster default; fall back to it, as the legacy `??=` does.
-      const base = current.memberCaps[memberId] ?? groupFallback(roster, memberId);
+      const base = requiredDraftCapacity(current, memberId);
       return {
         ...current,
         memberCaps: { ...current.memberCaps, [memberId]: { ...base, ...patch } },
@@ -279,8 +294,22 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
     const reciter = draft.memberIds.has(draft.reciterId)
       ? draft.reciterId
       : pickDuaReciter(ids, khatmas);
-    const capacities = buildCapacities(roster, draft, ids);
+    const capacities = buildCapacities(draft, ids);
     const createdAt = dateToEpoch(draft.createdDate);
+    const inheritedImageName = khatmas.find(
+      (candidate) => candidate.seriesId === seriesId && candidate.imageName,
+    )?.imageName;
+    const imageName = draft.imageName ?? inheritedImageName;
+
+    // An explicit choice while continuing a series applies to all of its
+    // existing khatmas as well as the new one. null means "leave it inherited".
+    if (existing && draft.imageName !== null) {
+      const imageResult = await setSeriesImage.execute(seriesId, draft.imageName);
+      if (imageResult.status === 'failure') {
+        setError(strings.admin.createError);
+        return;
+      }
+    }
 
     const result = await createKhatma.execute({
       seriesId,
@@ -291,7 +320,8 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
       memberIds: ids,
       remainingPages: pool,
       duaReciterId: reciter,
-      ...(Object.keys(capacities).length > 0 ? { capacities } : {}),
+      capacities,
+      ...(imageName ? { imageName } : {}),
       ...(createdAt !== undefined ? { createdAt } : {}),
     });
 
@@ -322,6 +352,11 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           }
         />
         <SeriesContinuationNote khatmas={khatmas} name={draft.seriesName} />
+        <SeriesImagePicker
+          value={draft.imageName ?? matchingImageName ?? ''}
+          disabled={createKhatma.isPending || setSeriesImage.isPending}
+          onChange={(imageName) => setDraft((current) => ({ ...current, imageName }))}
+        />
 
         <FieldGroup label={strings.admin.scopeLabel}>
           <ScopeControls draft={draft} setDraft={setDraft} surahs={surahs} />
@@ -339,8 +374,8 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
                   onChange={(checked) => toggleMember(person, checked)}
                   label={
                     person.enabled
-                      ? person.name
-                      : `${person.name} (${strings.admin.disabledBadge})`
+                      ? `${person.emoji || ''} ${person.name}`
+                      : `${person.emoji || ''} ${person.name} (${strings.admin.disabledBadge})`
                   }
                 />
               ))}
@@ -355,9 +390,7 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
                 <CapacityRow
                   key={person.id}
                   person={person}
-                  capacity={
-                    draft.memberCaps[person.id] ?? groupFallback(roster, person.id)
-                  }
+                  capacity={requiredDraftCapacity(draft, person.id)}
                   surahs={surahs}
                   onChange={(patch) => setCapacity(person.id, patch)}
                 />
@@ -405,7 +438,10 @@ function CreateArea({ khatmas }: { khatmas: readonly Khatma[] }) {
           useFlexGap
           sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <AppButton onClick={() => void onCreate()}>
+          <AppButton
+            disabled={createKhatma.isPending || setSeriesImage.isPending}
+            onClick={() => void onCreate()}
+          >
             {strings.admin.createButton}
           </AppButton>
           <AppButton
@@ -552,7 +588,7 @@ function CapacityRow({
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
       <Typography component="span" sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}>
-        {person.name}
+        {person.emoji || ''} {person.name}
       </Typography>
       <AppTextField
         type="number"
@@ -618,22 +654,21 @@ function buildScope(draft: CreateDraft): PageScope | null {
   }
 }
 
-/** The default capacity for a member without an explicit entry: their roster pace. */
-function groupFallback(roster: readonly Person[], memberId: string): MemberCapacity {
-  const person = roster.find((candidate) => candidate.id === memberId);
-  return { pages: person?.pagesPerDay ?? DEFAULT_PAGES_PER_DAY, surahs: 0, juz: 0 };
-}
-
 function buildCapacities(
-  roster: readonly Person[],
   draft: CreateDraft,
   ids: string[],
 ): Record<string, MemberCapacity> {
   const out: Record<string, MemberCapacity> = {};
   for (const id of ids) {
-    out[id] = draft.memberCaps[id] ?? groupFallback(roster, id);
+    out[id] = requiredDraftCapacity(draft, id);
   }
   return out;
+}
+
+function requiredDraftCapacity(draft: CreateDraft, memberId: string): MemberCapacity {
+  const capacity = draft.memberCaps[memberId];
+  if (!capacity) throw new Error(`Missing draft capacity for member ${memberId}`);
+  return capacity;
 }
 
 function draftFromPrefill(prefill: CreateKhatmaPrefill): CreateDraft {

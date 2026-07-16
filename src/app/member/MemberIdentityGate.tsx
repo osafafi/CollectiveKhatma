@@ -71,7 +71,7 @@ function RosterGateState({ roster, status, onSelectMember }: RosterGateStateProp
       {roster.map((person) => (
         <Box component="li" key={person.id}>
           <AppButton hero onClick={() => onSelectMember(person.id)}>
-            {person.name}
+            {person.emoji || ''} {person.name}
           </AppButton>
         </Box>
       ))}
