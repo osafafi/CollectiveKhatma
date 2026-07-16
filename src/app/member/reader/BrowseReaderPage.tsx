@@ -76,13 +76,13 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
       </StickyChrome>
 
       <QuranPageContent page={page} />
-        <ReaderNav
-          onPrev={() => goToPage(page - 1)}
-          onNext={() => goToPage(page + 1)}
-          atStart={page <= 1}
-          atEnd={page >= TOTAL_PAGES}
-          indicator={indicator}
-        />
+      <ReaderNav
+        onPrev={() => goToPage(page - 1)}
+        onNext={() => goToPage(page + 1)}
+        atStart={page <= 1}
+        atEnd={page >= TOTAL_PAGES}
+        indicator={indicator}
+      />
     </Stack>
   );
 }
