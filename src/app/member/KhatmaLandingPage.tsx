@@ -29,6 +29,7 @@ import {
 import { completedInSeries, seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import { useMemberIdentity } from './memberIdentityContext';
+import { QuranPageGrid } from '@/components/charts';
 
 /** Member `#/khatma/{id}` landing page. */
 export function KhatmaLandingPage({ khatmaId }: { khatmaId: string }) {
@@ -333,6 +334,8 @@ function GroupProgressCard({
           ⏳ {pendingNames.join('، ')}
         </Typography>
       ) : null}
+      <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
+
     </SurfaceCard>
   );
 }
