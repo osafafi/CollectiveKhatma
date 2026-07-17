@@ -59,18 +59,19 @@ function renderRoster(
 }
 
 describe('admin Roster (RM-510)', () => {
-  it('lists members, badging only the disabled ones', () => {
+  it('lists every member, whether enabled or paused', () => {
     renderRoster([amina, maryam]);
 
     expect(
       screen.getByRole('heading', { name: strings.admin.rosterHeading }),
     ).toBeVisible();
 
-    // Maryam is paused: her row carries the disabled badge; Amina's does not.
+    // Maryam is paused, but a paused member still gets a row; the enable/disable
+    // toggle is what carries her state.
     const aminaRow = screen.getByText('Amina').closest('li')!;
     const maryamRow = screen.getByText('Maryam').closest('li')!;
-    expect(within(maryamRow).getByText(strings.admin.disabledBadge)).toBeVisible();
-    expect(within(aminaRow).queryByText(strings.admin.disabledBadge)).toBeNull();
+    expect(within(aminaRow).getByRole('button', { name: strings.admin.disable })).toBeVisible();
+    expect(within(maryamRow).getByRole('button', { name: strings.admin.enable })).toBeVisible();
   });
 
   it('filters by name substring as-you-type and keeps the search caret focused (P4)', async () => {
@@ -165,13 +166,19 @@ describe('admin Roster (RM-510)', () => {
   it('removes a member only after the confirmation is approved', async () => {
     const { user, operations } = renderRoster([amina]);
 
-    await user.click(screen.getByRole('button', { name: strings.admin.remove }));
+    await user.click(
+      screen.getByRole('button', { name: `${strings.admin.remove}: ${amina.name}` }),
+    );
     // Dismissing the confirmation leaves the roster untouched.
     await user.click(screen.getByRole('button', { name: strings.common.cancel }));
     expect(operations.removePerson).not.toHaveBeenCalled();
 
     // Once the dialog has closed the row's remove control is reachable again.
-    await user.click(await screen.findByRole('button', { name: strings.admin.remove }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: `${strings.admin.remove}: ${amina.name}`,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: strings.common.confirm }));
     expect(operations.removePerson).toHaveBeenCalledWith('p1');
   });

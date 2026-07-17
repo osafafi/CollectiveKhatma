@@ -171,7 +171,7 @@ function composePageBlocks(page: QuranPage, surahs: Map<number, Surah>): ReactNo
       if (ayah.ayah === 1)
         blocks.push(<SurahHeader key={`head-${key++}`} surah={surahs.get(ayah.surah)} />);
     }
-    let text = `${ayah.text} ${ayahEndMarker(ayah.ayah)}`;
+    const text = `${ayah.text} ${ayahEndMarker(ayah.ayah)}`;
     run.push(text);
   }
   flush();

@@ -253,7 +253,9 @@ describe('admin Khatma detail (RM-530)', () => {
       assignments: { k: [makeAssignment(amina.id, [round(1, [1, 2])])] },
     });
 
-    await user.click(screen.getByRole('button', { name: strings.admin.saveCapacity }));
+    await user.click(
+      screen.getByRole('button', { name: `${strings.admin.saveCapacity}: ${amina.name}` }),
+    );
     // The explicitly stored capacity is written back unchanged.
     expect(operations.updateKhatma).toHaveBeenCalledWith('k', {
       capacities: { p1: { pages: 2, surahs: 0, juz: 0 } },

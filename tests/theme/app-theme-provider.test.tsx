@@ -64,8 +64,13 @@ describe('AppThemeProvider — RTL foundation (RM-210)', () => {
 
     // The retained layer defines the bundled Quran font, the UI/Quran font vars,
     // and the scalable mushaf text class.
-    const styles = retainedGlobalStyles as Record<string, Record<string, string>>;
-    expect(styles['@font-face']!.fontFamily).toBe('Amiri Quran');
+    const styles = retainedGlobalStyles as Record<string, Record<string, string>> &
+      Record<'@font-face', Array<Record<string, string>>>;
+    // Both bundled Quran webfaces ship, in fallback order.
+    expect(styles['@font-face'].map((face) => face.fontFamily)).toEqual([
+      'Amiri Quran',
+      'Scheherazade New',
+    ]);
     expect(styles[':root']!['--font-ui']).toContain('Tajawal');
     expect(styles[':root']!['--font-quran']).toContain('Amiri Quran');
     expect(styles['.quran-text']!.fontFamily).toBe('var(--font-quran)');

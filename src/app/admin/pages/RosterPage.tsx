@@ -144,10 +144,6 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
         </Typography>
       </Box>
 
-      {/* {person.enabled ? null : (
-        <StatusChip tone="neutral" size="small" label={strings.admin.disabledBadge} />
-      )} */}
-
       <NumberStepper
         label={strings.admin.pagesPerDayLabel}
         value={person.pagesPerDay}

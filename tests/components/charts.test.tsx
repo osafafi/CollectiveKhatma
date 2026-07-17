@@ -312,10 +312,13 @@ describe('QuranPageGrid', () => {
       expect(page(6)).toHaveAttribute('data-scale', '1.000');
       expect(activeCardText()).toEqual(['Maryam', '٣']);
 
+      // Row 0, column 3 — page 4. The card's 12px pad insets the content box to
+      // 12..288, so the 20 columns are 13.8px wide and are counted from the
+      // right edge in RTL: 288 - 240 = 48px lands in column 3.
       fireEvent.pointerMove(grid, {
         pointerId: 1,
         pointerType: 'touch',
-        clientX: 249,
+        clientX: 240,
         clientY: 16,
       });
       expect(page(4)).toHaveAttribute('data-active', 'true');
