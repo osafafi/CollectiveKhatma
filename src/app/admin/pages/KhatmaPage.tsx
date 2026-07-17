@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Box, Link, Stack, Typography } from '@mui/material';
+import { Box, IconButton, Link, Stack, Typography } from '@mui/material';
+import PersonRemoveAlt1Icon from '@mui/icons-material/PersonRemoveAlt1';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {
   selectAssignmentsForKhatma,
   selectKhatmaById,
@@ -400,15 +402,8 @@ function MemberRow({
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}>
       <Stack spacing={1}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-          <Typography
-            component="span"
-            sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}
-          >
-            {name}
-          </Typography>
-          {level !== 'none' ? (
-            <>
+        {level !== 'none' ? (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
               <StatusChip
                 size="small"
                 tone={level === 'red' ? 'danger' : 'warning'}
@@ -421,8 +416,26 @@ function MemberRow({
               <AppButton variant="text" quiet color="inherit" onClick={onClearWarning}>
                 {strings.admin.clearWarning}
               </AppButton>
-            </>
+            </Box>
           ) : null}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+          
+          <IconButton
+            size="small"
+            color="error"
+            title={strings.admin.removeFromKhatma}
+            aria-label={`${strings.admin.removeFromKhatma}: ${name}`}
+            onClick={() => void onRemove()}
+          >
+            <PersonRemoveAlt1Icon fontSize="small" />
+          </IconButton>
+          <Typography
+            component="span"
+            sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}
+          >
+            {name}
+          </Typography>
+          
           <ChunkChip
             assignment={assignment}
             chunk={chunk}
@@ -439,13 +452,12 @@ function MemberRow({
               {strings.admin.returnToPool}
             </AppButton>
           ) : null}
-          <AppButton variant="text" quiet color="error" onClick={() => void onRemove()}>
-            {strings.admin.removeFromKhatma}
-          </AppButton>
+          
         </Box>
         {person ? (
           <CapacityEditor khatma={khatma} person={person} surahs={surahs} />
         ) : null}
+        
       </Stack>
     </Box>
   );
@@ -512,7 +524,7 @@ function CapacityEditor({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, ps: 2 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 2, ps: 2 }}>
       <AppTextField
         type="number"
         label={strings.admin.capacityPages}
@@ -530,9 +542,14 @@ function CapacityEditor({
         onChange={(event) => setJuz(event.target.value)}
         slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
       />
-      <AppButton variant="text" quiet color="inherit" onClick={onSave}>
-        {strings.admin.saveCapacity}
-      </AppButton>
+      <IconButton
+        size="small"
+        title={strings.admin.saveCapacity}
+        aria-label={`${strings.admin.saveCapacity}: ${person.name}`}
+        onClick={onSave}
+      >
+        <SaveOutlinedIcon fontSize="small" />
+      </IconButton>
     </Box>
   );
 }

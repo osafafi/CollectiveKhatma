@@ -9,6 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { selectRoster, useAppSelector } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
@@ -113,9 +114,24 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          minWidth: 160,
+          minWidth: 100,
         }}
       >
+          <IconButton
+            size="small"
+            title={strings.admin.rename}
+            aria-label={`${strings.admin.rename}: ${person.name}`}
+            onClick={() => setRenameOpen(true)}
+          >
+            <Box
+              component="svg"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              sx={{ width: 20, height: 20, fill: 'currentColor' }}
+            >
+              <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
+            </Box>
+          </IconButton>
         <Typography
           component="span"
           sx={{
@@ -127,26 +143,11 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
         >
           {person.emoji || ''} {person.name}
         </Typography>
-        <IconButton
-          size="small"
-          title={strings.admin.rename}
-          aria-label={`${strings.admin.rename}: ${person.name}`}
-          onClick={() => setRenameOpen(true)}
-        >
-          <Box
-            component="svg"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            sx={{ width: 20, height: 20, fill: 'currentColor' }}
-          >
-            <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
-          </Box>
-        </IconButton>
       </Box>
 
-      {person.enabled ? null : (
+      {/* {person.enabled ? null : (
         <StatusChip tone="neutral" size="small" label={strings.admin.disabledBadge} />
-      )}
+      )} */}
 
       <NumberStepper
         label={strings.admin.pagesPerDayLabel}
@@ -156,15 +157,22 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
       />
 
       <AppButton
+      sx={{px:2}}
         variant="outlined"
         onClick={() => void updatePerson.execute(person.id, { enabled: !person.enabled })}
       >
         {person.enabled ? strings.admin.disable : strings.admin.enable}
       </AppButton>
 
-      <AppButton variant="text" quiet color="error" onClick={() => void onRemove()}>
-        {strings.admin.remove}
-      </AppButton>
+      <IconButton
+        size="small"
+        color="error"
+        title={strings.admin.remove}
+        aria-label={`${strings.admin.remove}: ${person.name}`}
+        onClick={() => void onRemove()}
+      >
+        <DeleteOutlineRoundedIcon fontSize="small" />
+      </IconButton>
 
       <RenamePersonDialog
         open={renameOpen}

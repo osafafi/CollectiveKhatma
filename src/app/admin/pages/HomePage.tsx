@@ -211,7 +211,7 @@ function PendingReaders({
   return (
     <Box
       sx={{
-        borderRadius: 3,
+        borderRadius: 1,
         bgcolor: 'background.default',
         p: 3,
         color: 'text.secondary',

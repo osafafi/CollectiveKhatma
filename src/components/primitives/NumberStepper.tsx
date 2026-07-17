@@ -34,7 +34,7 @@ export function NumberStepper({
   return (
     <Stack
       direction="row"
-      spacing={1}
+      spacing={0}
       role="group"
       aria-label={label}
       sx={{ alignItems: 'center' }}
@@ -51,7 +51,7 @@ export function NumberStepper({
       <Typography
         component="span"
         aria-live="polite"
-        sx={{ minWidth: 40, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+        sx={{ minWidth: 30, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
       >
         {toArabicDigits(value)}
       </Typography>
