@@ -29,9 +29,9 @@ import {
   type QuranPageState,
 } from './quranPageGridModel';
 
-const DEFAULT_COLUMNS = 24;
-const DEFAULT_NEIGHBOR_COUNT = 2;
-const DEFAULT_MAX_SCALE = 3.2;
+const DEFAULT_COLUMNS = 20;
+const DEFAULT_NEIGHBOR_COUNT = 6;
+const DEFAULT_MAX_SCALE = 5;
 const DEFAULT_LONG_PRESS_MS = 360;
 const PRESS_MOVE_TOLERANCE = 10;
 
@@ -270,10 +270,12 @@ export function QuranPageGrid({
                 DEFAULT_COLUMNS,
                 DEFAULT_MAX_SCALE,
               );
+              const verticalScale = 1 + (scale - 1) * 2;
               const active = index === activeIndex;
               const distance = activeIndex === null ? 0 : Math.abs(index - activeIndex);
               const member = entry.memberId ? peopleById.get(entry.memberId) : undefined;
               const memberName = member?.name ?? entry.memberId;
+              const memberEmoji = member?.emoji?.trim();
               const avatar = member ? personAvatar(member) : undefined;
               const usesEmoji = Boolean(member?.emoji?.trim());
 
@@ -299,43 +301,81 @@ export function QuranPageGrid({
                     bgcolor: pageColor(entry.state),
                     border: '1px solid',
                     borderColor: pageBorderColor(entry.state),
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'center',
+                    transform: `scaleX(${scale}) scaleY(${verticalScale})`,
+                    transformOrigin: 'bottom center',
                     transition: 'transform 130ms cubic-bezier(0.2, 0.8, 0.2, 1)',
                     zIndex: scale > 1 ? neighborCount + 2 - distance : 0,
                     overflow: 'visible',
                   }}
                 >
                   {active ? (
-                    <Box
-                      component="span"
-                      sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        display: 'block',
-                        maxWidth: 'none',
-                        color: pageTextColor(entry.state),
-                        bgcolor: pageLabelColor(entry.state),
-                        border: '1px solid',
-                        borderColor: pageBorderColor(entry.state),
-                        borderRadius: '3px',
-                        boxShadow: '0 1px 3px rgb(38 49 43 / 22%)',
-                        px: 0.75,
-                        py: 0.5,
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        lineHeight: 1,
-                        whiteSpace: 'nowrap',
-                        transform: `translate(-50%, -50%) rotate(-38deg) scale(${1 / DEFAULT_MAX_SCALE})`,
-                        transformOrigin: 'center',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      {memberName
-                        ? `${toArabicDigits(entry.page)} · ${memberName}`
-                        : toArabicDigits(entry.page)}
-                    </Box>
+                    <>
+                      {memberName ? (
+                        <Box
+                          component="span"
+                          data-page-header="true"
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            // Sized against the cell's own scale so the band lands
+                            // at a real 18px tall however far the cell is stretched.
+                            height: `${18 / verticalScale}px`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: pageBorderColor(entry.state),
+                            color: pageTextColor(entry.state),
+                            overflow: 'hidden',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              fontSize: '0.6rem',
+                              fontWeight: 600,
+                              lineHeight: 1,
+                              whiteSpace: 'nowrap',
+                              // Undo the cell's non-uniform scale so the text keeps
+                              // its true proportions and size.
+                              transform: `scale(${1 / scale}, ${1 / verticalScale})`,
+                              transformOrigin: 'center',
+                            }}
+                          >
+                            {memberEmoji ? `${memberEmoji} ${memberName}` : memberName}
+                          </Box>
+                        </Box>
+                      ) : null}
+                      <Box
+                        component="span"
+                        data-page-number="true"
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: pageTextColor(entry.state),
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                            transform: `scale(${1 / scale}, ${1 / verticalScale})`,
+                            transformOrigin: 'center',
+                          }}
+                        >
+                          {toArabicDigits(entry.page)}
+                        </Box>
+                      </Box>
+                    </>
                   ) : avatar ? (
                     <Box
                       component="span"
@@ -465,17 +505,6 @@ function pageBorderColor(state: QuranPageState): string {
 
 function pageTextColor(state: QuranPageState): string {
   return state === 'done' ? 'primary.contrastText' : 'text.primary';
-}
-
-function pageLabelColor(state: QuranPageState): string {
-  switch (state) {
-    case 'done':
-      return pageBorderColor(state);
-    case 'assigned':
-      return pageColor(state);
-    case 'remaining':
-      return 'grey.100';
-  }
 }
 
 /** Blend two semantic theme colors. */

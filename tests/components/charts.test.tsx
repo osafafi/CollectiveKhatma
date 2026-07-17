@@ -288,6 +288,10 @@ describe('QuranPageGrid', () => {
     });
     const page = (number: number) =>
       grid.querySelector(`[data-page="${number}"]`) as HTMLElement;
+    const activeCardText = () => [
+      grid.querySelector('[data-page-header]')?.textContent,
+      grid.querySelector('[data-page-number]')?.textContent,
+    ];
 
     vi.useFakeTimers();
     try {
@@ -306,7 +310,7 @@ describe('QuranPageGrid', () => {
       expect(page(2)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(1)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(6)).toHaveAttribute('data-scale', '1.000');
-      expect(screen.getByText('٣ · Maryam')).toBeInTheDocument();
+      expect(activeCardText()).toEqual(['Maryam', '٣']);
 
       fireEvent.pointerMove(grid, {
         pointerId: 1,
@@ -315,7 +319,7 @@ describe('QuranPageGrid', () => {
         clientY: 16,
       });
       expect(page(4)).toHaveAttribute('data-active', 'true');
-      expect(screen.getByText('٤ · Maryam')).toBeInTheDocument();
+      expect(activeCardText()).toEqual(['Maryam', '٤']);
 
       fireEvent.pointerUp(grid, { pointerId: 1, pointerType: 'touch' });
       expect(page(3)).not.toHaveAttribute('data-active');
