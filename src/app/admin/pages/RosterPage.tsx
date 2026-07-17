@@ -17,7 +17,6 @@ import {
   AppButton,
   AppTextField,
   NumberStepper,
-  StatusChip,
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
