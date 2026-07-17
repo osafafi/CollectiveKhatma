@@ -131,7 +131,7 @@ function JumpControls({
   return (
     <Stack
       direction="row"
-      spacing={5}
+      spacing={2}
       useFlexGap
       sx={{
         flexWrap: 'nowrap',
@@ -141,10 +141,10 @@ function JumpControls({
         // overflow: 'hidden',
       }}
     >
+      <PageJumpInput key={page} page={page} onJump={onJump} />
       <JumpSelect label={strings.reader.surah} options={surahOptions} onJump={onJump} />
       <JumpSelect label={strings.reader.juz} options={juzOptions} onJump={onJump} />
       {/* Remount on committed-page change so the draft resyncs without an effect. */}
-      <PageJumpInput key={page} page={page} onJump={onJump} />
     </Stack>
   );
 }

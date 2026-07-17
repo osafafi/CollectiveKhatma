@@ -1,5 +1,7 @@
 import type { Interpolation, Theme } from '@mui/material/styles';
 import amiriQuranUrl from '@/theme/fonts/AmiriQuran.woff2';
+import scheherazadeNewUrl from '@/theme/fonts/ScheherazadeNew.woff2';
+
 
 /**
  * App-specific global CSS retained alongside the MUI theme (AD-09).
@@ -12,16 +14,26 @@ import amiriQuranUrl from '@/theme/fonts/AmiriQuran.woff2';
  * to `CssBaseline` and the MUI theme.
  */
 export const retainedGlobalStyles: Interpolation<Theme> = {
-  '@font-face': {
-    fontFamily: 'Amiri Quran',
-    src: `url(${amiriQuranUrl}) format('woff2')`,
-    fontDisplay: 'swap',
-  },
+  '@font-face': [
+      {
+      fontFamily: 'Amiri Quran',
+      src: `url(${amiriQuranUrl}) format('woff2')`,
+      fontDisplay: 'swap',
+      },
+       
+      {
+      fontFamily: 'Scheherazade New',
+      src: `url(${scheherazadeNewUrl}) format('woff2')`,
+      fontDisplay: 'swap',
+      },
+
+
+  ],
 
   // Font stacks + default reading scale.
   ':root': {
     '--font-ui': "'Tajawal', system-ui, -apple-system, 'Segoe UI', sans-serif",
-    '--font-quran': "'Amiri Quran', 'Amiri', 'Scheherazade New', serif",
+    '--font-quran': "'Amiri Quran', 'Scheherazade New', 'serif'",
     '--reading-scale': '1',
   },
 
