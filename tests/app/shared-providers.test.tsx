@@ -55,7 +55,7 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
-describe('AppProviders composition (RM-300)', () => {
+describe('AppProviders composition', () => {
   it('wires store, subscriptions, router, RTL theme, and snackbar into one tree', async () => {
     window.history.replaceState(null, '', '/#/khatmas');
     const user = userEvent.setup();

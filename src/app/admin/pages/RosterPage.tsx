@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { selectRoster, useAppSelector } from '@/app/store';
-import { useWriteOperation } from '@/app/operations';
+import { DuplicatePersonNameError, useWriteOperation } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
 import {
   AppButton,
@@ -20,19 +20,18 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { DuplicatePersonNameError } from '@/data/roster';
 import { isNameUnique, normalizeName } from '@/domain/validation';
 import type { Person } from '@/domain/types';
 
 /**
- * Admin Roster `#/roster` (inventory §3.2): search-as-you-type over the member
+ * Admin Roster `#/roster` (current UI contract): search-as-you-type over the member
  * list, per-person controls (pages/round, pause, remove), and the
  * add-member form.
  *
  * Drafts (the search text and the add-form fields) are component-local state;
  * because the page stays mounted while live Firestore snapshots re-render it,
  * those drafts survive the snapshot re-renders that would clobber them in a naive
- * port (inventory §3.2 / P2). A controlled search field that never remounts also
+ * port (current UI contract). A controlled search field that never remounts also
  * keeps the caret/focus across the keystroke re-render (**P4**) without the
  * legacy's manual re-focus hack.
  */
@@ -77,7 +76,7 @@ export function AdminRosterPage() {
 /**
  * One roster row. The stepper and the pause toggle are fire-and-forget
  * `updatePerson` writes; remove confirms first, then `removePerson` — matching
- * the legacy feedback granularity (inventory §5 quirk 5): none of these surface a
+ * the legacy feedback granularity (current UI contract quirk 5): none of these surface a
  * success/error status.
  */
 function PersonRow({ person, roster }: { person: Person; roster: readonly Person[] }) {
@@ -116,21 +115,21 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
           minWidth: 100,
         }}
       >
-          <IconButton
-            size="small"
-            title={strings.admin.rename}
-            aria-label={`${strings.admin.rename}: ${person.name}`}
-            onClick={() => setRenameOpen(true)}
+        <IconButton
+          size="small"
+          title={strings.admin.rename}
+          aria-label={`${strings.admin.rename}: ${person.name}`}
+          onClick={() => setRenameOpen(true)}
+        >
+          <Box
+            component="svg"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            sx={{ width: 20, height: 20, fill: 'currentColor' }}
           >
-            <Box
-              component="svg"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              sx={{ width: 20, height: 20, fill: 'currentColor' }}
-            >
-              <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
-            </Box>
-          </IconButton>
+            <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
+          </Box>
+        </IconButton>
         <Typography
           component="span"
           sx={{
@@ -152,7 +151,7 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
       />
 
       <AppButton
-      sx={{px:2}}
+        sx={{ px: 2 }}
         variant="outlined"
         onClick={() => void updatePerson.execute(person.id, { enabled: !person.enabled })}
       >
@@ -275,7 +274,7 @@ function RenamePersonDialog({
 
 /**
  * Add-member form. Validation (`nameRequired`, `nameTaken`) is client-side and
- * shown; the `addPerson` write itself is fire-and-forget (inventory §5 quirk 5).
+ * shown; the `addPerson` write itself is fire-and-forget (current UI contract quirk 5).
  * On success the name/note/emoji/error reset but the pages/round value is kept.
  */
 function AddPersonForm({ roster }: { roster: readonly Person[] }) {

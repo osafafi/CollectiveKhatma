@@ -6,7 +6,12 @@ import {
   selectRoster,
   useAppSelector,
 } from '@/app/store';
-import { useWriteOperation, type OperationState } from '@/app/operations';
+import {
+  AlreadyDistributedError,
+  useWriteOperation,
+  type DistributionOutcome,
+  type OperationState,
+} from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
@@ -18,7 +23,6 @@ import {
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
-import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
 import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { currentChunk, khatmaProgress } from '@/domain/progress';
@@ -34,7 +38,7 @@ import { todayIso } from '@/app/admin/todayIso';
 import { useQuranScopeMaps, type QuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 
 /**
- * Admin Home `#/home` (inventory §3.1). One block per active series, one sub-block
+ * Admin Home `#/home` (current UI contract). One block per active series, one sub-block
  * per active khatma: at-a-glance metrics, pending readers, warnings,
  * and the daily distribute/redistribute action that drives the round model.
  */
@@ -400,7 +404,7 @@ function DistributeAction({
         {distributedToday ? strings.admin.redistribute : strings.admin.distribute}
       </AppButton>
       {status ? (
-        // Intentional a11y delta (inventory §1.7): the legacy shows every status —
+        // Intentional a11y delta (current UI contract): the legacy shows every status —
         // successes and errors alike — in the same green. Errors get error tone +
         // an `alert` role here so a failed distribution is not announced as success.
         <Typography

@@ -119,8 +119,7 @@ export function pageIndexAtGridPoint(
   const contentLeft = layout.left + layout.paddingLeft;
   const contentRight = layout.right - layout.paddingRight;
   const contentWidth = contentRight - contentLeft;
-  const cellSize =
-    (contentWidth - Math.max(0, columns - 1) * layout.columnGap) / columns;
+  const cellSize = (contentWidth - Math.max(0, columns - 1) * layout.columnGap) / columns;
   if (cellSize <= 0 || clientX < contentLeft || clientX >= contentRight) return null;
 
   const rows = Math.ceil(pageCount / columns);

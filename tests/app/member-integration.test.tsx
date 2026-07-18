@@ -139,7 +139,7 @@ beforeEach(() => {
   loader.getPage.mockImplementation((page: number) => Promise.resolve(makePage(page)));
 });
 
-describe('member application integration (RM-450)', () => {
+describe('member application integration', () => {
   it('walks the full journey from the identity gate to finishing an assigned round', async () => {
     const khatma = makeKhatma('journey', {
       seriesName: 'أهل القرآن',

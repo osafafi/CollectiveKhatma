@@ -15,14 +15,19 @@ describe('resolvePageScope', () => {
   });
 
   it('range yields the inclusive span and rejects reversed/invalid ranges', () => {
-    expect(resolvePageScope({ kind: 'range', fromPage: 5, toPage: 8 })).toEqual([5, 6, 7, 8]);
+    expect(resolvePageScope({ kind: 'range', fromPage: 5, toPage: 8 })).toEqual([
+      5, 6, 7, 8,
+    ]);
     expect(() => resolvePageScope({ kind: 'range', fromPage: 8, toPage: 5 })).toThrow();
     expect(() => resolvePageScope({ kind: 'range', fromPage: 0, toPage: 3 })).toThrow();
   });
 
   it('surahs unions chapter page-spans and de-dupes a shared boundary page', () => {
     // Surah 4 ends on page 106; surah 5 starts on page 106 (real KFGQPC overlap).
-    const surahToPages = { 4: [77, 106], 5: [106, 127] } as Record<number, [number, number]>;
+    const surahToPages = { 4: [77, 106], 5: [106, 127] } as Record<
+      number,
+      [number, number]
+    >;
     const pages = resolvePageScope({ kind: 'surahs', surahIds: [4, 5] }, surahToPages);
     expect(pages[0]).toBe(77);
     expect(pages.at(-1)).toBe(127);
@@ -32,6 +37,8 @@ describe('resolvePageScope', () => {
 
   it('surahs requires the map and a known id', () => {
     expect(() => resolvePageScope({ kind: 'surahs', surahIds: [1] })).toThrow();
-    expect(() => resolvePageScope({ kind: 'surahs', surahIds: [999] }, { 1: [1, 1] })).toThrow();
+    expect(() =>
+      resolvePageScope({ kind: 'surahs', surahIds: [999] }, { 1: [1, 1] }),
+    ).toThrow();
   });
 });

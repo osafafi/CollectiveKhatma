@@ -31,14 +31,14 @@ function composite(foreground: Rgb, background: Rgb, alpha: number): Rgb {
   ) as unknown as Rgb;
 }
 
-describe('MUI theme — token mapping (RM-210)', () => {
+describe('MUI theme — token mapping', () => {
   it('is right-to-left', () => {
     expect(appTheme.direction).toBe('rtl');
   });
 
-  it('applies the refreshed OD-03 palette onto the MUI palette (RM-460)', () => {
+  it('applies the accessible app palette onto the MUI palette', () => {
     // Pinned refreshed values — fresh, senior-friendly, reading-comfortable.
-    // WCAG-AA contrast evidence is in docs/react-migration/tasks/RM-460.md.
+    // WCAG-AA contrast evidence is in docs/react-migration/tasks/.md.
     expect(appTheme.palette.background.default).toBe('#f6f1e7');
     expect(appTheme.palette.background.paper).toBe('#fffdf7');
     expect(appTheme.palette.text.primary).toBe('#26312b');
@@ -52,7 +52,7 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(appTheme.palette.divider).toBe('#e5ddcb');
   });
 
-  it('pins the refreshed muiTheme tokens and splits accent from warn (R3)', () => {
+  it('pins the theme tokens and splits accent from warning', () => {
     expect(tokens.color.bg).toBe('#f6f1e7');
     expect(tokens.color.surface).toBe('#fffdf7');
     expect(tokens.color.ink).toBe('#26312b');
@@ -72,7 +72,7 @@ describe('MUI theme — token mapping (RM-210)', () => {
 
   it('sets white contrastText on filled semantics, dark ink on the gold accent', () => {
     expect(appTheme.palette.primary.contrastText).toBe('#ffffff');
-    // Gold accent is light → dark ink text for legibility (RM-460).
+    // Gold accent is light → dark ink text for legibility.
     expect(appTheme.palette.secondary.contrastText).toBe('#26312b');
     expect(appTheme.palette.success.contrastText).toBe('#ffffff');
     expect(appTheme.palette.warning.contrastText).toBe('#ffffff');
@@ -143,7 +143,7 @@ describe('MUI theme — token mapping (RM-210)', () => {
     expect(fresh.palette.primary.main).toBe(appTheme.palette.primary.main);
   });
 
-  it('centralizes RM-320 component parity defaults', () => {
+  it('centralizes shared component defaults', () => {
     expect(appTheme.components?.MuiButton?.defaultProps).toMatchObject({
       disableElevation: true,
     });

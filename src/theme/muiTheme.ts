@@ -1,17 +1,17 @@
 import { createTheme, type Theme } from '@mui/material/styles';
 
 /**
- * Centralized MUI theme (RM-210), refreshed under OD-03 (RM-460).
+ * Centralized MUI theme for the Arabic RTL member and admin apps.
  *
- * The owner resolved OD-03 toward an intentional visual refresh: a fresh,
+ * The palette uses a fresh,
  * modern, senior-friendly look with reading-comfortable colors. Design intent
- * and WCAG-AA contrast evidence are recorded in RM-460.
+ * and WCAG-AA contrast evidence are recorded in .
  */
 
 /**
- * Refreshed design tokens (OD-03 / RM-460). Warm low-glare paper, a calm emerald
+ * Design tokens: warm low-glare paper, a calm emerald
  * "Quran green" primary, a distinct gold accent (dark text), and higher-contrast
- * ink/muted for extended reading. See the RM-460 record for the contrast matrix.
+ * ink/muted for extended reading. Theme tests guard the contrast matrix.
  */
 export const tokens = {
   color: {
@@ -32,7 +32,7 @@ export const tokens = {
   },
   radius: {
     button: 12, // 0.75rem — buttons, fields, chips, badges, pills, bars
-    card: 18, // softer 1.125rem — cards/sections/dialogs (RM-460 refresh)
+    card: 18, // softer 1.125rem — cards/sections/dialogs ( refresh)
   },
   font: {
     // Exposed as CSS vars in globalStyles.ts so the UI and Quran font stacks
@@ -56,14 +56,14 @@ export function createAppTheme(): Theme {
       primary: {
         main: tokens.color.primary,
         // Revive the otherwise-dead `--color-primary-strong` as the dark tone
-        // MUI needs for hover/press states (theme-map R2).
+        // MUI needs these tonal offsets for hover and press states.
         dark: tokens.color.primaryStrong,
         contrastText: tokens.color.white,
       },
       // Gold `--color-accent` (dua/reciter highlight, chart "pending"). It reads
       // as a bright gold, so filled secondary surfaces carry DARK ink text
       // rather than white (legible + premium) — the one semantic color that does
-      // not use white contrast (RM-460 refresh; guarded in the theme test).
+      // not use white contrast ( refresh; guarded in the theme test).
       secondary: {
         main: tokens.color.accent,
         contrastText: tokens.color.ink,
@@ -73,7 +73,7 @@ export function createAppTheme(): Theme {
         dark: tokens.color.successStrong,
         contrastText: tokens.color.white,
       },
-      // Warning amber remains distinct from the lighter gold accent (theme-map R3).
+      // Warning amber remains distinct from the lighter gold accent.
       warning: {
         main: tokens.color.warn,
         dark: tokens.color.warnStrong,
@@ -92,9 +92,9 @@ export function createAppTheme(): Theme {
     },
 
     typography: {
-      // Keep the exact legacy stack via the CSS var (theme-map R4): Tajawal
+      // Keep the established stack via the CSS variable: Tajawal
       // preferred, system-ui fallback. No third-party font runtime is added;
-      // the self-host-Tajawal-vs-drop decision stays an OD-03 input.
+      // self-hosting can be added later without changing component styles.
       fontFamily: tokens.font.ui,
       fontWeightRegular: 400,
       fontWeightMedium: 500,
@@ -111,7 +111,7 @@ export function createAppTheme(): Theme {
     },
 
     // Common radius = the button radius (12px). Cards/pills that differ (16px /
-    // full) are overridden per-component in RM-320.
+    // full) are overridden per-component in .
     shape: { borderRadius: tokens.radius.button },
 
     // Compact 4px spacing unit used throughout the app.
@@ -122,7 +122,7 @@ export function createAppTheme(): Theme {
       values: { xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280 },
     },
 
-    // Shared primitive defaults (RM-320). These keep page-level components from
+    // Shared primitive defaults. These keep page-level components from
     // repeating the legacy radius, spacing, disabled, and surface treatments.
     components: {
       MuiButton: {
@@ -146,7 +146,7 @@ export function createAppTheme(): Theme {
           root: {
             borderColor: tokens.color.border,
             borderRadius: tokens.radius.card,
-            // Softer, warmer layered shadow (RM-460) — gentle depth that reads
+            // Softer, warmer layered shadow — gentle depth that reads
             // modern and calm rather than the flat legacy 1px hairline.
             boxShadow: '0 1px 2px rgb(38 49 43 / 4%), 0 6px 20px rgb(38 49 43 / 5%)',
           },

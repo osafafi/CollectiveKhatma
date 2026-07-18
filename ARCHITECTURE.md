@@ -13,9 +13,6 @@ for a future collaborator to pick up. This reflects the design mandated by
 - Code is split into **layers with a strict, one-directional dependency rule**,
   enforced by ESLint so the boundaries can't quietly erode.
 
-> Both production entries mount React. Migration cleanup and validation status
-> lives in [the migration tracker](docs/react-migration/TRACKER.md).
-
 ## Layers
 
 ```
@@ -74,10 +71,11 @@ Collections and their document shapes (typed in [`src/domain/types.ts`](src/doma
 Represents a global reader in the community roster.
 
 - `name`: string (unique)
+- `note`: optional string (admin-only distinguishing detail)
 - `emoji`: optional string (person-selected avatar; grid surfaces derive the
   first letter of every name word when absent)
 - `completedPages`: number[] (deduplicated pages read over lifetime; consulted by distribution to prefer new coverage)
-- `pagesPerDay`: number (capacity check per round)
+- `pagesPerDay`: number (default copied into new per-khatma capacity)
 - `enabled`: boolean (active/paused flag)
 - `createdAt`: number (epoch ms)
 
@@ -90,7 +88,7 @@ Represents a single open-ended, numbered group reading session.
 - `imageName`: optional string (shared filename from `public/khatma-images/`; the UI uses `placeholder.svg` when absent)
 - `seriesNumber`: number (e.g., 1, 2, 3...)
 - `totalPages`: number
-- `scope`: PageScope (`{ kind: 'full' | 'range' | 'chapters', ... }`)
+- `scope`: PageScope (`{ kind: 'full' | 'range' | 'surahs', ... }`)
 - `memberIds`: string[] (list of participants)
 - `capacities`: Record<memberId, `{ pages, surahs, juz }>` (required per-member ADDITIVE per-round capacity, copied forward at rollover)
 - `status`: 'active' | 'completed'
@@ -175,16 +173,11 @@ production entries mount this application architecture.
 
 - `npm run build` emits the member `index.html` and hidden `admin-nano.html`
   inputs, both backed by React entries.
-- `react-preview.html` and `admin-react-preview.html` are development-only
-  aliases excluded from deployable build inputs.
-- Stable migration governance, phase gates, and accepted decisions live in
-  [the compact migration plan](docs/react-migration/PLAN.md) (AD-01…AD-12), while
-  current task status lives in [the tracker](docs/react-migration/TRACKER.md).
 
 ### The `src/app/` layer
 
-All React composition lives under a new `src/app/` layer. The shared
-`data`, `domain`, `content`, and `theme` layers are reused as-is.
+All React composition lives under `src/app/`. Shared code lives in `data`,
+`domain`, `content`, `components`, and `theme`.
 
 ```
 src/app/
@@ -307,8 +300,7 @@ single owner of listener lifecycle for React:
 
 - **One shared route contract** (`routing/routes.ts`): discriminated-union
   `MemberRoute` / `AdminRoute` types with total, pure parsers and path/hash
-  builders. Both the legacy app and the React app import these same functions, so
-  the two surfaces cannot drift on URLs during the migration.
+  builders. Both production entries use these functions, so URLs stay aligned.
 - React uses `AppHashRouter` (React Router `HashRouter`) with typed hooks
   (`useMemberRoute` / `useAdminRoute`) and typed links (`RouteLink`).
 - All established hashes (`#/home`, `#/roster`, `#/khatma/:id`, `#/khatma/:id/read`,

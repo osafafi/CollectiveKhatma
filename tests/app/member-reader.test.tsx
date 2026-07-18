@@ -136,7 +136,7 @@ beforeEach(() => {
   loader.getPage.mockImplementation((page: number) => Promise.resolve(makePage(page)));
 });
 
-describe('member browse reader (RM-440)', () => {
+describe('member browse reader', () => {
   it('resumes from the remembered page and renders the mushaf body', async () => {
     localStorage.setItem('khatma.lastReadPage', '5');
     renderMember({ route: '/quran', data: { roster: [amina] } });
@@ -198,7 +198,7 @@ describe('member browse reader (RM-440)', () => {
   });
 });
 
-describe('member assigned reader (RM-440)', () => {
+describe('member assigned reader', () => {
   it('reads the assigned chunk, navigates, and finishes the round', async () => {
     const khatma = makeKhatma('k1');
     const markRoundDone = vi

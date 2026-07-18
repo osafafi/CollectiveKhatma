@@ -89,16 +89,16 @@ function renderAdmin(options: RenderWithAppProvidersOptions = {}) {
 }
 
 /**
- * RM-560 — admin integration layer. The per-route suites (RM-500…RM-550) prove
+ *  — admin integration layer. The per-route suites prove
  * each admin route's own states, validation, and drafts. These scenarios instead
  * walk **continuous, cross-feature journeys** through the composed admin tree
- * (`AdminAssignmentsSubscriptions` + `AdminShell` + routes) to prove the Phase 5
+ * (`AdminAssignmentsSubscriptions` + `AdminShell` + routes) to prove the
  * exit criterion — functional parity plus realtime updates that never disrupt
  * in-progress work — holds when everything is wired together. They also pin the
  * one admin risk-oracle row the steady-state suites do not exercise dynamically:
  * **P10** (a khatma leaving the admin's active ∪ open set releases its listener).
  */
-describe('admin application integration (RM-560)', () => {
+describe('admin application integration', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);

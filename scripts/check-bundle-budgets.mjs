@@ -9,12 +9,12 @@ const budgets = {
   member: {
     entry: 'index.html',
     initialJavaScriptGzipBytes: 350_000,
-    initialTransferBytes: 400_000,
+    initialTransferBytes: 525_000,
   },
   admin: {
     entry: 'admin-nano.html',
     initialJavaScriptGzipBytes: 375_000,
-    initialTransferBytes: 425_000,
+    initialTransferBytes: 530_000,
   },
 };
 

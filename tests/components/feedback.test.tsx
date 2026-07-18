@@ -16,7 +16,7 @@ function renderThemed(ui: ReactElement) {
   return render(<AppThemeProvider>{ui}</AppThemeProvider>);
 }
 
-describe('Feedback primitives (RM-300)', () => {
+describe('Feedback primitives', () => {
   it('LoadingState announces a status region with default and custom copy', () => {
     const { rerender } = renderThemed(<LoadingState />);
     expect(screen.getByRole('status')).toHaveTextContent(strings.feedback.loading);
@@ -56,7 +56,7 @@ describe('Feedback primitives (RM-300)', () => {
   });
 });
 
-describe('AsyncContent maps listener status to feedback (RM-300)', () => {
+describe('AsyncContent maps listener status to feedback', () => {
   const child = <p>Ready content</p>;
 
   it('treats idle and loading as loading', () => {

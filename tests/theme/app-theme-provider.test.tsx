@@ -9,7 +9,7 @@ function hasRtlCacheStyleTag(): boolean {
   return document.querySelector('style[data-emotion^="mui-rtl"]') !== null;
 }
 
-describe('AppThemeProvider — RTL foundation (RM-210)', () => {
+describe('AppThemeProvider — RTL foundation', () => {
   it('forces the document direction and language to Arabic RTL', () => {
     render(
       <AppThemeProvider>

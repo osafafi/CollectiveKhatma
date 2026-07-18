@@ -18,7 +18,7 @@ afterEach(() => {
   shouldThrow = true;
 });
 
-describe('ErrorBoundary (RM-300)', () => {
+describe('ErrorBoundary', () => {
   it('renders children unchanged when nothing throws', () => {
     shouldThrow = false;
     render(

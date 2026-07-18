@@ -4,12 +4,10 @@ import { strings } from '@/content/strings.ar';
 import { useMemberIdentity } from './memberIdentityContext';
 import { useWriteOperation } from '@/app/operations';
 
-
-/** Identity-only portion of the personal route; RM-420 adds its insight content. */
+/** Identity summary shown on the personal route. */
 export function MemberIdentitySummary() {
   const { member, switchMember } = useMemberIdentity();
   const updatePerson = useWriteOperation('updatePerson');
-  
 
   return (
     <Stack component="section" spacing={1}>
@@ -18,7 +16,7 @@ export function MemberIdentitySummary() {
       </Typography>
       <Typography color="text.secondary">{strings.member.greeting}</Typography>
       <Typography component="p" variant="h3">
-        {member?.emoji ?? ''} {member?.name ?? ''} 
+        {member?.emoji ?? ''} {member?.name ?? ''}
       </Typography>
       <AppButton quiet variant="text" onClick={switchMember} sx={{ alignSelf: 'start' }}>
         {strings.member.switchPerson}
@@ -28,9 +26,10 @@ export function MemberIdentitySummary() {
         onClick={() => {
           if (!member?.id) return;
           void updatePerson.execute(member.id, { enabled: !member.enabled });
-        }}>
-          {member?.enabled ? strings.admin.disable : strings.admin.enable}
-        </AppButton>
+        }}
+      >
+        {member?.enabled ? strings.admin.disable : strings.admin.enable}
+      </AppButton>
     </Stack>
   );
 }

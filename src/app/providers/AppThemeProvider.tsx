@@ -6,7 +6,7 @@ import { createRtlCache } from '@/theme/rtlCache';
 import { retainedGlobalStyles } from '@/theme/globalStyles';
 
 /**
- * Centralized theme provider for both React apps (RM-210).
+ * Centralized theme provider for both React apps.
  *
  * Composition order matters: the RTL Emotion cache must wrap the MUI
  * `ThemeProvider` so every styled element — including portalled ones — is

@@ -23,7 +23,7 @@ interface AppProvidersProps {
 }
 
 /**
- * The single shared provider stack for both React entries (RM-300).
+ * The single shared provider stack for both React entries.
  *
  * Composition order (outer → inner) and why each layer sits where it does:
  *   AppStoreProvider   Redux store + the three global Firestore subscriptions.

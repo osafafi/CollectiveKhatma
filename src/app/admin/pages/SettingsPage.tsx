@@ -19,7 +19,7 @@ interface AdminSettingsPageProps {
 }
 
 /**
- * Admin Settings `#/settings` (inventory §3.5): the global du3a editor plus the
+ * Admin Settings `#/settings` (current UI contract): the global du3a editor plus the
  * shared reading-scale control (**P11**, reused not forked).
  *
  * The reading-scale disclosure state is lifted to `AdminRouteContent` (like the
@@ -34,7 +34,12 @@ export function AdminSettingsPage({
   onOpenChange,
 }: AdminSettingsPageProps) {
   return (
-    <Stack component="section" spacing={4} data-react-surface="admin" data-route="settings">
+    <Stack
+      component="section"
+      spacing={4}
+      data-react-surface="admin"
+      data-route="settings"
+    >
       <Typography component="h1" variant="h2" color="primary.main">
         {strings.admin.navSettings}
       </Typography>
@@ -93,12 +98,17 @@ function Du3aEditor() {
             },
           }}
         />
-        <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <AppButton onClick={() => void onSave()} disabled={save.isPending}>
             {strings.admin.save}
           </AppButton>
           {/*
-            Intentional a11y delta (inventory §1.7): the legacy shows only the
+            Intentional a11y delta (current UI contract): the legacy shows only the
             green `saved` note. A save failure surfaces an error-tone `alert`
             here so it is not announced as success; success keeps `role="status"`.
           */}

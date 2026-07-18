@@ -40,7 +40,7 @@ function lifetimeInsight(completedPageCount: number): string {
   return `${strings.member.lifetimeLead} ${toArabicDigits(completedPageCount)} ${strings.member.lifetimeTail} (${formatPercent(percent)})`;
 }
 
-describe('member personal and settings routes (RM-420)', () => {
+describe('member personal and settings routes', () => {
   beforeEach(() => {
     localStorage.clear();
     delete document.documentElement.dataset.readingScale;

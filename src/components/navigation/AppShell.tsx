@@ -6,7 +6,7 @@ import { AppNav } from './AppNav';
 import { appShellContentSx, appShellFrameSx } from './layoutContracts';
 
 /**
- * Responsive application shell (RM-310): a centered content column plus the
+ * Responsive application shell: a centered content column plus the
  * bottom-bar/right-rail {@link AppNav}. An outer wrapper reserves the desktop
  * rail and an inner `<main>` centers the content with the
  * per-surface max-widths, page padding, and bottom-bar clearance (`pb-28`,

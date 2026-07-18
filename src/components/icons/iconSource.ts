@@ -1,5 +1,5 @@
 /**
- * Icon source URLs + the file-based override system (RM-330).
+ * Icon source URLs + the file-based override system.
  *
  * Icons load from `public/icons/` so the admin can swap them for downloaded
  * artwork without touching code: replace `icons/<name>.svg`, or drop an

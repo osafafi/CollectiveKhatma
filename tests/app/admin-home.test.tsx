@@ -94,7 +94,7 @@ function deferred<Value>() {
   return { promise, resolve, reject };
 }
 
-describe('admin Home dashboard (RM-500)', () => {
+describe('admin Home dashboard', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);

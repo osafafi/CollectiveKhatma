@@ -57,7 +57,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * The persistent admin title shown on every admin page (inventory §3). Rendered
+ * The persistent admin title shown on every admin page (current UI contract). Rendered
  * as a non-heading label so each route keeps a single `h1` (its own page
  * heading).
  */

@@ -70,7 +70,7 @@ function renderMember(options: RenderWithAppProvidersOptions = {}) {
   return renderWithAppProviders(<TestMemberExperience />, options);
 }
 
-describe('member completion/du3a interrupt (RM-430)', () => {
+describe('member completion/du3a interrupt', () => {
   beforeEach(() => localStorage.clear());
 
   it('interrupts any route with live du3a content and restores it after acknowledgement', async () => {

@@ -1,6 +1,15 @@
-import { clearRoundDone, clearWarning, markRoundDone } from '@/data/assignments';
+import {
+  clearRoundDone,
+  clearWarning,
+  markRoundDone,
+  ReleasedChunkError,
+} from '@/data/assignments';
 import { setDu3aText } from '@/data/content';
-import { runDistribution } from '@/data/distribution';
+import {
+  AlreadyDistributedError,
+  runDistribution,
+  type DistributionOutcome,
+} from '@/data/distribution';
 import {
   addMemberToKhatma,
   completeKhatma,
@@ -12,7 +21,17 @@ import {
   setSeriesImage,
   updateKhatma,
 } from '@/data/khatmas';
-import { addPerson, removePerson, renamePerson, updatePerson } from '@/data/roster';
+import {
+  addPerson,
+  DuplicatePersonNameError,
+  removePerson,
+  renamePerson,
+  updatePerson,
+} from '@/data/roster';
+
+/** Feature-facing errors and results exposed without leaking the data layer. */
+export { AlreadyDistributedError, DuplicatePersonNameError, ReleasedChunkError };
+export type { DistributionOutcome };
 
 /** Every Firestore mutation available to React features through the data boundary. */
 export interface WriteOperations {

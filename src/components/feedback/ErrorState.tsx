@@ -13,7 +13,7 @@ export interface ErrorStateProps {
 }
 
 /**
- * Inline error panel with an optional retry (RM-300).
+ * Inline error panel with an optional retry.
  *
  * Built on an MUI `Alert` (`role="alert"`) so assistive tech announces failures
  * immediately. The retry button renders only when `onRetry` is supplied, so the

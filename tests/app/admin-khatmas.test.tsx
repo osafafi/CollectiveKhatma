@@ -111,7 +111,7 @@ function renderKhatmas(
   return { ...harness, operations: operations as ReturnType<typeof mockOperations> };
 }
 
-describe('admin Khatmas list/create (RM-520)', () => {
+describe('admin Khatmas list/create', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);

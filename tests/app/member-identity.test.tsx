@@ -28,7 +28,7 @@ function MemberExperience() {
   );
 }
 
-describe('member identity gate (RM-400)', () => {
+describe('member identity gate', () => {
   beforeEach(() => localStorage.clear());
 
   it('shows live loading, empty, and ready roster states without navigation', () => {

@@ -5,7 +5,7 @@ import { NavIcon } from './NavIcon';
 import { appNavLayout } from './layoutContracts';
 
 /**
- * Responsive primary navigation (RM-310).
+ * Responsive primary navigation.
  *
  * - **Mobile (`< lg`)**: a fixed full-width **bottom** bar with a top border. The
  *   `.tab-bar` retained global style adds the iOS home-indicator safe-area inset.

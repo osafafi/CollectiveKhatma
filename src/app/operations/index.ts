@@ -13,4 +13,11 @@ export {
   type WriteOperationName,
   type WriteOperationResult,
 } from './useWriteOperation';
-export { writeOperations, type WriteOperations } from './writeOperations';
+export {
+  AlreadyDistributedError,
+  DuplicatePersonNameError,
+  ReleasedChunkError,
+  writeOperations,
+  type DistributionOutcome,
+  type WriteOperations,
+} from './writeOperations';

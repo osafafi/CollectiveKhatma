@@ -1,8 +1,8 @@
 /**
- * Minimal ambient types for `stylis` (RM-210).
+ * Minimal ambient types for `stylis`.
  *
  * `stylis` 4.x ships no bundled type declarations and `@types/stylis` is not
- * installed. RM-210 imports only `prefixer` (for the RTL Emotion cache in
+ * installed.  imports only `prefixer` (for the RTL Emotion cache in
  * `src/theme/rtlCache.ts`), so this declares just that surface rather than
  * pulling a new devDependency + lockfile change into a theme task on a
  * non-pinned runtime. `stylis-plugin-rtl`'s own `.d.ts` references

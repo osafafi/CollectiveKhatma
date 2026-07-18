@@ -85,7 +85,6 @@ function AssignedReaderCore({
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
-
       <QuranPageContent page={page} />
       <StickyChrome>
         <ReaderNav
@@ -131,7 +130,6 @@ function FinishFooter({
 
   return (
     <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 4 }}>
-      
       <AppButton
         hero
         disabled={markDone.isPending}

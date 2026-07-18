@@ -10,10 +10,6 @@ unguessable-URL **admin app** — talking directly to **Firebase/Firestore** wit
 no server or Cloud Functions. See [REQUIREMENTS.md](REQUIREMENTS.md) for the full
 product spec and [ARCHITECTURE.md](ARCHITECTURE.md) for how the code is organized.
 
-> **Status:** The member and hidden admin production entries run on React. The
-> migration branch is in final merge-readiness review; see the
-> [migration tracker](docs/react-migration/TRACKER.md).
-
 ## Tech stack
 
 | Concern     | Choice                                                            |
@@ -60,9 +56,8 @@ seeded roster live; the admin page is at `/admin-nano.html` (see
 > Without the emulator running, the app still loads — the roster simply shows
 > "no members yet" (Firestore returns an empty offline snapshot).
 
-The production member and hidden admin pages both mount React. Development-only
-preview aliases remain available for local comparison and are excluded from the
-deployable Vite inputs; bundle budgets are measured from the production manifest.
+The production member and hidden admin pages both mount React. Bundle budgets are
+measured from those two production entries.
 
 ## npm scripts
 
@@ -75,6 +70,9 @@ deployable Vite inputs; bundle budgets are measured from the production manifest
 | `npm run typecheck`            | `tsc --noEmit`                                                |
 | `npm run lint`                 | ESLint (includes the layer guardrails)                        |
 | `npm run format`               | Prettier write                                                |
+| `npm run format:check`         | Check formatting without changing files                       |
+| `npm run check:agent-docs`     | Check agent docs, links, commands, and route-shell size       |
+| `npm run check`                | Run the full local type/lint/test/build/docs/format gate      |
 | `npm test`                     | Run the Vitest unit tests                                     |
 | `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)        |
 | `npm run seed`                 | Seed roster + default du3a into the running emulator          |
@@ -97,8 +95,9 @@ is all you need for local development — just `npm run emulators`.
 4. Deploy the security rules (see below).
 
 > The `VITE_FIREBASE_*` web config is **not secret** — it is compiled into the
-> public client bundle by design. Security comes from Firestore rules, not from
-> hiding the config. See [ARCHITECTURE.md](ARCHITECTURE.md#security).
+> public client bundle by design. Firestore rules validate paths and shapes, but
+> this trust-based app has no identity security. See
+> [ARCHITECTURE.md](ARCHITECTURE.md#security).
 
 ### Deploying Firestore rules
 
@@ -189,6 +188,4 @@ a page range, a whole chapter, or both.
 The app includes the round-based assignment engine, live member reading and
 completion flows, roster and khatma administration, progress dashboards,
 du3a/settings controls, bundled paged Quran reader, browser persistence, and
-responsive Arabic RTL member/admin surfaces. Remaining merge review, rollback
-planning, and owner approval are tracked in
-[the React migration tracker](docs/react-migration/TRACKER.md).
+responsive Arabic RTL member/admin surfaces.

@@ -16,10 +16,6 @@ export const entryFiles = {
     member: 'index.html',
     admin: ADMIN_ENTRY,
   },
-  reactPreview: {
-    member: 'react-preview.html',
-    admin: 'admin-react-preview.html',
-  },
 } as const;
 
 /**
@@ -71,12 +67,9 @@ export default defineConfig({
   },
 
   build: {
-    // The budget gate reads this production manifest so its totals always match
-    // the two deployable HTML inputs rather than development-only aliases.
+    // The budget gate reads this manifest so its totals match both entries.
     manifest: true,
-    // Production remains a two-entry build throughout the controlled cutover.
-    // The React preview HTML files are intentionally absent: Vite serves them
-    // during development, but `npm run build` cannot publish them to dist/.
+    // Member and hidden admin are the only deployable entries.
     rollupOptions: {
       input: {
         member: resolve(import.meta.dirname, entryFiles.production.member),

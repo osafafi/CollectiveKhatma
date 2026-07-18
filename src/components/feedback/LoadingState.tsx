@@ -9,11 +9,11 @@ export interface LoadingStateProps {
 }
 
 /**
- * Centered loading indicator with an accessible status message (RM-300).
+ * Centered loading indicator with an accessible status message.
  *
  * The wrapper is a `role="status"` + `aria-live="polite"` region so assistive
  * tech announces the wait once, without stealing focus; the spinner itself is
- * `aria-hidden` because the text carries the meaning. Feature routes (Phase 4–5)
+ * `aria-hidden` because the text carries the meaning. Feature routes
  * render this while a Firestore listener status is `idle`/`loading`.
  */
 export function LoadingState({

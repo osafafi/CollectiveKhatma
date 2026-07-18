@@ -78,7 +78,7 @@ function renderMember(options: RenderWithAppProvidersOptions = {}) {
   return renderWithAppProviders(<TestMemberExperience />, options);
 }
 
-describe('member khatma routes (RM-410)', () => {
+describe('member khatma routes', () => {
   beforeEach(() => localStorage.clear());
 
   it('renders one relevant card per active series and targets the pending khatma', async () => {

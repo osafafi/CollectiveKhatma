@@ -56,7 +56,7 @@ async function expectGlobalState(
       expect(selectRosterListener(client.store.getState()).status).toBe('ready');
       expect(selectKhatmasListener(client.store.getState()).status).toBe('ready');
       expect(selectPersonById(client.store.getState(), personId)?.name).toBe(
-        'RM-640 reader',
+        'Emulator reader',
       );
       expect(selectKhatmaById(client.store.getState(), khatmaId)?.status).toBe('active');
     },
@@ -64,7 +64,7 @@ async function expectGlobalState(
   );
 }
 
-emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
+emulatorDescribe('Firestore emulator cross-client validation', () => {
   it('propagates writes, distribution, completion, reloads, and listener cleanup', async () => {
     expect(process.env.FIRESTORE_EMULATOR_HOST).toBeTruthy();
 
@@ -80,7 +80,7 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
       const memberClient = createClient();
       clients.push(adminClient, memberClient);
 
-      personId = await addPerson({ name: 'RM-640 reader', pagesPerDay: 2 });
+      personId = await addPerson({ name: 'Emulator reader', pagesPerDay: 2 });
       await vi.waitFor(
         () => {
           expect(selectPersonById(adminClient.store.getState(), personId!)).toBeDefined();
@@ -121,8 +121,8 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
       );
 
       khatmaId = await createKhatma({
-        seriesId: `rm640-series-${suffix}`,
-        seriesName: 'RM-640 series',
+        seriesId: `emulator-series-${suffix}`,
+        seriesName: 'Emulator series',
         seriesNumber: 1,
         totalPages: 2,
         scope: { kind: 'range', fromPage: 1, toPage: 2 },
@@ -162,8 +162,8 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
         ],
         today: '2099-06-14',
         rolloverSeed: {
-          seriesId: `rm640-series-${suffix}`,
-          seriesName: 'RM-640 series',
+          seriesId: `emulator-series-${suffix}`,
+          seriesName: 'Emulator series',
           seriesNumber: 2,
           totalPages: 2,
           scope: { kind: 'range', fromPage: 1, toPage: 2 },
@@ -241,8 +241,8 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
         ],
         today: '2099-06-15',
         rolloverSeed: {
-          seriesId: `rm640-series-${suffix}`,
-          seriesName: 'RM-640 series',
+          seriesId: `emulator-series-${suffix}`,
+          seriesName: 'Emulator series',
           seriesNumber: 2,
           totalPages: 2,
           scope: { kind: 'range', fromPage: 1, toPage: 2 },
@@ -270,12 +270,12 @@ emulatorDescribe('RM-640 Firestore emulator cross-client validation', () => {
 
       releaseClient(adminClient);
       const stoppedName = selectPersonById(adminClient.store.getState(), personId)?.name;
-      await updatePerson(personId, { name: 'RM-640 after cleanup' });
+      await updatePerson(personId, { name: 'Emulator reader after cleanup' });
       await vi.waitFor(
         () => {
           expect(
             selectPersonById(reloadedMemberClient.store.getState(), personId!)?.name,
-          ).toBe('RM-640 after cleanup');
+          ).toBe('Emulator reader after cleanup');
         },
         { timeout: 10_000, interval: 50 },
       );

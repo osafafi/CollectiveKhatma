@@ -49,7 +49,7 @@ function du3aEditor(): HTMLTextAreaElement {
   }) as HTMLTextAreaElement;
 }
 
-describe('admin Settings (RM-540)', () => {
+describe('admin Settings', () => {
   beforeEach(() => {
     localStorage.clear();
     delete document.documentElement.dataset.readingScale;

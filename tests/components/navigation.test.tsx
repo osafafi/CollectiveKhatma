@@ -39,7 +39,7 @@ const renderMember = (hash = '') =>
 const renderAdmin = (hash = '') =>
   renderShell((content) => <AdminShell>{content}</AdminShell>, hash);
 
-describe('Member shell navigation (RM-310)', () => {
+describe('Member shell navigation', () => {
   it('frames route content in the single main landmark', () => {
     renderMember();
     const main = screen.getByRole('main');
@@ -65,7 +65,7 @@ describe('Member shell navigation (RM-310)', () => {
     }
   });
 
-  it('hosts every tab icon as an aria-hidden mask span (override-aware since RM-330)', () => {
+  it('hosts every tab icon as an aria-hidden mask span (override-aware since )', () => {
     const { container } = renderMember();
     const icons = container.querySelectorAll('nav .icon-mask');
     expect(icons).toHaveLength(4);
@@ -113,7 +113,7 @@ describe('Member shell navigation (RM-310)', () => {
   });
 });
 
-describe('Responsive shell contracts (RM-650)', () => {
+describe('Responsive shell contracts', () => {
   it('clears the mobile tab bar and reserves the RTL desktop rail', () => {
     expect(appShellFrameSx.paddingInlineStart).toEqual({ lg: '96px' });
     expect(appShellContentSx).toMatchObject({
@@ -140,7 +140,7 @@ describe('Responsive shell contracts (RM-650)', () => {
   });
 });
 
-describe('Admin shell navigation (RM-310)', () => {
+describe('Admin shell navigation', () => {
   it('renders the four admin tabs with Arabic labels, hash links, and active state', () => {
     renderAdmin('#/roster');
     const nav = screen.getByRole('navigation', { name: strings.admin.heading });

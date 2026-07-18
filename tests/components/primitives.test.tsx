@@ -28,7 +28,7 @@ function renderThemed(ui: ReactElement) {
   return render(<AppThemeProvider>{ui}</AppThemeProvider>);
 }
 
-describe('Shared action and surface primitives (RM-320)', () => {
+describe('Shared action and surface primitives', () => {
   it('covers compact, outlined, quiet, link, hero, and clickable-card actions', () => {
     renderThemed(
       <div>
@@ -73,7 +73,7 @@ describe('Shared action and surface primitives (RM-320)', () => {
   });
 });
 
-describe('Shared form primitives (RM-320)', () => {
+describe('Shared form primitives', () => {
   function FieldsHarness() {
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState('full');
@@ -167,7 +167,7 @@ describe('Shared form primitives (RM-320)', () => {
   });
 });
 
-describe('Shared numeric and display primitives (RM-320)', () => {
+describe('Shared numeric and display primitives', () => {
   function StepperHarness() {
     const [value, setValue] = useState(1);
     return (
@@ -215,7 +215,7 @@ describe('Shared numeric and display primitives (RM-320)', () => {
   });
 });
 
-describe('Queued confirmation pattern (RM-320)', () => {
+describe('Queued confirmation pattern', () => {
   function ConfirmationHarness() {
     const { confirm } = useConfirmation();
     const [result, setResult] = useState('idle');
@@ -315,7 +315,7 @@ describe('Queued confirmation pattern (RM-320)', () => {
   });
 });
 
-describe('useConfirmation (RM-320)', () => {
+describe('useConfirmation', () => {
   it('throws when used outside a ConfirmationProvider', () => {
     function Orphan() {
       useConfirmation();

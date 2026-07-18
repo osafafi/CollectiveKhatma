@@ -30,10 +30,12 @@ jobs:
         run: npm run typecheck
       - name: Lint TypeScript and TSX
         run: npm run lint
-      - name: Test legacy and React projects
+      - name: Check formatting and agent docs
+        run: npm run format:check && npm run check:agent-docs
+      - name: Test application
         run: npm test
-      - name: Build production entries
-        run: npm run build
+      - name: Build and check bundle budgets
+        run: npm run check:bundle-budgets
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).
           # Change to match your repo name, or delete for a user/custom-domain site.

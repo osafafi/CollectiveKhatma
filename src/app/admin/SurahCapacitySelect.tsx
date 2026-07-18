@@ -13,11 +13,14 @@ export interface SurahCapacitySelectProps {
 
 /**
  * The per-member surah capacity as a name dropdown (first option = none `—`)
- * instead of a raw number — shared by the Khatmas create form (RM-520) and the
- * Khatma detail capacity editor / add-member row (RM-530). The React twin of the
- * legacy `surahCapacitySelect` / `surahSelectEl`.
+ * instead of a raw number — shared by the Khatmas create form and the
+ * Khatma detail capacity editor and add-member row.
  */
-export function SurahCapacitySelect({ surahs, value, onChange }: SurahCapacitySelectProps) {
+export function SurahCapacitySelect({
+  surahs,
+  value,
+  onChange,
+}: SurahCapacitySelectProps) {
   const options: SelectOption[] = [
     { value: '', label: strings.admin.noSurah },
     ...(surahs ?? []).map((surah) => ({

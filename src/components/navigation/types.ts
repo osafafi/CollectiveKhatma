@@ -1,7 +1,7 @@
 import type { IconName } from '@/components/icons';
 
 /**
- * One navigation destination in the responsive shell (RM-310).
+ * One navigation destination in the responsive shell.
  *
  * Generic over the app's typed route union (`MemberRoute` / `AdminRoute`) so the
  * member and admin apps each supply their own data-driven tab list without the

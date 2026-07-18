@@ -58,7 +58,7 @@ function renderRoster(
   };
 }
 
-describe('admin Roster (RM-510)', () => {
+describe('admin Roster', () => {
   it('lists every member, whether enabled or paused', () => {
     renderRoster([amina, maryam]);
 
@@ -70,8 +70,12 @@ describe('admin Roster (RM-510)', () => {
     // toggle is what carries her state.
     const aminaRow = screen.getByText('Amina').closest('li')!;
     const maryamRow = screen.getByText('Maryam').closest('li')!;
-    expect(within(aminaRow).getByRole('button', { name: strings.admin.disable })).toBeVisible();
-    expect(within(maryamRow).getByRole('button', { name: strings.admin.enable })).toBeVisible();
+    expect(
+      within(aminaRow).getByRole('button', { name: strings.admin.disable }),
+    ).toBeVisible();
+    expect(
+      within(maryamRow).getByRole('button', { name: strings.admin.enable }),
+    ).toBeVisible();
   });
 
   it('filters by name substring as-you-type and keeps the search caret focused (P4)', async () => {

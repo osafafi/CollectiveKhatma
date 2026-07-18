@@ -51,7 +51,7 @@ describe('React app roots', () => {
       'home',
     );
 
-    // The Phase 3 preview scaffold is gone.
+    // Production renders the current member surface.
     expect(
       screen.queryByRole('heading', { name: strings.preview.adminHeading }),
     ).not.toBeInTheDocument();

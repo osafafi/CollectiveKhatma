@@ -11,7 +11,7 @@ export interface ReadingScaleControlProps {
 }
 
 /**
- * The shared 1–5 reading-scale disclosure (inventory §2.7 / §3.5, **P11**): one
+ * The shared 1–5 reading-scale disclosure: one
  * localStorage-backed control reused verbatim by the member ([`SettingsPage`](../../app/member/SettingsPage.tsx))
  * and admin ([`AdminSettingsPage`](../../app/admin/pages/SettingsPage.tsx)) Settings
  * pages, not a fork per app.

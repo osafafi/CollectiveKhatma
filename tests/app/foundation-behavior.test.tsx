@@ -171,7 +171,7 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
-describe('Phase 2 foundation behavior', () => {
+describe('application foundation behavior', () => {
   it('composes navigation, realtime state, local write feedback, errors, and cleanup', async () => {
     window.history.replaceState(null, '', '/#/khatmas');
     const user = userEvent.setup();

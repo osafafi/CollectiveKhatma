@@ -15,7 +15,7 @@ interface ErrorBoundaryState {
 }
 
 /**
- * App-level React error boundary (RM-300).
+ * App-level React error boundary.
  *
  * Catches render/lifecycle errors in its subtree, shows a themed, RTL-correct
  * fallback with a retry, and re-mounts the subtree when the user retries. It

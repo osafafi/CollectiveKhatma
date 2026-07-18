@@ -29,13 +29,21 @@ export function activeSeriesGroups(khatmas: readonly Khatma[]): SeriesGroup[] {
     active.sort((a, b) => a.seriesNumber - b.seriesNumber);
     const latest = active[active.length - 1];
     if (!latest) continue;
-    groups.push({ seriesId: latest.seriesId, seriesName: latest.seriesName, active, latest });
+    groups.push({
+      seriesId: latest.seriesId,
+      seriesName: latest.seriesName,
+      active,
+      latest,
+    });
   }
   return groups.sort((a, b) => b.latest.createdAt - a.latest.createdAt);
 }
 
 /** The series' completed khatmas, most recently completed first (the history list). */
-export function completedInSeries(khatmas: readonly Khatma[], seriesId: string): Khatma[] {
+export function completedInSeries(
+  khatmas: readonly Khatma[],
+  seriesId: string,
+): Khatma[] {
   return khatmas
     .filter((k) => k.seriesId === seriesId && k.status === 'completed')
     .sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));

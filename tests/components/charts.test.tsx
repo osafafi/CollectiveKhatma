@@ -21,7 +21,7 @@ function renderThemed(ui: ReactElement) {
 const RING_RADIUS = 48 - 10 / 2 - 2;
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-describe('DonutChart (RM-330)', () => {
+describe('DonutChart', () => {
   it('exposes the percentage in Arabic-Indic digits as the accessible name', () => {
     renderThemed(<DonutChart percent={57} />);
     const donut = screen.getByRole('img', { name: '٥٧٪' });
@@ -82,7 +82,7 @@ function barOf(container: HTMLElement): HTMLElement {
   return bar;
 }
 
-describe('SegmentBar (RM-330)', () => {
+describe('SegmentBar', () => {
   it('writes every count in the legend with Arabic-Indic digits', () => {
     renderThemed(<SegmentBar segments={SEGMENTS} />);
     expect(screen.getByText('قُرئت: ٣٤٢')).toBeInTheDocument();

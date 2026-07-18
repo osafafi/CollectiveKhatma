@@ -11,10 +11,10 @@ import {
 } from '../support/reactTestHarness';
 
 /**
- * RM-550 — one consolidated proof that a live Firestore snapshot arriving mid-
+ *  — one consolidated proof that a live Firestore snapshot arriving mid-
  * interaction never clobbers an in-progress admin draft or closes an open form.
  *
- * Coverage matrix (inventory §4): **P2** for the three admin drafts that seed or
+ * Covers the three admin drafts that seed or
  * accumulate local state — the khatmas create form, the khatma-detail edit card,
  * and the roster add-person form — and **P4** search caret/focus survival across
  * a live snapshot. **P3** (the settings du3a touched guard) is proven in
@@ -88,7 +88,7 @@ function render(route: string, data: RenderWithAppProvidersOptions['data']) {
   });
 }
 
-describe('admin form-draft stability under live snapshots (RM-550)', () => {
+describe('admin form-draft stability under live snapshots', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);

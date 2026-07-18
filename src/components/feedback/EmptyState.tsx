@@ -16,7 +16,7 @@ export interface EmptyStateProps {
 }
 
 /**
- * Neutral empty-collection placeholder (RM-300).
+ * Neutral empty-collection placeholder.
  *
  * Deliberately distinct from {@link ErrorState}: an empty result is a normal,
  * non-error outcome, so this is quiet (muted text, no alert role) and offers an

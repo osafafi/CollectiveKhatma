@@ -36,7 +36,7 @@ function renderProvider() {
   );
 }
 
-describe('SnackbarProvider (RM-300)', () => {
+describe('SnackbarProvider', () => {
   it('shows an enqueued message and dismisses it on demand', async () => {
     const user = userEvent.setup();
     renderProvider();
@@ -61,7 +61,7 @@ describe('SnackbarProvider (RM-300)', () => {
   });
 });
 
-describe('useSnackbar (RM-300)', () => {
+describe('useSnackbar', () => {
   it('throws when used outside a SnackbarProvider', () => {
     function Orphan() {
       useSnackbar();

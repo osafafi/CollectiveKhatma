@@ -14,7 +14,6 @@ export { NumberStepper } from './NumberStepper';
 export type { NumberStepperProps } from './NumberStepper';
 export { KhatmaSeriesArtwork } from './KhatmaSeriesArtwork';
 export type { KhatmaSeriesArtworkProps } from './KhatmaSeriesArtwork';
-export { KHATMA_PLACEHOLDER_URL, khatmaArtworkUrl } from '@/content/seriesImages';
 export { ProgressBar, ProgressView } from './ProgressView';
 export type { ProgressBarProps, ProgressViewProps } from './ProgressView';
 export { clampPercent, formatPercent } from './progress';

@@ -27,7 +27,7 @@ function fetchStub(outcome: (url: string) => Promise<HeadResponse>) {
   ) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
 }
 
-describe('Icon override source (RM-330)', () => {
+describe('Icon override source', () => {
   it('defaults every icon to its bundled SVG under BASE_URL', () => {
     for (const name of ICON_NAMES) {
       expect(getIconUrl(name)).toBe(`/icons/${name}.svg`);

@@ -25,17 +25,10 @@ no passwords, no app-store installs for members.
 - No per-page checkboxes or granular reading UI — see §6.
 - No custom server/API. No serverless functions (see §3). All logic runs in
   the browser (member app and admin app), talking directly to the database.
-- No historical khatma archive/log and no per-person consistency
-  (reliability) stats in v1 — explicitly deferred, see §10.
+- Completed khatmas remain visible as series history. There is no separate audit
+  log, analytics archive, or per-person consistency (reliability) stats in v1.
 
 ## 3. Tech stack & architecture
-
-> **Note (React migration).** The UI stack below was originally specified as
-> plain HTML + Tailwind CSS with no framework. It has since been migrated to
-> **React + Material UI (MUI)**, and this section reflects the shipped stack. The
-> static-site, no-server, Firestore-only, and layered-architecture requirements
-> are unchanged. See [ARCHITECTURE.md](ARCHITECTURE.md) and the
-> [migration tracker](docs/react-migration/TRACKER.md).
 
 - **Language**: TypeScript everywhere — both the member-facing app and the
   admin app. No untyped JS.

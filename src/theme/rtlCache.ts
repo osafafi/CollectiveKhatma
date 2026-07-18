@@ -3,7 +3,7 @@ import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 
 /**
- * Emotion cache that flips MUI's generated CSS to RTL (RM-210, AD-08).
+ * Emotion cache that flips MUI's generated CSS to RTL (, ).
  *
  * MUI styles through Emotion, so RTL cannot be achieved with `dir="rtl"` alone —
  * the CSS-in-JS itself must be mirrored (`padding-left` → `padding-right`, etc.),

@@ -132,7 +132,7 @@ function renderDetail(
   return { ...harness, operations };
 }
 
-describe('admin Khatma detail (RM-530)', () => {
+describe('admin Khatma detail', () => {
   beforeEach(() => {
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);
@@ -254,7 +254,9 @@ describe('admin Khatma detail (RM-530)', () => {
     });
 
     await user.click(
-      screen.getByRole('button', { name: `${strings.admin.saveCapacity}: ${amina.name}` }),
+      screen.getByRole('button', {
+        name: `${strings.admin.saveCapacity}: ${amina.name}`,
+      }),
     );
     // The explicitly stored capacity is written back unchanged.
     expect(operations.updateKhatma).toHaveBeenCalledWith('k', {

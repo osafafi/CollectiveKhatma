@@ -16,7 +16,7 @@ export const strings = {
     increase: 'زيادة',
     decrease: 'تقليل',
   },
-  // Shared feedback-state copy for the React primitives (RM-300): loading,
+  // Shared feedback-state copy for the React primitives: loading,
   // empty, error/retry, snackbar dismissal, and the last-resort crash fallback.
   feedback: {
     loading: 'جارٍ التحميل…',

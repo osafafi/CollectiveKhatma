@@ -1,11 +1,11 @@
 import { useIconUrl, type IconName } from '@/components/icons';
 
 /**
- * Navigation icon: a `.icon-mask` span (retained global style, RM-210 §8)
+ * Navigation icon: a `.icon-mask` span (retained global style,  §8)
  * painted with `currentColor`, so it inherits the active/inactive tab color set
  * by {@link AppNav}. Only the source image's alpha matters.
  *
- * The mask URL comes from the override-aware icon source (RM-330): the bundled
+ * The mask URL comes from the override-aware icon source: the bundled
  * `icons/<name>.svg` by default, upgraded live to a dropped-in `icons/<name>.png`
  * when the startup probe finds one.
  */

@@ -68,7 +68,9 @@ export function latestReadableChunk(a: Assignment): RoundChunk | undefined {
 export function donePageCount(a: Assignment): number {
   return a.rounds.reduce(
     (sum, chunk) =>
-      chunk.released !== true && isRoundDone(a, chunk.round) ? sum + chunk.pages.length : sum,
+      chunk.released !== true && isRoundDone(a, chunk.round)
+        ? sum + chunk.pages.length
+        : sum,
     0,
   );
 }
@@ -93,7 +95,9 @@ export function khatmaProgress(
     totalPages,
     percent: khatmaPercent(donePages, totalPages),
     complete:
-      totalPages > 0 && khatma.remainingPages.length === 0 && !assignments.some(hasPendingChunk),
+      totalPages > 0 &&
+      khatma.remainingPages.length === 0 &&
+      !assignments.some(hasPendingChunk),
   };
 }
 

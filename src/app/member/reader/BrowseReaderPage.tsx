@@ -64,7 +64,7 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="quran">
-      <StickyChrome> 
+      <StickyChrome>
         <Typography
           component="h1"
           color="primary.main"

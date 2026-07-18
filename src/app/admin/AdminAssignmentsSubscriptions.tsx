@@ -6,11 +6,11 @@ import { useAdminRoute } from '@/app/routing/hooks';
  * Keep the admin's dynamic assignment listeners alive for exactly the set the
  * dashboard and detail page need:
  * **every active khatma** (Home + Khatmas need them) **plus** the khatma open on
- * the detail route, which may itself be completed (inventory §1.4 / P9).
+ * the detail route, which may itself be completed (current UI contract).
  *
  * Sits in the persistent admin experience so navigating between routes does not
  * restart listeners; when a khatma leaves this set the reference-counted bridge
- * releases the listener and drops its slice (P10, proven in RM-240).
+ * releases the listener and drops its slice (P10, proven in ).
  */
 export function AdminAssignmentsSubscriptions() {
   const route = useAdminRoute();

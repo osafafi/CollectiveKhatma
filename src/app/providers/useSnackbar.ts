@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { SnackbarContext, type SnackbarContextValue } from './snackbarContext';
 
 /**
- * Access the app-wide snackbar queue (RM-300). Throws when used outside a
+ * Access the app-wide snackbar queue. Throws when used outside a
  * {@link SnackbarProvider} so a misplaced consumer fails loudly instead of
  * dropping notifications silently.
  */

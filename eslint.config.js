@@ -96,5 +96,47 @@ export default tseslint.config(
     },
   },
 
+  // Feature UI talks to persistence through app/store and app/operations only.
+  {
+    files: ['src/app/admin/**/*.{ts,tsx}', 'src/app/member/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['firebase', 'firebase/*'],
+              message:
+                'Import Firebase only inside src/data/. Feature UI must use application boundaries.',
+            },
+            {
+              group: ['@/data', '@/data/*'],
+              message:
+                'Feature UI must use app/store for reads and app/operations for writes, errors, and results.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Shared UI stays reusable. It cannot reach into application state or persistence.
+  {
+    files: ['src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/app', '@/app/*', '@/data', '@/data/*'],
+              message: 'Shared components cannot import app state or data access.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   prettier,
 );

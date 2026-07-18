@@ -30,7 +30,12 @@ function pidsOnPort(port) {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return new Set(out.split('\n').map((pid) => pid.trim()).filter(Boolean));
+    return new Set(
+      out
+        .split('\n')
+        .map((pid) => pid.trim())
+        .filter(Boolean),
+    );
   } catch {
     // No process on this port — findstr/lsof exit non-zero when there's no match.
     return new Set();

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Ship Ranqur Change'
+  short_description: 'Scope, build, test, and document Ranqur changes'
+  default_prompt: 'Use $ship-ranqur-change to plan and deliver this Ranqur feature safely.'

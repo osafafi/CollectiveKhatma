@@ -76,7 +76,7 @@ function HarnessProbe({ khatmaId = khatma.id }: { khatmaId?: string }) {
   );
 }
 
-describe('shared React test harness (RM-350)', () => {
+describe('shared React test harness', () => {
   it('renders seeded Redux data through the production MUI and router providers', async () => {
     const harness = renderWithAppProviders(<HarnessProbe />, {
       route: '/khatmas',

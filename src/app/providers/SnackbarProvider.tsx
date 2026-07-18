@@ -29,7 +29,7 @@ interface SnackbarProviderProps {
 }
 
 /**
- * App-wide transient notifications (RM-300).
+ * App-wide transient notifications.
  *
  * Exposes `enqueueSnackbar` through context and renders one MUI `Snackbar` at a
  * time. Messages are held in a FIFO queue whose head is the visible message;

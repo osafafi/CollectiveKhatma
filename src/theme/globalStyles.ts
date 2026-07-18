@@ -2,32 +2,29 @@ import type { Interpolation, Theme } from '@mui/material/styles';
 import amiriQuranUrl from '@/theme/fonts/AmiriQuran.woff2';
 import scheherazadeNewUrl from '@/theme/fonts/ScheherazadeNew.woff2';
 
-
 /**
- * App-specific global CSS retained alongside the MUI theme (AD-09).
+ * App-specific global CSS retained alongside the MUI theme.
  *
  * These are app-specific rules that must NOT be forced into MUI components:
  * the bundled Quran webfont, the reading-scale variables, the `.quran-text`
- * mushaf flow, the `.icon-mask` paint, and the `.tab-bar` safe-area inset. The
+ * mushaf flow, the `.icon-mask` paint, and the `.tab-bar` safe-area inset.
  * This file also defines the `--font-ui` / `--font-quran` CSS variables the
  * theme and `.quran-text` reference. Base body/html color and font rules belong
  * to `CssBaseline` and the MUI theme.
  */
 export const retainedGlobalStyles: Interpolation<Theme> = {
   '@font-face': [
-      {
+    {
       fontFamily: 'Amiri Quran',
       src: `url(${amiriQuranUrl}) format('woff2')`,
       fontDisplay: 'swap',
-      },
-       
-      {
+    },
+
+    {
       fontFamily: 'Scheherazade New',
       src: `url(${scheherazadeNewUrl}) format('woff2')`,
       fontDisplay: 'swap',
-      },
-
-
+    },
   ],
 
   // Font stacks + default reading scale.
@@ -37,7 +34,7 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
     '--reading-scale': '1',
   },
 
-  // Visible keyboard focus ring (RM-460 accessibility refresh). `:focus-visible`
+  // Visible keyboard focus ring. `:focus-visible`
   // only fires for keyboard/AT navigation, so pointer users see no outline while
   // keyboard users get a clear, high-contrast emerald ring. The color is the
   // refreshed primary (#0e6f61) at 70% alpha, which keeps at least 3:1 contrast
@@ -49,7 +46,7 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
   },
 
   // Reading font-size scale — 5 discrete levels driven by `data-reading-scale`
-  // on <html> (RM-340 owns the React control). Senior-audience feature.
+  // on <html>. The shared reading control owns this senior-audience feature.
   "html[data-reading-scale='1']": { '--reading-scale': '0.9' },
   "html[data-reading-scale='2']": { '--reading-scale': '1' },
   "html[data-reading-scale='3']": { '--reading-scale': '1.15' },
@@ -68,7 +65,7 @@ export const retainedGlobalStyles: Interpolation<Theme> = {
 
   // Icons are image files painted with currentColor through a CSS mask so
   // monochrome SVGs and PNGs-with-alpha both tint to the active color. The
-  // mask-image itself is set inline by the icon component (RM-330).
+  // mask-image itself is set inline by the icon component.
   '.icon-mask': {
     display: 'inline-block',
     backgroundColor: 'currentColor',
