@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, IconButton } from '@mui/material';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import { JuzCapacitySelect } from '@/app/admin/JuzCapacitySelect';
 import { useWriteOperation } from '@/app/operations';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
 import { AppTextField } from '@/components/primitives';
@@ -25,14 +26,14 @@ export function KhatmaCapacityEditor({
   const start = requiredCapacity(khatma, person.id);
   const [pages, setPages] = useState(String(start.pages));
   const [surah, setSurah] = useState(start.surahs);
-  const [juz, setJuz] = useState(String(start.juz));
+  const [juz, setJuz] = useState(start.juz);
   const updateKhatma = useWriteOperation('updateKhatma');
 
   const onSave = () => {
     const capacity: MemberCapacity = {
       pages: toCount(pages),
       surahs: surah,
-      juz: toCount(juz),
+      juz,
     };
     void updateKhatma.execute(khatma.id, {
       capacities: { ...khatma.capacities, [person.id]: capacity },
@@ -52,14 +53,7 @@ export function KhatmaCapacityEditor({
         slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
       />
       <SurahCapacitySelect surahs={surahs} value={surah} onChange={setSurah} />
-      <AppTextField
-        type="number"
-        label={strings.admin.capacityJuz}
-        value={juz}
-        fieldWidth={96}
-        onChange={(event) => setJuz(event.target.value)}
-        slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
-      />
+      <JuzCapacitySelect value={juz} onChange={setJuz} />
       <IconButton
         size="small"
         title={strings.admin.saveCapacity}

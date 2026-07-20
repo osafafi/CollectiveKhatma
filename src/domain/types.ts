@@ -41,17 +41,18 @@ export interface Person {
 
 /**
  * A member's per-round reading capacity within a khatma (REQUIREMENTS §4). The
- * three fields are ADDITIVE: the member receives `pages` loose pages PLUS
- * `surahs` whole surahs PLUS `juz` whole ajzā' each round, all drawn from the
- * front of the khatma's page pool. Stored per-khatma in {@link Khatma.capacities}.
- * A solo full-Quran reader is typically `{ pages: 0, surahs: 0, juz: 1 }`.
+ * three fields are ADDITIVE: the member receives `pages` loose pages PLUS the
+ * selected `surahs` Surah PLUS the selected `juz` Juz, wherever those whole
+ * units remain in the khatma's page pool. Stored per-khatma in
+ * {@link Khatma.capacities}. A solo reader assigned the first Juz uses
+ * `{ pages: 0, surahs: 0, juz: 1 }`.
  */
 export interface MemberCapacity {
   /** Loose pages served from the front of the pool. */
   pages: number;
   /** A specific surah to assign, by id (1..114); read once from the pool. 0 = none. */
   surahs: number;
-  /** Whole ajzā' (juz') served, never split. */
+  /** A specific Juz to assign, by number (1..30); read once from the pool. 0 = none. */
   juz: number;
 }
 

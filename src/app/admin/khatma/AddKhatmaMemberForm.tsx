@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
+import { JuzCapacitySelect } from '@/app/admin/JuzCapacitySelect';
 import { useWriteOperation } from '@/app/operations';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
 import {
@@ -30,7 +31,7 @@ export function AddKhatmaMemberForm({
   const [selectedId, setSelectedId] = useState('');
   const [pages, setPages] = useState('');
   const [surah, setSurah] = useState(0);
-  const [juz, setJuz] = useState('0');
+  const [juz, setJuz] = useState(0);
 
   if (candidates.length === 0) return null;
 
@@ -45,13 +46,13 @@ export function AddKhatmaMemberForm({
     const capacity: MemberCapacity = {
       pages: toCount(pagesValue),
       surahs: surah,
-      juz: toCount(juz),
+      juz,
     };
     void addMemberToKhatma.execute(khatma.id, resolvedId, capacity);
     setSelectedId('');
     setPages('');
     setSurah(0);
-    setJuz('0');
+    setJuz(0);
   };
 
   const memberOptions: SelectOption[] = candidates.map((candidate) => ({
@@ -77,14 +78,7 @@ export function AddKhatmaMemberForm({
         slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
       />
       <SurahCapacitySelect surahs={surahs} value={surah} onChange={setSurah} />
-      <AppTextField
-        type="number"
-        label={strings.admin.capacityJuz}
-        value={juz}
-        fieldWidth={96}
-        onChange={(event) => setJuz(event.target.value)}
-        slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
-      />
+      <JuzCapacitySelect value={juz} onChange={setJuz} />
       <AppButton variant="outlined" onClick={onAdd}>
         {strings.admin.addMember}
       </AppButton>

@@ -55,7 +55,7 @@ export interface RunDistributionParams {
   /** ISO date (YYYY-MM-DD) — the idempotency key and the chunks' date stamp. */
   today: string;
   rolloverSeed: RolloverSeed;
-  /** page -> surah/juz lookups for whole-surah / whole-juz capacities. */
+  /** page -> Surah/Juz lookups for specific whole-unit selections. */
   unitOfPage?: PageUnitMaps;
   /** Recall pending loose pages first and permit another run on the same date. */
   redistributePages?: boolean;

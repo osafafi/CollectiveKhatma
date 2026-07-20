@@ -20,7 +20,8 @@ Tests: `admin-khatmas`, `admin-khatma`, `admin-draft-stability`,
 Hard rules:
 
 - Scope kind is `full`, `range`, or `surahs`.
-- Every member has additive `{ pages, surahs, juz }` capacity.
+- Every member has additive `{ pages, surahs, juz }` capacity, where `surahs`
+  selects one Surah id and `juz` selects one Juz number (`1..30`; `0` means none).
 - Completed khatmas stay for series history.
 - The admin Khatmas list shows all active rounds. For a series with no active
   round, it shows only the latest completed round as the history entry point.

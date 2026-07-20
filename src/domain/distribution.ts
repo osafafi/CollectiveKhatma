@@ -8,7 +8,7 @@
  * skipped (served nothing new) and their warning escalates by one — the pages
  * return to the pool only when the admin explicitly calls it in (see
  * `releaseChunk`). Each member's chunk is their additive {@link MemberCapacity}
- * (pages + whole surahs + whole juz) taken from the oldest pool, preferring
+ * (pages + a selected Surah + a selected Juz) taken from the oldest pool, preferring
  * material they have not completed in an earlier khatma.
  * The data layer applies the resulting plan in one Firestore transaction.
  */
@@ -19,7 +19,7 @@ import type { Assignment, MemberCapacity, WarningLevel } from './types';
 /** Roster info the planner needs about one participating member. */
 export interface DistributionMember {
   id: string;
-  /** Additive per-round reading capacity (pages + whole surahs + whole juz). */
+  /** Additive per-round reading capacity (pages + selected Surah + selected Juz). */
   capacity: MemberCapacity;
   /** Lifetime Quran pages already completed; new material is preferred. */
   completedPages: readonly number[];
@@ -95,11 +95,10 @@ function mergeSorted(pool: number[], pages: number[]): number[] {
 
 /**
  * Serve one member's additive capacity from `pool` (mutating it):
- * `cap.pages` loose pages they have not completed before, PLUS the specific surah `cap.surahs`
- * ajzā', concatenated into one contiguous chunk. Whole units are taken by
- * shifting every consecutive front page that shares the front page's unit id, so
- * a unit is never split; a short chunk results when the pool drains mid-way.
- * Surah/juz portions need `unitOfPage` — without it they are skipped.
+ * `cap.pages` loose pages they have not completed before, PLUS the specific Surah
+ * `cap.surahs` and specific Juz `cap.juz`. Whole units are pulled from wherever
+ * they remain in the pool and are never split. Surah/Juz portions need
+ * `unitOfPage` — without it they are skipped.
  */
 export function takeChunk(
   pool: number[],
@@ -128,14 +127,8 @@ function takeChunkParts(
   const pages = Math.max(0, Math.floor(cap.pages));
   takePreferredPages(pool, loosePages, pages, completed);
   taken.push(...loosePages);
-  takeSpecificSurah(pool, taken, Math.max(0, Math.floor(cap.surahs)), unitOfPage?.surah);
-  takeWholeUnits(
-    pool,
-    taken,
-    Math.max(0, Math.floor(cap.juz)),
-    unitOfPage?.juz,
-    completed,
-  );
+  takeSpecificUnit(pool, taken, Math.max(0, Math.floor(cap.surahs)), unitOfPage?.surah);
+  takeSpecificUnit(pool, taken, Math.max(0, Math.floor(cap.juz)), unitOfPage?.juz);
   return {
     pages: taken.sort((a, b) => a - b),
     loosePages: loosePages.sort((a, b) => a - b),
@@ -156,44 +149,17 @@ function takePreferredPages(
   while (taken.length < count && pool.length > 0) taken.push(pool.shift()!);
 }
 
-/** Pull every in-pool page of the specific surah `surahId` (0 = none) into `taken`. */
-function takeSpecificSurah(
+/** Pull every in-pool page of the selected unit id (`0` = none) into `taken`. */
+function takeSpecificUnit(
   pool: number[],
   taken: number[],
-  surahId: number,
+  unitId: number,
   ofPage?: Record<number, number>,
 ): void {
-  if (surahId <= 0 || !ofPage) return;
+  if (unitId <= 0 || !ofPage) return;
   for (let i = 0; i < pool.length;) {
-    if (ofPage[pool[i]!] === surahId) taken.push(pool.splice(i, 1)[0]!);
+    if (ofPage[pool[i]!] === unitId) taken.push(pool.splice(i, 1)[0]!);
     else i++;
-  }
-}
-
-/** Shift `count` whole units (by `ofPage` id) off the front of `pool` into `taken`. */
-function takeWholeUnits(
-  pool: number[],
-  taken: number[],
-  count: number,
-  ofPage?: Record<number, number>,
-  completed: ReadonlySet<number> = new Set(),
-): void {
-  if (count <= 0 || !ofPage) return;
-  for (let u = 0; u < count && pool.length > 0; u++) {
-    const unitIds = [
-      ...new Set(
-        pool.map((page) => ofPage[page]).filter((id): id is number => id !== undefined),
-      ),
-    ];
-    const unit =
-      unitIds.find((id) =>
-        pool.every((page) => ofPage[page] !== id || !completed.has(page)),
-      ) ?? ofPage[pool[0]!];
-    if (unit === undefined) break; // page outside the known map — stop rather than loop
-    for (let i = 0; i < pool.length;) {
-      if (ofPage[pool[i]!] === unit) taken.push(pool.splice(i, 1)[0]!);
-      else i++;
-    }
   }
 }
 

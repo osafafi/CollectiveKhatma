@@ -21,6 +21,8 @@ Hard rules:
 - Pending pages stay with reader and block a new chunk.
 - Only admin release returns held pages.
 - Remaining pages stay sorted.
+- `capacities.surahs` is a Surah id and `capacities.juz` is a Juz number; each
+  selected whole unit is pulled from wherever it remains in the pool.
 - Same local date blocks a second normal distribution.
 - Redistribution recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;

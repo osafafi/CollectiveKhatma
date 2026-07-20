@@ -6,7 +6,7 @@ import { buildPageUnitMaps, type PageUnitMaps } from '@/domain/assignment';
 export interface QuranScopeMaps {
   /** surah id -> `[firstPage, lastPage]`, for resolving a `chapters` scope pool. */
   surahToPages: Record<number, [number, number]>;
-  /** page -> surah / page -> juz, for whole-surah and whole-juz capacities. */
+  /** page -> Surah / page -> Juz, for specific whole-unit selections. */
   pageUnitMaps: PageUnitMaps;
 }
 

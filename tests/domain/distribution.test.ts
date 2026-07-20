@@ -87,10 +87,10 @@ function chunkFor(plan: ReturnType<typeof planDistribution>, memberId: string) {
   return plan.chunks.find((c) => c.memberId === memberId);
 }
 
-// Small synthetic Quran maps: surahs 1..3 over pages 1..7, juz 1..2 over 1..41.
+// Synthetic Quran maps including the real final-Juz span (pages 582..604).
 const units = buildPageUnitMaps(
   { 1: [1, 1], 2: [2, 4], 3: [5, 7] },
-  { 1: [1, 21], 2: [22, 41] },
+  { 1: [1, 21], 2: [22, 41], 30: [582, 604] },
 );
 
 describe('warningLevel', () => {
@@ -115,11 +115,10 @@ describe('takeChunk', () => {
     expect(pool).toEqual([5, 6, 7]);
   });
 
-  it('serves whole juz without splitting them', () => {
-    const pool = range(1, 41);
-    expect(takeChunk(pool, cap(0, 0, 1), units)).toEqual(range(1, 21));
-    expect(takeChunk(pool, cap(0, 0, 1), units)).toEqual(range(22, 41));
-    expect(pool).toEqual([]);
+  it('pulls selected Juz 30 from the end of the Quran pool', () => {
+    const pool = range(1, 604);
+    expect(takeChunk(pool, cap(0, 0, 30), units)).toEqual(range(582, 604));
+    expect(pool).toEqual(range(1, 581));
   });
 
   it('returns a short chunk when the pool drains', () => {
@@ -216,11 +215,11 @@ describe('planDistribution — serving', () => {
     expect(plan.rollover).toBeUndefined();
   });
 
-  it('gives a solo juz reader the first juz (pages 1..21)', () => {
+  it('gives a reader their selected Juz number', () => {
     const plan = planDistribution(
       input({
         khatmas: [khatma('k1', range(1, 604), 0, [assignment('m1')])],
-        members: [memberCap('m1', cap(0, 0, 1))],
+        members: [memberCap('m1', cap(0, 0, 30))],
         newKhatmaPool: range(1, 604),
         unitOfPage: units,
       }),
@@ -229,12 +228,12 @@ describe('planDistribution — serving', () => {
       khatmaId: 'k1',
       memberId: 'm1',
       round: 1,
-      pages: range(1, 21),
+      pages: range(582, 604),
       loosePages: [],
     });
     expect(plan.khatmaUpdates[0]).toEqual({
       khatmaId: 'k1',
-      remainingPages: range(22, 604),
+      remainingPages: range(1, 581),
       roundCount: 1,
     });
   });

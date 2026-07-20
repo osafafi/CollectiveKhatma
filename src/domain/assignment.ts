@@ -66,7 +66,7 @@ export function resolvePageScope(
   }
 }
 
-/** Page-number → unit-id lookups for whole-surah / whole-juz distribution. */
+/** Page-number → unit-id lookups for selected-Surah / selected-Juz distribution. */
 export interface PageUnitMaps {
   /** page -> surah id (1..114). */
   surah: Record<number, number>;
@@ -77,8 +77,8 @@ export interface PageUnitMaps {
 /**
  * Build page → unit lookups from the bundled Quran index maps. Stays pure — the
  * caller passes `surahToPages` / `juzToPages` (from `getQuranIndex()`), so the
- * domain never imports the content loader. Distribution uses these to serve
- * complete surahs/ajzā' without splitting them ({@link MemberCapacity}).
+ * domain never imports the content loader. Distribution uses these to serve a
+ * selected complete Surah or Juz without splitting it ({@link MemberCapacity}).
  *
  * A page shared by two adjacent surahs (one ends where the next begins) is
  * attributed to the surah that STARTS on it: ids are applied in ascending order

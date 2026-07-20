@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
+import { toArabicDigits } from '@/content/quran/symbols';
 import type { QuranIndex, Surah } from '@/content/quran/types';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
@@ -253,14 +254,20 @@ describe('admin Khatma detail', () => {
       assignments: { k: [makeAssignment(amina.id, [round(1, [1, 2])])] },
     });
 
+    await user.click(screen.getByRole('combobox', { name: strings.admin.capacityJuz }));
+    await user.click(
+      within(screen.getByRole('listbox')).getByRole('option', {
+        name: toArabicDigits(30),
+      }),
+    );
     await user.click(
       screen.getByRole('button', {
         name: `${strings.admin.saveCapacity}: ${amina.name}`,
       }),
     );
-    // The explicitly stored capacity is written back unchanged.
+    // The selected Juz number is written, rather than a quantity.
     expect(operations.updateKhatma).toHaveBeenCalledWith('k', {
-      capacities: { p1: { pages: 2, surahs: 0, juz: 0 } },
+      capacities: { p1: { pages: 2, surahs: 0, juz: 30 } },
     });
   });
 

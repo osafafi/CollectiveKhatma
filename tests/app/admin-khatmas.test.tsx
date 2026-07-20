@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
+import { toArabicDigits } from '@/content/quran/symbols';
 import type { QuranIndex, Surah } from '@/content/quran/types';
 import type { Khatma, Person } from '@/domain/types';
 import {
@@ -224,6 +225,12 @@ describe('admin Khatmas list/create', () => {
       'أهل القرآن',
     );
     await user.click(screen.getByRole('checkbox', { name: amina.name }));
+    await user.click(screen.getByRole('combobox', { name: strings.admin.capacityJuz }));
+    await user.click(
+      within(screen.getByRole('listbox')).getByRole('option', {
+        name: toArabicDigits(30),
+      }),
+    );
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
 
     await waitFor(() => expect(operations.createKhatma).toHaveBeenCalledTimes(1));
@@ -234,8 +241,8 @@ describe('admin Khatmas list/create', () => {
       memberIds: ['p1'],
       scope: { kind: 'full' },
       duaReciterId: 'p1',
-      // A solo reader defaults to one whole juz.
-      capacities: { p1: { pages: 0, surahs: 0, juz: 1 } },
+      // The dropdown stores the selected Juz number, not a quantity.
+      capacities: { p1: { pages: 0, surahs: 0, juz: 30 } },
     });
     expect(input.totalPages).toBe(604);
     expect(input.remainingPages).toHaveLength(604);
