@@ -20,6 +20,8 @@ Hard rules:
 - Firestore data lives in Redux. Drafts, dialogs, caret, and busy state stay local.
 - Drafts survive live snapshots. Reset only after successful submit.
 - Busy distribution blocks double press.
+- Dashboard warnings are grouped per khatma in a count-labelled accordion that
+  is collapsed by default.
 - Admin assignment subscriptions cover active khatmas plus open detail.
 - The Khatmas list hides completed rounds already represented by a later or
   active round, retaining only the last round of a fully ended series.

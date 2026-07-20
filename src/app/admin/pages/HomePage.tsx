@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Box, Link, Stack, Typography } from '@mui/material';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Link,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {
   selectAssignmentsForKhatma,
   selectKhatmas,
@@ -251,7 +260,7 @@ function PendingReaders({
   );
 }
 
-/** Yellow/red warning chips for this khatma — the admin sees every flag. */
+/** Collapsed yellow/red warning chips for this khatma. */
 function Warnings({
   assignments,
   roster,
@@ -268,19 +277,43 @@ function Warnings({
   if (flagged.length === 0) return null;
 
   return (
-    <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-      {flagged.map(({ memberId, level }) => (
-        <StatusChip
-          key={memberId}
-          tone={level === 'red' ? 'danger' : 'warning'}
-          label={`⚠ ${memberName(roster, memberId)} · ${
-            level === 'red'
-              ? strings.admin.warningRedWord
-              : strings.admin.warningYellowWord
-          }`}
-        />
-      ))}
-    </Stack>
+    <Accordion
+      disableGutters
+      elevation={0}
+      slotProps={{ transition: { unmountOnExit: true } }}
+      sx={{
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '12px !important',
+        bgcolor: 'background.default',
+        boxShadow: 'none',
+        '&:before': { display: 'none' },
+      }}
+    >
+      <AccordionSummary
+        expandIcon={<ExpandMoreRoundedIcon />}
+        sx={{ minHeight: 52, px: 3, '& .MuiAccordionSummary-content': { my: 2 } }}
+      >
+        <Typography sx={{ fontWeight: 600 }}>
+          {strings.admin.warningsHeading} ({toArabicDigits(flagged.length)})
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
+        <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {flagged.map(({ memberId, level }) => (
+            <StatusChip
+              key={memberId}
+              tone={level === 'red' ? 'danger' : 'warning'}
+              label={`⚠ ${memberName(roster, memberId)} · ${
+                level === 'red'
+                  ? strings.admin.warningRedWord
+                  : strings.admin.warningYellowWord
+              }`}
+            />
+          ))}
+        </Stack>
+      </AccordionDetails>
+    </Accordion>
   );
 }
 

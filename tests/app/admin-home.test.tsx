@@ -113,7 +113,7 @@ describe('admin Home dashboard', () => {
       lastDistributionDate: '2026-07-10',
       memberIds: [amina.id, maryam.id],
     });
-    renderAdmin({
+    const { user } = renderAdmin({
       data: {
         roster: [amina, maryam],
         khatmas: [khatma],
@@ -155,7 +155,14 @@ describe('admin Home dashboard', () => {
     expect(within(pending).getByText('٣–٤')).toBeVisible();
     expect(within(pending).queryByText('Amina')).toBeNull();
 
-    // Warning chip: Maryam's single missed round is a first (yellow) warning.
+    // Warning chips stay collapsed until the count-labelled warning section opens.
+    const warnings = screen.getByRole('button', {
+      name: `${strings.admin.warningsHeading} (١)`,
+    });
+    expect(
+      screen.queryByText(`⚠ Maryam · ${strings.admin.warningYellowWord}`),
+    ).toBeNull();
+    await user.click(warnings);
     expect(
       screen.getByText(`⚠ Maryam · ${strings.admin.warningYellowWord}`),
     ).toBeVisible();

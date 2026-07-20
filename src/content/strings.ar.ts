@@ -160,6 +160,7 @@ export const strings = {
     pageMapHoldHint: 'اضغطي مطولاً ثم اسحبي للتنقل بين الصفحات',
     pageMapKeyboardHint: 'استخدمي السهمين للتنقل بين الصفحات',
     pageWord: 'الصفحة',
+    warningsHeading: 'التحذيرات',
     warningYellowWord: 'تحذير أول',
     warningRedWord: 'تحذير ثانٍ',
 
