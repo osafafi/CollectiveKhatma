@@ -22,7 +22,9 @@ Hard rules:
 - Only admin release returns held pages.
 - Remaining pages stay sorted.
 - Same local date blocks a second normal distribution.
-- Redistribution recalls unread loose pages only. Surah and juz pages stay held.
+- Redistribution recalls and reassigns unread loose pages only among readers whose
+  loose-page chunk was fully recalled. Finished readers receive nothing new;
+  preserved Surah and Juz pages stay held.
 - Chunk never crosses khatmas. Rollover can leave N and N+1 active.
 - Member warning level is private from other members.
 

@@ -436,6 +436,64 @@ export interface LoosePageRecall {
   remainingPages: number[];
 }
 
+export interface PageRedistributionRecall {
+  /** Post-recall khatma state used by the distribution planner. */
+  khatmas: DistributionKhatmaState[];
+  /** Assignment documents whose pending loose pages were recalled. */
+  changedAssignments: Set<string>;
+  /** Members whose unread chunk was fully recalled and may receive replacement pages. */
+  eligibleMemberIds: Set<string>;
+}
+
+/** True when an assignment still contains an unread, unreleased chunk. */
+function hasPendingChunk(assignment: Assignment): boolean {
+  return assignment.rounds.some(
+    (chunk) =>
+      chunk.pages.length > 0 &&
+      chunk.released !== true &&
+      assignment.doneByRound[chunk.round] === undefined,
+  );
+}
+
+/**
+ * Recall unread loose pages across the selected khatmas and identify the only
+ * readers who participate in the replacement distribution. A reader must have
+ * actually had loose pages recalled, and must not still hold a preserved Surah
+ * or Juz portion. Finished readers and readers without a current chunk remain
+ * untouched.
+ */
+export function recallLoosePagesForRedistribution(
+  khatmas: readonly DistributionKhatmaState[],
+): PageRedistributionRecall {
+  const changedAssignments = new Set<string>();
+  const recalledMemberIds = new Set<string>();
+  const recalledKhatmas = khatmas.map((khatma) => {
+    let remainingPages = [...khatma.remainingPages];
+    const assignments = khatma.assignments.map((assignment) => {
+      const recall = recallLoosePagesFromAssignment(assignment, remainingPages);
+      if (!recall) return assignment;
+      remainingPages = recall.remainingPages;
+      changedAssignments.add(`${khatma.id}:${assignment.memberId}`);
+      recalledMemberIds.add(assignment.memberId);
+      return recall.assignment;
+    });
+    return { ...khatma, remainingPages, assignments };
+  });
+
+  const eligibleMemberIds = new Set(
+    [...recalledMemberIds].filter((memberId) =>
+      recalledKhatmas.every((khatma) =>
+        khatma.assignments.every(
+          (assignment) =>
+            assignment.memberId !== memberId || !hasPendingChunk(assignment),
+        ),
+      ),
+    ),
+  );
+
+  return { khatmas: recalledKhatmas, changedAssignments, eligibleMemberIds };
+}
+
 /**
  * Recall loose pages for redistribution while preserving whole-surah and
  * whole-juz allocations.

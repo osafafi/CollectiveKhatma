@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   planDistribution,
   recallLoosePagesFromAssignment,
+  recallLoosePagesForRedistribution,
   releaseChunk,
   takeChunk,
   warningLevel,
@@ -487,5 +488,34 @@ describe('recallLoosePagesFromAssignment', () => {
         [5],
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('recallLoosePagesForRedistribution', () => {
+  it('makes only unread loose-page readers eligible for replacement pages', () => {
+    const unread = assignment('unread', [chunk(1, [1, 2])]);
+    const finished = assignment('finished', [chunk(1, [3, 4])], { 1: 100 });
+    const noCurrentPages = assignment('new-member');
+
+    const result = recallLoosePagesForRedistribution([
+      khatma('k1', [5, 6], 1, [unread, finished, noCurrentPages]),
+    ]);
+
+    expect(result.eligibleMemberIds).toEqual(new Set(['unread']));
+    expect(result.changedAssignments).toEqual(new Set(['k1:unread']));
+    expect(result.khatmas[0]?.remainingPages).toEqual([1, 2, 5, 6]);
+    expect(result.khatmas[0]?.assignments.find((a) => a.memberId === 'finished')).toBe(
+      finished,
+    );
+  });
+
+  it('keeps a reader ineligible when a preserved whole-unit portion remains', () => {
+    const mixed = assignment('mixed', [{ ...chunk(1, [1, 2, 3]), loosePages: [1] }]);
+
+    const result = recallLoosePagesForRedistribution([khatma('k1', [4], 1, [mixed])]);
+
+    expect(result.eligibleMemberIds).toEqual(new Set());
+    expect(result.khatmas[0]?.remainingPages).toEqual([1, 4]);
+    expect(result.khatmas[0]?.assignments[0]?.rounds[0]?.pages).toEqual([2, 3]);
   });
 });

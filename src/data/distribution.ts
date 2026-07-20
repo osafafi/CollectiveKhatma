@@ -1,7 +1,7 @@
 import { doc, runTransaction } from 'firebase/firestore';
 import {
   planDistribution,
-  recallLoosePagesFromAssignment,
+  recallLoosePagesForRedistribution,
   type DistributionKhatmaState,
   type DistributionMember,
 } from '@/domain/distribution';
@@ -86,52 +86,6 @@ function nextAssignment(
 }
 
 /**
- * Recall only the loose-page portion of pending chunks. Whole-surah and
- * whole-juz portions stay with their readers.
- */
-interface PageRecallResult {
-  changedAssignments: Set<string>;
-  /** Members still holding a preserved whole-unit allocation; freeze their warning. */
-  preservedMemberIds: Set<string>;
-}
-
-function recallLoosePages(
-  khatmas: Array<Khatma & { assignments: Assignment[] }>,
-): PageRecallResult {
-  const changedAssignments = new Set<string>();
-  const preservedMemberIds = new Set<string>();
-  for (const khatma of khatmas) {
-    for (const assignment of khatma.assignments) {
-      for (let i = assignment.rounds.length - 1; i >= 0; i--) {
-        const chunk = assignment.rounds[i]!;
-        if (
-          chunk.pages.length === 0 ||
-          chunk.released === true ||
-          assignment.doneByRound[chunk.round] !== undefined
-        ) {
-          continue;
-        }
-        const recall = recallLoosePagesFromAssignment(assignment, khatma.remainingPages);
-        if (!recall) {
-          if (chunk.pages.length > 0 && chunk.loosePages.length === 0) {
-            preservedMemberIds.add(assignment.memberId);
-          }
-          break;
-        }
-        khatma.assignments[khatma.assignments.indexOf(assignment)] = recall.assignment;
-        khatma.remainingPages = recall.remainingPages;
-        changedAssignments.add(`${khatma.id}:${assignment.memberId}`);
-        if (recall.assignment.rounds[i]?.pages.length) {
-          preservedMemberIds.add(assignment.memberId);
-        }
-        break;
-      }
-    }
-  }
-  return { changedAssignments, preservedMemberIds };
-}
-
-/**
  * Run one distribution round for the selected khatma(s) as a single
  * Firestore transaction: re-reads every active khatma + assignment doc,
  * re-checks the same-day guard, re-plans on the transactional snapshot, and
@@ -181,25 +135,38 @@ export function runDistribution(
       }
     }
 
-    const pageRecall = redistributePages
-      ? recallLoosePages(khatmas)
-      : { changedAssignments: new Set<string>(), preservedMemberIds: new Set<string>() };
-
     // --- Plan on the transactional snapshot --------------------------------
-    const states: DistributionKhatmaState[] = khatmas.map((k) => ({
+    let states: DistributionKhatmaState[] = khatmas.map((k) => ({
       id: k.id,
       seriesNumber: k.seriesNumber,
       remainingPages: k.remainingPages,
       roundCount: k.roundCount,
       assignments: k.assignments,
     }));
+    const pageRecall = redistributePages
+      ? recallLoosePagesForRedistribution(states)
+      : {
+          khatmas: states,
+          changedAssignments: new Set<string>(),
+          eligibleMemberIds: new Set<string>(),
+        };
+    if (redistributePages) {
+      states = pageRecall.khatmas;
+      for (const khatma of khatmas) {
+        const recalled = states.find((state) => state.id === khatma.id);
+        if (!recalled) continue;
+        khatma.remainingPages = recalled.remainingPages;
+        khatma.assignments = recalled.assignments;
+      }
+    }
     const plan = planDistribution({
       khatmas: states,
-      members: members.map((member) =>
-        pageRecall.preservedMemberIds.has(member.id)
-          ? { ...member, enabled: false }
-          : member,
-      ),
+      members: redistributePages
+        ? members.map((member) => ({
+            ...member,
+            enabled: member.enabled && pageRecall.eligibleMemberIds.has(member.id),
+          }))
+        : members,
       newKhatmaPool: rolloverSeed.pool,
       newKhatmaSeriesNumber: rolloverSeed.seriesNumber,
       unitOfPage,
