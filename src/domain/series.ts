@@ -49,6 +49,36 @@ export function completedInSeries(
     .sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));
 }
 
+/**
+ * Entries shown on the admin Khatmas page: every ongoing khatma, plus the final
+ * completed khatma of a series only when that series has no ongoing or later
+ * round through which its history can be reached.
+ */
+export function khatmasListEntries(khatmas: readonly Khatma[]): Khatma[] {
+  const activeSeriesIds = new Set(
+    khatmas
+      .filter((khatma) => khatma.status === 'active')
+      .map((khatma) => khatma.seriesId),
+  );
+  const terminalCompleted = new Map<string, Khatma>();
+  for (const khatma of khatmas) {
+    if (khatma.status !== 'completed' || activeSeriesIds.has(khatma.seriesId)) continue;
+    const current = terminalCompleted.get(khatma.seriesId);
+    if (
+      !current ||
+      khatma.seriesNumber > current.seriesNumber ||
+      (khatma.seriesNumber === current.seriesNumber &&
+        khatma.createdAt > current.createdAt)
+    ) {
+      terminalCompleted.set(khatma.seriesId, khatma);
+    }
+  }
+  return [
+    ...khatmas.filter((khatma) => khatma.status === 'active'),
+    ...terminalCompleted.values(),
+  ];
+}
+
 /** The next number for a series (max existing + 1; 1 for a brand-new series). */
 export function nextSeriesNumber(khatmas: readonly Khatma[], seriesId: string): number {
   let max = 0;

@@ -22,6 +22,8 @@ Hard rules:
 - Scope kind is `full`, `range`, or `surahs`.
 - Every member has additive `{ pages, surahs, juz }` capacity.
 - Completed khatmas stay for series history.
+- The admin Khatmas list shows all active rounds. For a series with no active
+  round, it shows only the latest completed round as the history entry point.
 - N and N+1 may both be active during rollover.
 - Image is a filename from `public/khatma-images/`; missing means placeholder.
 

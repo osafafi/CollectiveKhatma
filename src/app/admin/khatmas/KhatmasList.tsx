@@ -5,19 +5,20 @@ import { KhatmaSeriesArtwork, StatusChip, SurfaceCard } from '@/components/primi
 import { toArabicDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import { khatmaProgress } from '@/domain/progress';
-import { seriesTitle } from '@/domain/series';
+import { khatmasListEntries, seriesTitle } from '@/domain/series';
 import type { Khatma } from '@/domain/types';
 
-/** All khatmas: active first, then completed, newest first within each state. */
+/** Ongoing khatmas plus the terminal entry of any fully ended series. */
 export function KhatmasList({ khatmas }: { khatmas: readonly Khatma[] }) {
-  if (khatmas.length === 0) {
+  const entries = khatmasListEntries(khatmas);
+  if (entries.length === 0) {
     return (
       <SurfaceCard title={strings.admin.khatmasHeading}>
         <Typography color="text.secondary">{strings.admin.noActive}</Typography>
       </SurfaceCard>
     );
   }
-  const ordered = [...khatmas].sort((a, b) => {
+  const ordered = [...entries].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
     return b.createdAt - a.createdAt;
   });

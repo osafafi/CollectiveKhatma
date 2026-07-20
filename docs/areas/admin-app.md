@@ -21,6 +21,8 @@ Hard rules:
 - Drafts survive live snapshots. Reset only after successful submit.
 - Busy distribution blocks double press.
 - Admin assignment subscriptions cover active khatmas plus open detail.
+- The Khatmas list hides completed rounds already represented by a later or
+  active round, retaining only the last round of a fully ended series.
 - Admin URL is obscure, not secure. No auth.
 
 Update this doc when admin route, page ownership, draft, or subscription scope changes.

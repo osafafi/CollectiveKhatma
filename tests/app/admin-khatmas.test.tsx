@@ -119,24 +119,47 @@ describe('admin Khatmas list/create', () => {
     loader.getSurahs.mockResolvedValue(SURAHS);
   });
 
-  it('lists khatmas active-first then completed, with badge, percent, and detail link', () => {
+  it('lists ongoing khatmas and only the terminal round of a fully ended series', () => {
     const active = makeKhatma('act', {
+      seriesId: 'ongoing',
       seriesName: 'سلسلة نشطة',
+      seriesNumber: 2,
       createdAt: Date.UTC(2026, 6, 1),
     });
-    const completed = makeKhatma('done', {
-      seriesName: 'سلسلة مكتملة',
+    const hiddenCompleted = makeKhatma('ongoing-done', {
+      seriesId: 'ongoing',
+      seriesName: 'سلسلة نشطة',
       status: 'completed',
+      seriesNumber: 1,
       createdAt: Date.UTC(2026, 5, 1),
     });
-    renderKhatmas({ roster: [amina], khatmas: [completed, active] });
+    const olderEnded = makeKhatma('ended-old', {
+      seriesId: 'ended',
+      seriesName: 'سلسلة مكتملة',
+      status: 'completed',
+      seriesNumber: 1,
+      createdAt: Date.UTC(2026, 5, 1),
+    });
+    const terminalEnded = makeKhatma('ended-latest', {
+      seriesId: 'ended',
+      seriesName: 'سلسلة مكتملة',
+      status: 'completed',
+      seriesNumber: 2,
+      createdAt: Date.UTC(2026, 5, 15),
+    });
+    renderKhatmas({
+      roster: [amina],
+      khatmas: [olderEnded, hiddenCompleted, terminalEnded, active],
+    });
 
     const list = screen.getByRole('region', { name: strings.admin.khatmasHeading });
     const links = within(list).getAllByRole('link');
-    // Active sorts before completed regardless of the input order.
+    // Active sorts first; only the latest completed entry of the ended series remains.
+    expect(links).toHaveLength(2);
     expect(links[0]).toHaveTextContent('سلسلة نشطة');
     expect(links[1]).toHaveTextContent('سلسلة مكتملة');
     expect(links[0]).toHaveAttribute('href', '#/khatmas/act');
+    expect(links[1]).toHaveAttribute('href', '#/khatmas/ended-latest');
 
     expect(within(links[0]!).getByText(strings.admin.statusActive)).toBeVisible();
     expect(within(links[1]!).getByText(strings.admin.statusCompleted)).toBeVisible();
