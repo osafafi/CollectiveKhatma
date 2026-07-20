@@ -14,7 +14,7 @@ interface AppStoreProviderProps {
   sources?: FirestoreSubscriptionSources;
 }
 
-/** Redux provider and owner of the three shared Firestore subscriptions. */
+/** Redux provider and owner of shared plus feature-retained Firestore subscriptions. */
 export function AppStoreProvider({
   children,
   appStore = store,

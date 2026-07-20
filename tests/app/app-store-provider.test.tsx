@@ -10,6 +10,7 @@ import {
   type SubscriptionCleanup,
   useAssignmentsSubscription,
 } from '@/app/store';
+import { useFeedbackSubscription } from '@/app/store/useFeedbackSubscription';
 
 function countingSubscription() {
   let starts = 0;
@@ -33,6 +34,7 @@ function countingSubscription() {
 
 function AssignmentConsumer() {
   useAssignmentsSubscription('khatma-1');
+  useFeedbackSubscription();
   return <div>child</div>;
 }
 
@@ -40,11 +42,13 @@ describe('AppStoreProvider', () => {
   it('owns one active global listener set and cleans it after Strict Mode unmount', () => {
     const roster = countingSubscription();
     const content = countingSubscription();
+    const feedback = countingSubscription();
     const khatmas = countingSubscription();
     const assignments = countingSubscription();
     const sources: FirestoreSubscriptionSources = {
       roster: roster.subscribe,
       content: content.subscribe,
+      feedback: feedback.subscribe,
       khatmas: khatmas.subscribe,
       assignments: assignments.subscribe,
     };
@@ -60,6 +64,7 @@ describe('AppStoreProvider', () => {
 
     expect(roster.counts()).toEqual({ starts: 2, stops: 1, active: 1, maxActive: 1 });
     expect(content.counts()).toEqual({ starts: 2, stops: 1, active: 1, maxActive: 1 });
+    expect(feedback.counts()).toEqual({ starts: 2, stops: 1, active: 1, maxActive: 1 });
     expect(khatmas.counts()).toEqual({ starts: 2, stops: 1, active: 1, maxActive: 1 });
     expect(assignments.counts()).toEqual({
       starts: 2,
@@ -76,6 +81,7 @@ describe('AppStoreProvider', () => {
 
     expect(roster.counts()).toEqual({ starts: 2, stops: 2, active: 0, maxActive: 1 });
     expect(content.counts()).toEqual({ starts: 2, stops: 2, active: 0, maxActive: 1 });
+    expect(feedback.counts()).toEqual({ starts: 2, stops: 2, active: 0, maxActive: 1 });
     expect(khatmas.counts()).toEqual({ starts: 2, stops: 2, active: 0, maxActive: 1 });
     expect(assignments.counts()).toEqual({
       starts: 2,

@@ -3,6 +3,7 @@ import {
   assignmentsActions,
   contentActions,
   createAppStore,
+  feedbackActions,
   khatmasActions,
   rosterActions,
   selectAssignmentByMemberId,
@@ -17,7 +18,14 @@ import {
   type AppDispatch,
   type RootState,
 } from '@/app/store';
-import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
+import { selectFeedback, selectUnreadFeedbackCount } from '@/app/store/feedbackSelectors';
+import type {
+  Assignment,
+  GlobalContent,
+  Khatma,
+  MemberFeedback,
+  Person,
+} from '@/domain/types';
 
 const person: Person = {
   id: 'person-1',
@@ -59,6 +67,15 @@ const assignment: Assignment = {
   missedStreak: 0,
 };
 
+const feedback: MemberFeedback = {
+  id: 'feedback-1',
+  memberId: person.id,
+  memberName: person.name,
+  message: 'A useful feedback message',
+  isRead: false,
+  createdAt: 3,
+};
+
 describe('Redux store foundation', () => {
   it('exposes typed state and starts every listener domain idle', () => {
     const appStore = createAppStore();
@@ -75,6 +92,7 @@ describe('Redux store foundation', () => {
       khatmas: { ids: [], entities: {}, listener: { status: 'idle', error: null } },
       assignments: { byKhatmaId: {} },
       content: { value: null, listener: { status: 'idle', error: null } },
+      feedback: { items: [], listener: { status: 'idle', error: null } },
     });
   });
 
@@ -91,12 +109,15 @@ describe('Redux store foundation', () => {
     appStore.dispatch(rosterActions.rosterSnapshotReceived([secondPerson, person]));
     appStore.dispatch(khatmasActions.khatmasSnapshotReceived([khatma]));
     appStore.dispatch(contentActions.contentSnapshotReceived({ du3aText: 'دعاء' }));
+    appStore.dispatch(feedbackActions.feedbackSnapshotReceived([feedback]));
 
     expect(selectRoster(appStore.getState())).toEqual([secondPerson, person]);
     expect(selectPersonById(appStore.getState(), person.id)).toBe(person);
     expect(selectKhatmas(appStore.getState())).toEqual([khatma]);
     expect(selectKhatmaById(appStore.getState(), khatma.id)).toBe(khatma);
     expect(selectContent(appStore.getState())).toEqual({ du3aText: 'دعاء' });
+    expect(selectFeedback(appStore.getState())).toEqual([feedback]);
+    expect(selectUnreadFeedbackCount(appStore.getState())).toBe(1);
 
     appStore.dispatch(rosterActions.rosterSnapshotReceived([person]));
     expect(selectPersonById(appStore.getState(), secondPerson.id)).toBeUndefined();
@@ -151,6 +172,7 @@ describe('Redux store foundation', () => {
       }),
     );
     appStore.dispatch(contentActions.contentSnapshotReceived(null));
+    appStore.dispatch(feedbackActions.feedbackSnapshotReceived([feedback]));
 
     const state = appStore.getState();
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);

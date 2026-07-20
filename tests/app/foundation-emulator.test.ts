@@ -14,9 +14,11 @@ import {
   type FirestoreSubscriptionBridge,
   type SubscriptionCleanup,
 } from '@/app/store';
+import { selectFeedback } from '@/app/store/feedbackSelectors';
 import { firestoreSubscriptionSources } from '@/app/store/firestoreSubscriptionSources';
 import { markRoundDone } from '@/data/assignments';
 import { runDistribution } from '@/data/distribution';
+import { deleteFeedback, setFeedbackRead, submitFeedback } from '@/data/feedback';
 import { createKhatma } from '@/data/khatmas';
 import { addPerson, updatePerson } from '@/data/roster';
 
@@ -28,6 +30,7 @@ interface TestClient {
   bridge: FirestoreSubscriptionBridge;
   releaseGlobal: SubscriptionCleanup;
   releaseAssignments?: SubscriptionCleanup;
+  releaseFeedback?: SubscriptionCleanup;
 }
 
 function createClient(): TestClient {
@@ -40,7 +43,13 @@ function retainAssignments(client: TestClient, khatmaId: string): void {
   client.releaseAssignments = client.bridge.retainAssignmentsSubscription(khatmaId);
 }
 
+function retainFeedback(client: TestClient): void {
+  client.releaseFeedback = client.bridge.retainFeedbackSubscription();
+}
+
 function releaseClient(client: TestClient): void {
+  client.releaseFeedback?.();
+  client.releaseFeedback = undefined;
   client.releaseAssignments?.();
   client.releaseAssignments = undefined;
   client.releaseGlobal();
@@ -73,6 +82,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
     const adminDb = getFirestore(adminApp);
     let personId: string | undefined;
     let khatmaId: string | undefined;
+    const feedbackIds: string[] = [];
     const clients: TestClient[] = [];
 
     try {
@@ -116,6 +126,34 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           expect(
             selectPersonById(memberClient.store.getState(), personId!)?.emoji,
           ).toBeUndefined();
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
+      retainFeedback(adminClient);
+      feedbackIds.push(
+        await submitFeedback(personId, 'Emulator reader', 'First emulator feedback'),
+        await submitFeedback(personId, 'Emulator reader', 'Second emulator feedback'),
+      );
+      await vi.waitFor(
+        () => {
+          const feedback = selectFeedback(adminClient.store.getState());
+          expect(feedback).toHaveLength(2);
+          expect(feedback.every((item) => item.memberId === personId)).toBe(true);
+          expect(feedback.every((item) => item.memberName === 'Emulator reader')).toBe(
+            true,
+          );
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
+      await setFeedbackRead(feedbackIds[0]!, true);
+      await deleteFeedback(feedbackIds[1]!);
+      await vi.waitFor(
+        () => {
+          expect(selectFeedback(adminClient.store.getState())).toEqual([
+            expect.objectContaining({ id: feedbackIds[0], isRead: true }),
+          ]);
         },
         { timeout: 10_000, interval: 50 },
       );
@@ -296,6 +334,14 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
       }
       if (khatmaId) await adminDb.collection('khatmas').doc(khatmaId).delete();
       if (personId) await adminDb.collection('roster').doc(personId).delete();
+      for (const feedbackId of feedbackIds) {
+        await adminDb
+          .collection('content')
+          .doc('feedback')
+          .collection('messages')
+          .doc(feedbackId)
+          .delete();
+      }
       await deleteApp(adminApp);
     }
   }, 60_000);

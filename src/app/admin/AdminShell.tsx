@@ -4,6 +4,7 @@ import { AppShell, type ShellTab } from '@/components/navigation';
 import { adminRoutePath, type AdminRoute } from '@/app/routing/routes';
 import { useAdminRoute } from '@/app/routing/hooks';
 import { strings } from '@/content/strings.ar';
+import { AdminFeedbackInbox } from './AdminFeedbackInbox';
 
 /**
  * Admin tab list (REQUIREMENTS §8: Home / Roster / Khatmas / Settings). The
@@ -63,7 +64,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
  */
 function AdminHeader() {
   return (
-    <Box component="header" sx={{ textAlign: 'center', mb: 4 }}>
+    <Box component="header" sx={{ position: 'relative', textAlign: 'center', mb: 4 }}>
+      <AdminFeedbackInbox />
       <Typography color="primary.main" sx={{ fontWeight: 700, fontSize: '1.25rem' }}>
         {strings.admin.heading}
       </Typography>

@@ -14,11 +14,18 @@ import {
   type FirestoreSubscriptionSources,
   type SubscriptionCleanup,
 } from '@/app/store';
-import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
+import type {
+  Assignment,
+  GlobalContent,
+  Khatma,
+  MemberFeedback,
+  Person,
+} from '@/domain/types';
 
 export interface TestAppData {
   roster?: Person[];
   content?: GlobalContent | undefined;
+  feedback?: MemberFeedback[];
   khatmas?: Khatma[];
   assignments?: Readonly<Record<string, Assignment[]>>;
 }
@@ -46,6 +53,7 @@ export interface TestFirestoreSubscriptions {
   sources: FirestoreSubscriptionSources;
   roster: TestSubscriptionPublisher<Person[]>;
   content: TestSubscriptionPublisher<GlobalContent | undefined>;
+  feedback: TestSubscriptionPublisher<MemberFeedback[]>;
   khatmas: TestSubscriptionPublisher<Khatma[]>;
   assignment: (khatmaId: string) => TestSubscriptionPublisher<Assignment[]>;
 }
@@ -112,6 +120,9 @@ export function createTestFirestoreSubscriptions(
   const content = createTestSubscriptionSource<GlobalContent | undefined>(
     hasOwn(data, 'content') ? { value: data.content } : undefined,
   );
+  const feedback = createTestSubscriptionSource<MemberFeedback[]>(
+    hasOwn(data, 'feedback') ? { value: data.feedback! } : undefined,
+  );
   const khatmas = createTestSubscriptionSource<Khatma[]>(
     hasOwn(data, 'khatmas') ? { value: data.khatmas! } : undefined,
   );
@@ -132,12 +143,13 @@ export function createTestFirestoreSubscriptions(
   const sources: FirestoreSubscriptionSources = {
     roster: roster.subscribe,
     content: content.subscribe,
+    feedback: feedback.subscribe,
     khatmas: khatmas.subscribe,
     assignments: (khatmaId, onChange, onError) =>
       assignment(khatmaId).subscribe(onChange, onError),
   };
 
-  return { sources, roster, content, khatmas, assignment };
+  return { sources, roster, content, feedback, khatmas, assignment };
 }
 
 function createTestSubscriptionSource<Value>(initial?: {

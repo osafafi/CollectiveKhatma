@@ -178,3 +178,15 @@ export interface GlobalContent {
   /** du3a2 al-khatma shown on completion (REQUIREMENTS §7). */
   du3aText: string;
 }
+
+/** One append-only feedback message. Firestore: `content/feedback/messages/{feedbackId}` */
+export interface MemberFeedback {
+  /** Auto-generated Firestore document id. */
+  id: string;
+  memberId: string;
+  /** Snapshot of the roster name when the message was submitted. */
+  memberName: string;
+  message: string;
+  isRead: boolean;
+  createdAt: number;
+}

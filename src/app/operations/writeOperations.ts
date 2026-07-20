@@ -6,6 +6,11 @@ import {
 } from '@/data/assignments';
 import { setDu3aText } from '@/data/content';
 import {
+  deleteFeedback,
+  setFeedbackRead,
+  submitFeedback,
+} from '@/data/feedbackOperations';
+import {
   AlreadyDistributedError,
   runDistribution,
   type DistributionOutcome,
@@ -40,6 +45,9 @@ export interface WriteOperations {
   updatePerson: typeof updatePerson;
   removePerson: typeof removePerson;
   setDu3aText: typeof setDu3aText;
+  submitFeedback: typeof submitFeedback;
+  setFeedbackRead: typeof setFeedbackRead;
+  deleteFeedback: typeof deleteFeedback;
   createKhatma: typeof createKhatma;
   setSeriesImage: typeof setSeriesImage;
   updateKhatma: typeof updateKhatma;
@@ -62,6 +70,9 @@ export const writeOperations: WriteOperations = Object.freeze({
   updatePerson,
   removePerson,
   setDu3aText,
+  submitFeedback,
+  setFeedbackRead,
+  deleteFeedback,
   createKhatma,
   setSeriesImage,
   updateKhatma,

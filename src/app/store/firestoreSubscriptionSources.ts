@@ -8,6 +8,24 @@ import type { FirestoreSubscriptionSources } from './firestoreSubscriptionBridge
 export const firestoreSubscriptionSources: FirestoreSubscriptionSources = {
   roster: subscribeRoster,
   content: subscribeGlobalContent,
+  feedback: (onChange, onError) => {
+    let active = true;
+    let unsubscribe: () => void = () => undefined;
+
+    void import('@/data/feedbackSubscription')
+      .then(({ subscribeFeedback }) => {
+        if (!active) return;
+        unsubscribe = subscribeFeedback(onChange, onError);
+      })
+      .catch((error: unknown) => {
+        if (active) onError(error);
+      });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  },
   khatmas: subscribeKhatmas,
   assignments: subscribeAssignments,
 };

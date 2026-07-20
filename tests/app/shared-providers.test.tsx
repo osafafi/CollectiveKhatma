@@ -18,6 +18,7 @@ import { strings } from '@/content/strings.ar';
 const inertSources: FirestoreSubscriptionSources = {
   roster: () => () => undefined,
   content: () => () => undefined,
+  feedback: () => () => undefined,
   khatmas: () => () => undefined,
   assignments: () => () => undefined,
 };

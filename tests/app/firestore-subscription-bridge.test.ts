@@ -13,7 +13,14 @@ import {
   type FirestoreSubscriptionSources,
   type SubscriptionCleanup,
 } from '@/app/store';
-import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
+import { selectFeedback, selectFeedbackListener } from '@/app/store/feedbackSelectors';
+import type {
+  Assignment,
+  GlobalContent,
+  Khatma,
+  MemberFeedback,
+  Person,
+} from '@/domain/types';
 
 interface TestSource<Value> {
   subscribe: (
@@ -92,15 +99,26 @@ const assignment: Assignment = {
   missedStreak: 0,
 };
 
+const feedbackMessage: MemberFeedback = {
+  id: 'feedback-1',
+  memberId: person.id,
+  memberName: person.name,
+  message: 'A useful feedback message',
+  isRead: false,
+  createdAt: 3,
+};
+
 function createSources() {
   const roster = createTestSource<Person[]>();
   const content = createTestSource<GlobalContent | undefined>();
+  const feedback = createTestSource<MemberFeedback[]>();
   const khatmas = createTestSource<Khatma[]>();
   const assignmentsByKhatma = new Map<string, TestSource<Assignment[]>>();
 
   const sources: FirestoreSubscriptionSources = {
     roster: roster.subscribe,
     content: content.subscribe,
+    feedback: feedback.subscribe,
     khatmas: khatmas.subscribe,
     assignments(khatmaId, onChange, onError) {
       let source = assignmentsByKhatma.get(khatmaId);
@@ -112,7 +130,7 @@ function createSources() {
     },
   };
 
-  return { sources, roster, content, khatmas, assignmentsByKhatma };
+  return { sources, roster, content, feedback, khatmas, assignmentsByKhatma };
 }
 
 describe('Firestore subscription bridge', () => {
@@ -185,6 +203,29 @@ describe('Firestore subscription bridge', () => {
     expect(source.stops()).toBe(1);
     expect(selectAssignmentsForKhatma(appStore.getState(), khatma.id)).toEqual([]);
     expect(selectAssignmentsListener(appStore.getState(), khatma.id)).toBeUndefined();
+  });
+
+  it('retains feedback only on demand and clears it after the final admin release', () => {
+    const appStore = createAppStore();
+    const test = createSources();
+    const bridge = createFirestoreSubscriptionBridge(appStore, test.sources);
+
+    expect(test.feedback.starts()).toBe(0);
+    const releaseFirst = bridge.retainFeedbackSubscription();
+    const releaseSecond = bridge.retainFeedbackSubscription();
+
+    expect(test.feedback.starts()).toBe(1);
+    test.feedback.emit([feedbackMessage]);
+    expect(selectFeedback(appStore.getState())).toEqual([feedbackMessage]);
+    expect(selectFeedbackListener(appStore.getState()).status).toBe('ready');
+
+    releaseFirst();
+    expect(test.feedback.active()).toBe(1);
+    releaseSecond();
+
+    expect(test.feedback.stops()).toBe(1);
+    expect(selectFeedback(appStore.getState())).toEqual([]);
+    expect(selectFeedbackListener(appStore.getState()).status).toBe('idle');
   });
 
   it('does not overlap listeners across Strict Mode-style setup/cleanup cycles', () => {

@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { assignmentsReducer } from './assignmentsSlice';
 import { contentReducer } from './contentSlice';
+import { feedbackReducer } from './feedbackSlice';
 import { khatmasReducer } from './khatmasSlice';
 import { rosterReducer } from './rosterSlice';
 
@@ -11,6 +12,7 @@ export function createAppStore() {
       khatmas: khatmasReducer,
       assignments: assignmentsReducer,
       content: contentReducer,
+      feedback: feedbackReducer,
     },
   });
 }

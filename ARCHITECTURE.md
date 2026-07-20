@@ -123,6 +123,17 @@ The single admin-editable content document.
 
 - `du3aText`: string (du3a2 al-khatma shown on completion — REQUIREMENTS §7)
 
+### 5. `content/feedback/messages/{feedbackId}` (MemberFeedback)
+
+An append-only member feedback document. Every submission receives a new
+Firestore id, so one member can have multiple independently managed messages.
+
+- `memberId`: string (selected roster id at submission)
+- `memberName`: string (roster name snapshot at submission)
+- `message`: string (trimmed, 10–500 characters)
+- `isRead`: boolean (created false; admin can toggle)
+- `createdAt`: number (epoch ms; newest-first inbox ordering)
+
 ---
 
 ## Key Subsystems
@@ -232,7 +243,7 @@ Each root composes the same provider stack, then renders its routed screen:
 
 ### Redux store & state ownership
 
-The store (`createAppStore`) holds four slices, all **serializable**:
+The store (`createAppStore`) holds five slices, all **serializable**:
 
 | Slice         | Shape                                          | Notes                                                             |
 | ------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
@@ -240,6 +251,7 @@ The store (`createAppStore`) holds four slices, all **serializable**:
 | `khatmas`     | `createEntityAdapter<Khatma>` + listener       | normalized                                                        |
 | `assignments` | `{ byKhatmaId: Record<id, adapter+listener> }` | one independent entity collection per khatma, keyed by `memberId` |
 | `content`     | `{ value: GlobalContent \| null, listener }`   | nullable global content                                           |
+| `feedback`    | `{ items: MemberFeedback[], listener }`        | admin-retained inbox ordered newest first                         |
 
 - **Listener state** is shared (`listenerState.ts`): every Firestore-backed slice
   carries `{ status: 'idle' | 'loading' | 'ready' | 'error', error: string | null }`.
@@ -252,7 +264,7 @@ State ownership follows the plan's model:
 
 | Concern                                                                      | Home                    |
 | ---------------------------------------------------------------------------- | ----------------------- |
-| Roster, khatmas, assignments, global content, and their listener status      | **Redux**               |
+| Roster, khatmas, assignments, global content, feedback, listener status      | **Redux**               |
 | Form drafts, open dialogs/menus/tabs, reader navigation, per-button pending  | **Local React state**   |
 | Remembered member, reading scale, last-read page, du3a acknowledgement       | **Browser persistence** |
 | Snapshots, refs, unsubscribe fns, `Error` objects, DOM nodes, derived values | **Never in Redux**      |
@@ -266,8 +278,9 @@ single owner of listener lifecycle for React:
 - **Reference-counted.** The three global listeners (roster, content, khatmas)
   share one consumer count opened by `AppStoreProvider`; assignments are counted
   **independently per khatma** and retained on demand via
-  `useAssignmentsSubscription(khatmaId)`. A listener starts on the first consumer
-  and closes only when the last releases.
+  `useAssignmentsSubscription(khatmaId)`. Feedback is separately retained only by
+  the admin shell via `useFeedbackSubscription()`. A listener starts on the first
+  consumer and closes only when the last releases.
 - **Strict-Mode / Fast-Refresh safe.** Release functions are idempotent, and
   callbacks arriving after cleanup are ignored, so double-invoked effects and HMR
   cycles never leak or duplicate a Firestore listener (Risk Register: duplicate

@@ -12,12 +12,15 @@ import { personAvatar } from '@/domain/personAppearance';
 import type { Person } from '@/domain/types';
 import type { ReadingScale } from '@/theme/reading';
 import { useMemberIdentity } from './memberIdentityContext';
+import { MemberFeedbackSection } from './MemberFeedbackSection';
 
 interface SettingsPageProps {
   readingScale: ReadingScale;
   onReadingScaleChange: (scale: ReadingScale) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  feedbackOpen: boolean;
+  onFeedbackOpenChange: (open: boolean) => void;
 }
 
 /** Member reading-scale settings with route-stable disclosure state. */
@@ -26,6 +29,8 @@ export function SettingsPage({
   onReadingScaleChange,
   open,
   onOpenChange,
+  feedbackOpen,
+  onFeedbackOpenChange,
 }: SettingsPageProps) {
   const { member } = useMemberIdentity();
 
@@ -41,6 +46,7 @@ export function SettingsPage({
         open={open}
         onOpenChange={onOpenChange}
       />
+      <MemberFeedbackSection open={feedbackOpen} onOpenChange={onFeedbackOpenChange} />
     </Stack>
   );
 }

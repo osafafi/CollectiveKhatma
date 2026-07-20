@@ -2,6 +2,8 @@ export { assignmentsActions } from './assignmentsSlice';
 export type { AssignmentBucket, AssignmentsState } from './assignmentsSlice';
 export { contentActions } from './contentSlice';
 export type { ContentState } from './contentSlice';
+export { feedbackActions } from './feedbackSlice';
+export type { FeedbackState } from './feedbackSlice';
 export { createFirestoreSubscriptionBridge } from './firestoreSubscriptionBridge';
 export type {
   FirestoreSubscriptionBridge,

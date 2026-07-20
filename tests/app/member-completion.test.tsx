@@ -105,7 +105,9 @@ describe('member completion/du3a interrupt', () => {
 
     expect(localStorage.getItem(`khatma.du3aAck.${khatma.id}`)).toBe('1');
     expect(window.location.hash).toBe('#/settings');
-    expect(screen.getByRole('heading', { name: strings.nav.settings })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: strings.nav.settings }),
+    ).toBeVisible();
     expect(
       screen.getByRole('navigation', { name: strings.common.appName }),
     ).toBeVisible();

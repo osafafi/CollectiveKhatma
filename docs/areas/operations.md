@@ -17,6 +17,13 @@ Bundle-sensitive change: `npm run check:bundle-budgets`.
 Firestore transaction/rule change: run domain tests, data callers, then the opt-in
 emulator smoke with Firestore emulator running. Record if not run.
 
+Feedback schema: `content/feedback/messages/{feedbackId}` is append-only at
+submission time. Each document stores `memberId`, `memberName`, `message`,
+`isRead`, and numeric `createdAt`. Create rules require unread 10–500-character
+messages; updates may change only `isRead`; deletes remove one message document.
+The admin retains its listener on demand, so member clients do not subscribe to
+the inbox.
+
 Hard rules:
 
 - Only `src/data` imports Firebase.

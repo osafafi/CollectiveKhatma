@@ -10,6 +10,11 @@ import {
 } from '@/app/operations';
 import { clearRoundDone, clearWarning, markRoundDone } from '@/data/assignments';
 import { setDu3aText } from '@/data/content';
+import {
+  deleteFeedback,
+  setFeedbackRead,
+  submitFeedback,
+} from '@/data/feedbackOperations';
 import { runDistribution } from '@/data/distribution';
 import {
   addMemberToKhatma,
@@ -42,6 +47,9 @@ describe('write operations', () => {
       updatePerson,
       removePerson,
       setDu3aText,
+      submitFeedback,
+      setFeedbackRead,
+      deleteFeedback,
       createKhatma,
       setSeriesImage,
       updateKhatma,

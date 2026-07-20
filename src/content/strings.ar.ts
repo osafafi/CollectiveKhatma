@@ -122,6 +122,13 @@ export const strings = {
     avatarSaveError: 'تعذّر حفظ الصورة الرمزية، حاولي مرة أخرى.',
     fontSize: 'حجم خط القراءة',
     sample: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+    feedbackTitle: 'الملاحظات',
+    feedbackLabel: 'رسالتك للمشرفة',
+    feedbackHelper: 'اكتبي من ١٠ إلى ٥٠٠ حرف.',
+    feedbackCharacterCount: 'عدد الأحرف',
+    sendFeedback: 'إرسال الملاحظات',
+    feedbackSent: 'تم إرسال ملاحظتك للمشرفة.',
+    feedbackSendError: 'تعذّر إرسال ملاحظتك، حاولي مرة أخرى.',
   },
   admin: {
     title: 'خَتْمة — لوحة التحكم',
@@ -133,6 +140,23 @@ export const strings = {
     navRoster: 'الأعضاء',
     navKhatmas: 'الختمات',
     navSettings: 'الإعدادات',
+
+    // Member feedback inbox
+    feedbackNotifications: 'ملاحظات الأعضاء',
+    feedbackInboxHeading: 'ملاحظات الأعضاء',
+    feedbackLoading: 'جارٍ تحميل الملاحظات…',
+    feedbackLoadError: 'تعذّر تحميل الملاحظات.',
+    noFeedback: 'لا توجد ملاحظات بعد.',
+    unreadFeedback: 'غير مقروءة',
+    markFeedbackRead: 'تحديد كمقروءة',
+    markFeedbackUnread: 'تحديد كغير مقروءة',
+    copyFeedback: 'نسخ الملاحظة',
+    feedbackCopied: 'تم نسخ الملاحظة',
+    feedbackCopyError: 'تعذّر نسخ الملاحظة',
+    deleteFeedback: 'حذف الملاحظة',
+    confirmDeleteFeedback: 'حذف هذه الملاحظة نهائيًا؟',
+    feedbackActionError: 'تعذّر تحديث الملاحظة، حاولي مرة أخرى.',
+    closeFeedback: 'إغلاق الملاحظات',
 
     // Home — per-series metrics + the daily distribution action.
     homeHeading: 'نظرة عامة',

@@ -1,6 +1,13 @@
-import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
+import type {
+  Assignment,
+  GlobalContent,
+  Khatma,
+  MemberFeedback,
+  Person,
+} from '@/domain/types';
 import { assignmentsActions } from './assignmentsSlice';
 import { contentActions } from './contentSlice';
+import { feedbackActions } from './feedbackSlice';
 import { khatmasActions } from './khatmasSlice';
 import { rosterActions } from './rosterSlice';
 import type { AppStore } from './store';
@@ -16,6 +23,7 @@ type SubscribeToValue<Value> = (
 export interface FirestoreSubscriptionSources {
   roster: SubscribeToValue<Person[]>;
   content: SubscribeToValue<GlobalContent | undefined>;
+  feedback: SubscribeToValue<MemberFeedback[]>;
   khatmas: SubscribeToValue<Khatma[]>;
   assignments: (
     khatmaId: string,
@@ -25,10 +33,12 @@ export interface FirestoreSubscriptionSources {
 }
 
 export interface FirestoreSubscriptionBridge {
-  /** Retain the shared roster, content, and khatma listeners. */
+  /** Retain the shared roster, global content, and khatma listeners. */
   startGlobalSubscriptions: () => SubscriptionCleanup;
   /** Retain the assignments listener for one khatma. */
   retainAssignmentsSubscription: (khatmaId: string) => SubscriptionCleanup;
+  /** Retain the admin feedback inbox listener. */
+  retainFeedbackSubscription: () => SubscriptionCleanup;
 }
 
 interface SharedSubscription {
@@ -107,6 +117,7 @@ export function createFirestoreSubscriptionBridge(
   let globalConsumers = 0;
   let closeGlobalSubscriptions: SubscriptionCleanup[] = [];
   const assignmentSubscriptions = new Map<string, SharedSubscription>();
+  let feedbackSubscription: SharedSubscription | null = null;
 
   function startGlobalSubscriptions(): SubscriptionCleanup {
     globalConsumers += 1;
@@ -201,5 +212,41 @@ export function createFirestoreSubscriptionBridge(
     });
   }
 
-  return { startGlobalSubscriptions, retainAssignmentsSubscription };
+  function retainFeedbackSubscription(): SubscriptionCleanup {
+    if (feedbackSubscription) {
+      feedbackSubscription.consumers += 1;
+      return createFeedbackRelease(feedbackSubscription);
+    }
+
+    const shared: SharedSubscription = {
+      consumers: 1,
+      close: openSubscription<MemberFeedback[]>(
+        sources.feedback,
+        () => dispatch(feedbackActions.feedbackSubscriptionStarted()),
+        (feedback) => dispatch(feedbackActions.feedbackSnapshotReceived(feedback)),
+        (error) => dispatch(feedbackActions.feedbackSubscriptionFailed(error)),
+        () => dispatch(feedbackActions.feedbackSubscriptionStopped()),
+      ),
+    };
+    feedbackSubscription = shared;
+    return createFeedbackRelease(shared);
+  }
+
+  function createFeedbackRelease(shared: SharedSubscription): SubscriptionCleanup {
+    return once(() => {
+      if (feedbackSubscription !== shared) return;
+
+      shared.consumers -= 1;
+      if (shared.consumers !== 0) return;
+
+      feedbackSubscription = null;
+      shared.close();
+    });
+  }
+
+  return {
+    startGlobalSubscriptions,
+    retainAssignmentsSubscription,
+    retainFeedbackSubscription,
+  };
 }

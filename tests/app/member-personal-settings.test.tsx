@@ -73,6 +73,7 @@ describe('member personal and settings routes', () => {
       route: '/settings',
       data: { roster: [amina] },
     });
+    await screen.findByRole('heading', { name: strings.nav.settings });
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
@@ -101,7 +102,9 @@ describe('member personal and settings routes', () => {
       operations: { ...writeOperations, updatePerson },
     });
 
-    expect(screen.getByLabelText(strings.settings.avatarPreview)).toHaveTextContent('A');
+    expect(
+      await screen.findByLabelText(strings.settings.avatarPreview),
+    ).toHaveTextContent('A');
     const field = screen.getByLabelText(strings.settings.avatarLabel);
     await harness.user.type(field, '🌙');
     expect(screen.getByLabelText(strings.settings.avatarPreview)).toHaveTextContent('🌙');
@@ -115,11 +118,48 @@ describe('member personal and settings routes', () => {
     );
   });
 
+  it('validates and submits append-only feedback with member identity metadata', async () => {
+    const submitFeedback = vi
+      .fn<WriteOperations['submitFeedback']>()
+      .mockResolvedValue('feedback-1');
+    const harness = renderMember({
+      route: '/settings',
+      data: { roster: [amina] },
+      operations: { ...writeOperations, submitFeedback },
+    });
+
+    const disclosure = (await screen.findByText(strings.settings.feedbackTitle)).closest(
+      'details',
+    );
+    expect(disclosure).not.toBeNull();
+    await harness.user.click(
+      within(disclosure!).getByText(strings.settings.feedbackTitle),
+    );
+
+    const field = screen.getByLabelText(strings.settings.feedbackLabel);
+    const send = screen.getByRole('button', { name: strings.settings.sendFeedback });
+    expect(field).toHaveAttribute('maxlength', '500');
+    expect(send).toBeDisabled();
+
+    await harness.user.type(field, '123456789');
+    expect(send).toBeDisabled();
+    await harness.user.type(field, '0');
+    expect(send).toBeEnabled();
+    await harness.user.click(send);
+
+    expect(submitFeedback).toHaveBeenCalledWith(amina.id, amina.name, '1234567890');
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      strings.settings.feedbackSent,
+    );
+    expect(field).toHaveValue('');
+  });
+
   it('navigates between both routes and preserves the settings disclosure state', async () => {
     const harness = renderMember({
       route: '/settings',
       data: { roster: [amina] },
     });
+    await screen.findByRole('heading', { name: strings.nav.settings });
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
@@ -130,7 +170,9 @@ describe('member personal and settings routes', () => {
     expect(screen.getByRole('heading', { name: strings.personal.heading })).toBeVisible();
 
     await harness.user.click(screen.getByRole('link', { name: strings.nav.settings }));
-    expect(screen.getByRole('heading', { name: strings.nav.settings })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: strings.nav.settings }),
+    ).toBeVisible();
     expect(document.querySelector('details')).toHaveAttribute('open');
   });
 });

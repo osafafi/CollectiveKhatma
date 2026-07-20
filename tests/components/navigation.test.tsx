@@ -12,6 +12,7 @@ import {
   appShellFrameSx,
 } from '@/components/navigation/layoutContracts';
 import { strings } from '@/content/strings.ar';
+import { renderWithAppProviders } from '../support/reactTestHarness';
 
 /** Mirror the hash-routing tests: drive HashRouter via the real location hash. */
 function setHash(hash: string): void {
@@ -37,7 +38,12 @@ function renderShell(shell: (content: ReactNode) => ReactNode, hash = '') {
 const renderMember = (hash = '') =>
   renderShell((content) => <MemberShell>{content}</MemberShell>, hash);
 const renderAdmin = (hash = '') =>
-  renderShell((content) => <AdminShell>{content}</AdminShell>, hash);
+  renderWithAppProviders(
+    <AdminShell>
+      <div data-testid="content">route content</div>
+    </AdminShell>,
+    { route: hash },
+  );
 
 describe('Member shell navigation', () => {
   it('frames route content in the single main landmark', () => {

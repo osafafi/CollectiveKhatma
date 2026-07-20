@@ -26,7 +26,13 @@ import {
   type SubscriptionCleanup,
 } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
-import type { Assignment, GlobalContent, Khatma, Person } from '@/domain/types';
+import type {
+  Assignment,
+  GlobalContent,
+  Khatma,
+  MemberFeedback,
+  Person,
+} from '@/domain/types';
 
 interface TestSource<Value> {
   subscribe: (
@@ -108,18 +114,20 @@ const assignment: Assignment = {
 function createSources() {
   const roster = createTestSource<Person[]>();
   const content = createTestSource<GlobalContent | undefined>();
+  const feedback = createTestSource<MemberFeedback[]>();
   const khatmas = createTestSource<Khatma[]>();
   const assignments = createTestSource<Assignment[]>();
 
   const sources: FirestoreSubscriptionSources = {
     roster: roster.subscribe,
     content: content.subscribe,
+    feedback: feedback.subscribe,
     khatmas: khatmas.subscribe,
     assignments: (_khatmaId, onChange, onError) =>
       assignments.subscribe(onChange, onError),
   };
 
-  return { sources, roster, content, khatmas, assignments };
+  return { sources, roster, content, feedback, khatmas, assignments };
 }
 
 function FoundationProbe() {
