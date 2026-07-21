@@ -29,12 +29,8 @@ export const strings = {
     crashBody: 'نعتذر، حدث خطأ غير متوقع في التطبيق. حاول مرة أخرى.',
   },
   preview: {
-    migrationLabel: 'معاينة ترحيل React',
-    notProduction: 'هذه معاينة تطوير منفصلة. التطبيق الحالي المنشور لم يتغير.',
     memberHeading: 'معاينة تطبيق الأعضاء',
     adminHeading: 'معاينة لوحة التحكم',
-    primitivesHeading: 'المكوّنات المشتركة',
-    chartsHeading: 'مخططات التقدّم',
   },
   // Bottom tab bar / side rail (member app). Kept short to fit a tab label.
   nav: {
@@ -48,7 +44,7 @@ export const strings = {
     greeting: 'السلام عليكم ورحمة الله',
     tagline: 'تطبيق ختمة القرآن الجماعية',
     rosterHeading: 'الأعضاء',
-    finishedToday: 'انتهيت من قراءة صفحاتي',
+    finishedToday: 'انهيت قراءة صفحاتي',
     emptyRoster: 'لا يوجد أعضاء بعد',
     connecting: 'جارٍ الاتصال بقاعدة البيانات…',
     connectionError: 'تعذّر الاتصال بقاعدة البيانات. تأكّد من تشغيل المحاكي (emulator).',
@@ -72,9 +68,8 @@ export const strings = {
     saveError: 'تعذّر حفظ الإنجاز، حاول مرة أخرى.',
     // Warnings (the member sees only their OWN warning, gently worded).
     warningNote:
-      'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابعي مع صفحاتك الجديدة عند توزيعها.',
-    releasedNote:
-      'أُعيدت هذه الصفحات إلى المجموعة وأُسندت لغيرك — انتظري الجولة القادمة.',
+      'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابع مع صفحاتك الجديدة عند توزيعها.',
+    releasedNote: 'أُعيدت هذه الصفحات إلى المجموعة وأُسندت لغيرك — انتظر الجولة القادمة.',
     // Insights & progress
     groupProgress: 'تقدّم المجموعة',
     completedRoundCount: 'أتمّوا صفحات الجولة',
@@ -115,24 +110,24 @@ export const strings = {
     avatarTitle: 'الصورة الرمزية',
     avatarLabel: 'رمز تعبيري (اختياري)',
     avatarHelper:
-      'اختاري رمزًا تعبيريًا واحدًا، أو اتركيه فارغًا لاستخدام الأحرف الأولى من اسمك.',
+      'اختر رمزًا تعبيريًا واحدًا، أو اتركه فارغًا لاستخدام الأحرف الأولى من اسمك.',
     avatarPreview: 'معاينة الصورة الرمزية',
     saveAvatar: 'حفظ الصورة الرمزية',
     avatarSaved: 'تم الحفظ',
-    avatarSaveError: 'تعذّر حفظ الصورة الرمزية، حاولي مرة أخرى.',
+    avatarSaveError: 'تعذّر حفظ الصورة الرمزية، حاول مرة أخرى.',
     fontSize: 'حجم خط القراءة',
     sample: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
     feedbackTitle: 'الملاحظات',
-    feedbackLabel: 'رسالتك للمشرفة',
-    feedbackHelper: 'اكتبي من ١٠ إلى ٥٠٠ حرف.',
+    feedbackLabel: 'رسالتك للمشرف',
+    feedbackHelper: 'اكتب من ١٠ إلى ٥٠٠ حرف.',
     feedbackCharacterCount: 'عدد الأحرف',
     sendFeedback: 'إرسال الملاحظات',
-    feedbackSent: 'تم إرسال ملاحظتك للمشرفة.',
-    feedbackSendError: 'تعذّر إرسال ملاحظتك، حاولي مرة أخرى.',
+    feedbackSent: 'تم إرسال ملاحظتك للمشرف.',
+    feedbackSendError: 'تعذّر إرسال ملاحظتك، حاول مرة أخرى.',
   },
   admin: {
     title: 'خَتْمة — لوحة التحكم',
-    heading: 'لوحة تحكم المشرفة',
+    heading: 'لوحة تحكم المشرف',
     connecting: 'جارٍ الاتصال بقاعدة البيانات…',
 
     // Tabs
@@ -140,7 +135,6 @@ export const strings = {
     navRoster: 'الأعضاء',
     navKhatmas: 'الختمات',
     navSettings: 'الإعدادات',
-
     // Member feedback inbox
     feedbackNotifications: 'ملاحظات الأعضاء',
     feedbackInboxHeading: 'ملاحظات الأعضاء',
@@ -155,7 +149,7 @@ export const strings = {
     feedbackCopyError: 'تعذّر نسخ الملاحظة',
     deleteFeedback: 'حذف الملاحظة',
     confirmDeleteFeedback: 'حذف هذه الملاحظة نهائيًا؟',
-    feedbackActionError: 'تعذّر تحديث الملاحظة، حاولي مرة أخرى.',
+    feedbackActionError: 'تعذّر تحديث الملاحظة، حاول مرة أخرى.',
     closeFeedback: 'إغلاق الملاحظات',
 
     // Home — per-series metrics + the daily distribution action.
@@ -170,7 +164,7 @@ export const strings = {
       'إعادة الصفحات الموزعة غير المقروءة إلى المجموعة وتوزيعها من جديد؟ لن تُسحب السور أو الأجزاء الموزعة.',
     redistributeSuccess: 'تمت إعادة توزيع الصفحات',
     alreadyDistributed: 'سبق توزيع صفحات اليوم لهذه الختمة',
-    distributeError: 'تعذّر التوزيع، حاولي مرة أخرى',
+    distributeError: 'تعذّر التوزيع، حاول مرة أخرى',
     rolloverNote: 'اكتملت صفحات الختمة وبدأت الختمة التالية تلقائيًا 🎉',
     completedNote: 'اكتملت الختمة، تقبّل الله 🎉',
     pagesRemaining: 'صفحة متبقية',
@@ -181,8 +175,8 @@ export const strings = {
     legendPending: 'قيد القراءة',
     legendRemaining: 'متبقية',
     pageMapHeading: 'خريطة صفحات القرآن',
-    pageMapHoldHint: 'اضغطي مطولاً ثم اسحبي للتنقل بين الصفحات',
-    pageMapKeyboardHint: 'استخدمي السهمين للتنقل بين الصفحات',
+    pageMapHoldHint: 'اضغط مطولاً ثم اسحب للتنقل بين الصفحات',
+    pageMapKeyboardHint: 'استخدم السهمين للتنقل بين الصفحات',
     pageWord: 'الصفحة',
     warningsHeading: 'التحذيرات',
     warningYellowWord: 'تحذير أول',
@@ -190,7 +184,7 @@ export const strings = {
 
     // Roster management
     rosterHeading: 'الأعضاء',
-    searchPlaceholder: 'ابحثي بالاسم…',
+    searchPlaceholder: 'ابحث بالاسم…',
     noMatches: 'لا نتائج مطابقة',
     addPerson: 'إضافة عضو',
     namePlaceholder: 'الاسم',
@@ -202,10 +196,10 @@ export const strings = {
     renameHeading: 'تعديل اسم العضو',
     disable: 'إيقاف مؤقت',
     enable: 'تفعيل',
-    disabledBadge: 'موقوفة مؤقتًا',
+    disabledBadge: 'موقوف مؤقتًا',
     remove: 'حذف',
     confirmRemove: 'حذف هذا العضو من القائمة؟',
-    emptyRoster: 'لا يوجد أعضاء بعد. أضيفي عضوًا للبدء.',
+    emptyRoster: 'لا يوجد أعضاء بعد. أضف عضوًا للبدء.',
 
     // Create khatma (series)
     createHeading: 'ختمة جديدة',
@@ -223,8 +217,8 @@ export const strings = {
     reciterLabel: 'قارئ دعاء الختم',
     reciterAuto: 'تلقائيًا (بالتناوب)',
     createButton: 'إنشاء الختمة',
-    selectMembers: 'اختاري عضوًا واحدًا على الأقل',
-    createError: 'تعذّر إنشاء الختمة، تحقّقي من المدخلات',
+    selectMembers: 'اختر عضوًا واحدًا على الأقل',
+    createError: 'تعذّر إنشاء الختمة، تحقّق من المدخلات',
     seriesImageLabel: 'صورة سلسلة الختمة',
     chooseSeriesImage: 'اختيار من الصور',
     seriesImageOptional: 'اختيارية · تُستخدم الصورة الافتراضية عند عدم الاختيار',
@@ -268,9 +262,9 @@ export const strings = {
     noJuz: '—',
     saveCapacity: 'حفظ السعة',
     returnToPool: 'إرجاع الصفحات للمجموعة',
-    confirmReturnToPool: 'إرجاع صفحات هذه العضوة غير المقروءة إلى المجموعة؟',
+    confirmReturnToPool: 'إرجاع صفحات هذا العضو غير المقروءة إلى المجموعة؟',
     removeFromKhatma: 'إزالة من الختمة',
-    confirmRemoveFromKhatma: 'إزالة هذه العضوة من الختمة؟ ستعود صفحاتها إلى المجموعة.',
+    confirmRemoveFromKhatma: 'إزالة هذا العضو من الختمة؟ ستعود صفحاته إلى المجموعة.',
     editKhatmaHeading: 'تعديل بيانات الختمة',
     saveKhatma: 'حفظ التعديلات',
     khatmaNumberLabel: 'رقم الختمة',
