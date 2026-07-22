@@ -38,8 +38,9 @@ Hard rules:
   history collapses by default on the khatma landing (local state).
 - Assigned-reader navigation follows RTL book direction: previous is on the
   right, next is on the left, and both enabled actions share the primary style.
-- The assigned reader opens with a compact grid header: page total at the upper
-  right, daily-pages title above the numbered series title, and khatma artwork
-  above the member name at the left edge.
+- The assigned reader opens with a compact grid header: the daily-pages title
+  sits above the member avatar and name in the center, khatma artwork sits above
+  the numbered series title at the left, and the right page-total tile matches
+  the artwork height.
 
 Update this doc when member routes, subscriptions, reader, finish, or persistence changes.

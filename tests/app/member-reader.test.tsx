@@ -233,12 +233,17 @@ describe('member assigned reader', () => {
     expect(
       screen.getByRole('heading', { name: strings.reader.assignedTitle }),
     ).toBeVisible();
-    expect(screen.getByText(amina.name)).toBeVisible();
-    expect(screen.getByText('٣ صفحات')).toBeVisible();
-    expect(screen.getByText('سلسلة k1 ١')).toBeVisible();
-    expect(
-      screen.getByRole('img', { name: strings.admin.seriesImageAlt }),
-    ).toHaveAttribute('src', '/khatma-images/1.jpeg');
+    expect(screen.getByText(`${amina.name} A`)).toBeVisible();
+
+    const pageCount = screen.getByText('٣ صفحات');
+    const khatmaTitle = screen.getByText('سلسلة k1 ١');
+    const khatmaArtwork = screen.getByRole('img', {
+      name: strings.admin.seriesImageAlt,
+    });
+    expect(khatmaTitle.previousElementSibling).toBe(khatmaArtwork);
+    expect(khatmaArtwork).toHaveAttribute('src', '/khatma-images/1.jpeg');
+    expect(pageCount).toHaveStyle({ height: '40px' });
+    expect(khatmaArtwork).toHaveStyle({ height: '40px' });
     const progressIndicator = await screen.findByText('١ من ٣');
     expect(progressIndicator).toBeVisible();
     expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة ١٠');

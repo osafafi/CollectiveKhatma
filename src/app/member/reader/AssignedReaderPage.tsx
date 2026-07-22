@@ -11,6 +11,7 @@ import {
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
+import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import { seriesTitle } from '@/domain/series';
 import type { RoundChunk } from '@/domain/types';
@@ -61,6 +62,7 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
       khatmaId={khatmaId}
       memberId={memberId}
       memberName={member?.name ?? ''}
+      memberAvatar={member ? personAvatar(member) : ''}
       khatmaTitle={seriesTitle(khatma, toArabicDigits)}
       imageName={khatma.imageName}
       chunk={chunk}
@@ -73,6 +75,7 @@ function AssignedReaderCore({
   khatmaId,
   memberId,
   memberName,
+  memberAvatar,
   khatmaTitle,
   imageName,
   chunk,
@@ -81,6 +84,7 @@ function AssignedReaderCore({
   khatmaId: string;
   memberId: string;
   memberName: string;
+  memberAvatar: string;
   khatmaTitle: string;
   imageName: string | undefined;
   chunk: RoundChunk;
@@ -109,6 +113,7 @@ function AssignedReaderCore({
       <ReaderBackground />
       <AssignedReaderHeader
         memberName={memberName}
+        memberAvatar={memberAvatar}
         khatmaTitle={khatmaTitle}
         imageName={imageName}
         pageCount={pages.length}
@@ -137,11 +142,13 @@ function AssignedReaderCore({
 
 function AssignedReaderHeader({
   memberName,
+  memberAvatar,
   khatmaTitle,
   imageName,
   pageCount,
 }: {
   memberName: string;
+  memberAvatar: string;
   khatmaTitle: string;
   imageName: string | undefined;
   pageCount: number;
@@ -177,9 +184,9 @@ function AssignedReaderHeader({
           position: 'relative',
           display: 'grid',
           gridTemplateColumns: '72px minmax(0, 1fr) 72px',
-          gridTemplateRows: 'auto auto auto',
+          gridTemplateRows: '40px auto',
           columnGap: 2,
-          rowGap: 0.5,
+          rowGap: 0.75,
           alignItems: 'center',
         }}
       >
@@ -189,8 +196,13 @@ function AssignedReaderHeader({
             gridColumn: 1,
             gridRow: 1,
             justifySelf: 'start',
-            px: 2.5,
-            py: 1,
+            width: '100%',
+            height: 40,
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            px: 1,
             borderRadius: `${theme.custom.radii.pill}px`,
             bgcolor: theme.custom.heroPill,
             border: `1px solid ${theme.custom.heroPillBorder}`,
@@ -208,12 +220,16 @@ function AssignedReaderHeader({
         >
           {strings.reader.assignedTitle}
         </Typography>
-        <Box
+        <Stack
+          spacing={0.75}
           sx={{
             gridColumn: 3,
             gridRow: '1 / span 2',
-            justifySelf: 'end',
-            display: 'flex',
+            justifySelf: 'center',
+            alignSelf: 'start',
+            alignItems: 'center',
+            minWidth: 0,
+            width: '100%',
           }}
         >
           <KhatmaSeriesArtwork
@@ -222,36 +238,46 @@ function AssignedReaderHeader({
             alt={strings.admin.seriesImageAlt}
             size={40}
           />
-        </Box>
-        <Typography
-          variant="caption"
+          <Typography
+            variant="caption"
+            sx={{
+              width: '100%',
+              textAlign: 'center',
+              opacity: 0.82,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {khatmaTitle}
+          </Typography>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
           sx={{
             gridColumn: 2,
             gridRow: 2,
-            textAlign: 'center',
-            opacity: 0.82,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            minWidth: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {khatmaTitle}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            gridColumn: '2 / 4',
-            gridRow: 3,
-            justifySelf: 'end',
-            maxWidth: 160,
-            opacity: 0.85,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {memberName}
-        </Typography>
+          <Typography
+            component="span"
+            variant="body1"
+            sx={{
+              minWidth: 0,
+              maxWidth: 160,
+              opacity: 0.85,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {memberName} {memberAvatar}
+          </Typography>
+        </Stack>
       </Box>
     </Box>
   );
