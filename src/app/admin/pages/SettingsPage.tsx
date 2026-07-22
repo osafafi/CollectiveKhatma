@@ -41,9 +41,6 @@ export function AdminSettingsPage({
       data-react-surface="admin"
       data-route="settings"
     >
-      <Typography component="h1" variant="h2" color="primary.main">
-        {strings.admin.navSettings}
-      </Typography>
       <Du3aEditor />
       <ReadingScaleControl
         readingScale={readingScale}

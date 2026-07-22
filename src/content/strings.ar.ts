@@ -235,6 +235,7 @@ export const strings = {
 
     // Khatmas list + per-khatma page
     khatmasHeading: 'كل الختمات',
+    khatmaDetailTitle: 'تفاصيل الختمة',
     statusActive: 'جارية',
     statusCompleted: 'مكتملة',
     progressLabel: 'تقدّم المجموعة',

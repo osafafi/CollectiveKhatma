@@ -153,7 +153,9 @@ describe('admin Khatmas list/create', () => {
       khatmas: [olderEnded, hiddenCompleted, terminalEnded, active],
     });
 
-    const list = screen.getByRole('region', { name: strings.admin.khatmasHeading });
+    // The list card no longer repeats the hero's title; scope by the route
+    // section instead of a named region.
+    const list = document.querySelector('[data-route="khatmas"]') as HTMLElement;
     const links = within(list).getAllByRole('link');
     // Active sorts first; only the latest completed entry of the ended series remains.
     expect(links).toHaveLength(2);
@@ -171,7 +173,7 @@ describe('admin Khatmas list/create', () => {
 
   it('shows the empty copy when there are no khatmas', () => {
     renderKhatmas({ roster: [amina], khatmas: [] });
-    const list = screen.getByRole('region', { name: strings.admin.khatmasHeading });
+    const list = document.querySelector('[data-route="khatmas"]') as HTMLElement;
     expect(within(list).getByText(strings.admin.noActive)).toBeVisible();
   });
 

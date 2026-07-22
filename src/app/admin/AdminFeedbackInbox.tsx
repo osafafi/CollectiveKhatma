@@ -45,23 +45,21 @@ export function AdminFeedbackInbox() {
           });
           setOpen(true);
         }}
-        sx={{
-          position: 'absolute',
-          right: 0,
-          top: '50%',
-          transform: 'translateY(-50%)',
+        sx={(theme) => ({
+          // The hero's frosted pill button (mock 5a); rendered inside the
+          // shell hero's action slot.
           display: 'grid',
           width: 44,
           height: 44,
           p: 0,
           placeItems: 'center',
-          border: 0,
-          borderRadius: '50%',
-          bgcolor: 'transparent',
-          color: 'text.primary',
+          borderRadius: `${theme.custom.radii.button}px`,
+          border: `1px solid ${theme.custom.heroPillBorder}`,
+          bgcolor: theme.custom.heroPill,
+          color: theme.custom.heroInk,
           cursor: 'pointer',
-          '&:hover': { bgcolor: 'action.hover' },
-        }}
+          '&:hover': { bgcolor: theme.custom.heroPillBorder },
+        })}
       >
         <Box
           component="span"
