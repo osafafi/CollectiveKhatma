@@ -3,10 +3,16 @@ import { Box, Stack, Typography } from '@mui/material';
 import { selectAssignmentsForKhatma, selectKhatmas, useAppSelector } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
 import { memberHash } from '@/app/routing/routes';
-import { AppButton, NoticeBanner, SurfaceCard } from '@/components/primitives';
+import {
+  AppButton,
+  KhatmaSeriesArtwork,
+  NoticeBanner,
+  SurfaceCard,
+} from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
+import { seriesTitle } from '@/domain/series';
 import type { RoundChunk } from '@/domain/types';
 import { useMemberIdentity } from '../memberIdentityContext';
 import {
@@ -54,6 +60,9 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
       key={`${khatmaId}:${chunk.round}`}
       khatmaId={khatmaId}
       memberId={memberId}
+      memberName={member?.name ?? ''}
+      khatmaTitle={seriesTitle(khatma, toArabicDigits)}
+      imageName={khatma.imageName}
       chunk={chunk}
       storedDone={mine ? isRoundDone(mine, chunk.round) : false}
     />
@@ -63,11 +72,17 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
 function AssignedReaderCore({
   khatmaId,
   memberId,
+  memberName,
+  khatmaTitle,
+  imageName,
   chunk,
   storedDone,
 }: {
   khatmaId: string;
   memberId: string;
+  memberName: string;
+  khatmaTitle: string;
+  imageName: string | undefined;
   chunk: RoundChunk;
   storedDone: boolean;
 }) {
@@ -91,6 +106,12 @@ function AssignedReaderCore({
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
       <ReaderBackground />
+      <AssignedReaderHeader
+        memberName={memberName}
+        khatmaTitle={khatmaTitle}
+        imageName={imageName}
+        pageCount={pages.length}
+      />
       <QuranPageContent page={page} />
       <StickyChrome>
         <ReaderNav
@@ -110,6 +131,133 @@ function AssignedReaderCore({
       />
     </Stack>
   );
+}
+
+function AssignedReaderHeader({
+  memberName,
+  khatmaTitle,
+  imageName,
+  pageCount,
+}: {
+  memberName: string;
+  khatmaTitle: string;
+  imageName: string | undefined;
+  pageCount: number;
+}) {
+  return (
+    <Box
+      sx={(theme) => ({
+        position: 'relative',
+        overflow: 'hidden',
+        mx: -4,
+        mt: -4,
+        px: 4,
+        py: 2.5,
+        background: theme.custom.heroGrad,
+        color: theme.custom.heroInk,
+        borderRadius: {
+          xs: `0 0 ${theme.custom.radii.hero}px ${theme.custom.radii.hero}px`,
+          lg: `${theme.custom.radii.card}px`,
+        },
+      })}
+    >
+      <Box
+        aria-hidden="true"
+        sx={(theme) => ({
+          position: 'absolute',
+          inset: 0,
+          background: theme.custom.heroGlow,
+          pointerEvents: 'none',
+        })}
+      />
+      <Box
+        sx={{
+          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: '72px minmax(0, 1fr) 72px',
+          gridTemplateRows: 'auto auto auto',
+          columnGap: 2,
+          rowGap: 0.5,
+          alignItems: 'center',
+        }}
+      >
+        <Box
+          component="span"
+          sx={(theme) => ({
+            gridColumn: 1,
+            gridRow: 1,
+            justifySelf: 'start',
+            px: 2.5,
+            py: 1,
+            borderRadius: `${theme.custom.radii.pill}px`,
+            bgcolor: theme.custom.heroPill,
+            border: `1px solid ${theme.custom.heroPillBorder}`,
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+          })}
+        >
+          {pageCountLabel(pageCount)}
+        </Box>
+        <Typography
+          component="h1"
+          variant="h3"
+          sx={{ gridColumn: 2, gridRow: 1, textAlign: 'center', color: 'inherit' }}
+        >
+          {strings.reader.assignedTitle}
+        </Typography>
+        <Box
+          sx={{
+            gridColumn: 3,
+            gridRow: '1 / span 2',
+            justifySelf: 'end',
+            display: 'flex',
+          }}
+        >
+          <KhatmaSeriesArtwork
+            variant="avatar"
+            imageName={imageName}
+            alt={strings.admin.seriesImageAlt}
+            size={40}
+          />
+        </Box>
+        <Typography
+          variant="caption"
+          sx={{
+            gridColumn: 2,
+            gridRow: 2,
+            textAlign: 'center',
+            opacity: 0.82,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {khatmaTitle}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            gridColumn: '2 / 4',
+            gridRow: 3,
+            justifySelf: 'end',
+            maxWidth: 160,
+            opacity: 0.85,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {memberName}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function pageCountLabel(count: number): string {
+  const word = count === 1 ? strings.member.pageWord : strings.member.pagesWord;
+  return `${toArabicDigits(count)} ${word}`;
 }
 
 function FinishFooter({

@@ -214,7 +214,7 @@ describe('member browse reader', () => {
 
 describe('member assigned reader', () => {
   it('reads the assigned chunk, navigates, and finishes the round', async () => {
-    const khatma = makeKhatma('k1');
+    const khatma = makeKhatma('k1', { imageName: '1.jpeg' });
     const markRoundDone = vi
       .fn<WriteOperations['markRoundDone']>()
       .mockResolvedValue(undefined);
@@ -230,6 +230,15 @@ describe('member assigned reader', () => {
       operations: { ...writeOperations, markRoundDone },
     });
 
+    expect(
+      screen.getByRole('heading', { name: strings.reader.assignedTitle }),
+    ).toBeVisible();
+    expect(screen.getByText(amina.name)).toBeVisible();
+    expect(screen.getByText('٣ صفحات')).toBeVisible();
+    expect(screen.getByText('سلسلة k1 ١')).toBeVisible();
+    expect(
+      screen.getByRole('img', { name: strings.admin.seriesImageAlt }),
+    ).toHaveAttribute('src', '/khatma-images/1.jpeg');
     expect(await screen.findByText('صفحة ١٠ · ١ من ٣')).toBeVisible();
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 

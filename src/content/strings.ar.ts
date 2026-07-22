@@ -93,6 +93,7 @@ export const strings = {
   // In-app mushaf reader — both the free-browse tab and the assigned-pages flow.
   reader: {
     browseTitle: 'المصحف الشريف',
+    assignedTitle: 'صفحاتي اليومية',
     surah: 'السورة',
     surahHeading: 'سورة',
     juz: 'الجزء',
