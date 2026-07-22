@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Stack, Typography } from '@mui/material';
+import { AppearanceSettingsCard } from '@/app/appearance/AppearanceSettingsCard';
 import { useWriteOperation } from '@/app/operations';
 import {
   AppButton,
@@ -39,13 +40,15 @@ export function SettingsPage({
       <Typography component="h1" variant="h2" color="primary.main">
         {strings.nav.settings}
       </Typography>
-      {member ? <AvatarEditor key={member.id} person={member} /> : null}
+      {/* Design order (mock 2c): appearance → reading size → avatar → feedback. */}
+      <AppearanceSettingsCard />
       <ReadingScaleControl
         readingScale={readingScale}
         onReadingScaleChange={onReadingScaleChange}
         open={open}
         onOpenChange={onOpenChange}
       />
+      {member ? <AvatarEditor key={member.id} person={member} /> : null}
       <MemberFeedbackSection open={feedbackOpen} onOpenChange={onFeedbackOpenChange} />
     </Stack>
   );

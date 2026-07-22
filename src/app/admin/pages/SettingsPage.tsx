@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, Typography } from '@mui/material';
+import { AppearanceSettingsCard } from '@/app/appearance/AppearanceSettingsCard';
 import { selectContent, useAppSelector } from '@/app/store';
 import { useWriteOperation } from '@/app/operations';
 import {
@@ -50,6 +51,9 @@ export function AdminSettingsPage({
         open={open}
         onOpenChange={onOpenChange}
       />
+      {/* Deliberate addition over admin mock 5i: admins get the same theme
+          toggle so the admin entry is not locked to light mode. */}
+      <AppearanceSettingsCard />
     </Stack>
   );
 }

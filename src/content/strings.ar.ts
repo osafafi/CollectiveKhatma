@@ -107,6 +107,9 @@ export const strings = {
   },
   settings: {
     title: 'الإعدادات',
+    appearanceTitle: 'مظهر التطبيق',
+    themeLight: 'فاتح',
+    themeDark: 'داكن',
     avatarTitle: 'الصورة الرمزية',
     avatarLabel: 'رمز تعبيري (اختياري)',
     avatarHelper:

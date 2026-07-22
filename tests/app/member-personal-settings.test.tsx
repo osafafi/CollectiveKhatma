@@ -92,6 +92,27 @@ describe('member personal and settings routes', () => {
     expect(localStorage.getItem('khatma.readingScale')).toBe('5');
   });
 
+  it('offers the appearance toggle in Settings and persists the dark choice', async () => {
+    const harness = renderMember({ route: '/settings', data: { roster: [amina] } });
+    await screen.findByRole('heading', { name: strings.nav.settings });
+
+    const group = screen.getByRole('group', { name: strings.settings.appearanceTitle });
+    const lightButton = within(group).getByRole('button', {
+      name: strings.settings.themeLight,
+    });
+    const darkButton = within(group).getByRole('button', {
+      name: strings.settings.themeDark,
+    });
+    expect(lightButton).toHaveAttribute('aria-pressed', 'true');
+    expect(darkButton).toHaveAttribute('aria-pressed', 'false');
+
+    await harness.user.click(darkButton);
+
+    expect(darkButton).toHaveAttribute('aria-pressed', 'true');
+    expect(lightButton).toHaveAttribute('aria-pressed', 'false');
+    expect(localStorage.getItem('khatma.themeMode')).toBe('dark');
+  });
+
   it('lets the selected member save an optional emoji avatar', async () => {
     const updatePerson = vi
       .fn<WriteOperations['updatePerson']>()

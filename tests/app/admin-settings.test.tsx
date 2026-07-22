@@ -130,6 +130,21 @@ describe('admin Settings', () => {
     expect(localStorage.getItem('khatma.readingScale')).toBe('5');
   });
 
+  it('offers the same appearance toggle as the member app and persists it', async () => {
+    const { user } = renderSettings({ roster: [amina], khatmas: [] });
+
+    const group = screen.getByRole('group', { name: strings.settings.appearanceTitle });
+    const darkButton = within(group).getByRole('button', {
+      name: strings.settings.themeDark,
+    });
+    expect(darkButton).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(darkButton);
+
+    expect(darkButton).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem('khatma.themeMode')).toBe('dark');
+  });
+
   it('keeps the reading-scale disclosure open across route navigation', async () => {
     const { user } = renderSettings({ roster: [amina], khatmas: [] });
 
