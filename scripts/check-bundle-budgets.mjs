@@ -5,16 +5,20 @@ import { resolve } from 'node:path';
 const outputDirectory = resolve('dist');
 const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 
+// 2026-07: +10 kB headroom for the visual redesign (theme factory with a
+// light+dark token map, motion keyframes, hero header chrome). No font bytes —
+// the redesign keeps the existing self-hosted fonts. Re-measured and tightened
+// after the redesign landed.
 const budgets = {
   member: {
     entry: 'index.html',
-    initialJavaScriptGzipBytes: 350_000,
-    initialTransferBytes: 525_000,
+    initialJavaScriptGzipBytes: 360_000,
+    initialTransferBytes: 535_000,
   },
   admin: {
     entry: 'admin-nano.html',
-    initialJavaScriptGzipBytes: 375_000,
-    initialTransferBytes: 530_000,
+    initialJavaScriptGzipBytes: 385_000,
+    initialTransferBytes: 540_000,
   },
 };
 
