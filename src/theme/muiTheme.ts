@@ -1,118 +1,172 @@
 import { createTheme, type Theme } from '@mui/material/styles';
+import {
+  MOTION,
+  RADII,
+  TOKENS,
+  cardGradient,
+  primaryBtnGradient,
+  type GradientStrength,
+  type ThemeMode,
+} from '@/theme/tokens';
 
 /**
  * Centralized MUI theme for the Arabic RTL member and admin apps.
  *
- * The palette uses a fresh,
- * modern, senior-friendly look with reading-comfortable colors. Design intent
- * and WCAG-AA contrast evidence are recorded in .
+ * Built per mode by {@link createKhatmaTheme} from the redesign token maps in
+ * `tokens.ts` (light values match the pre-redesign palette; WCAG-AA contrast
+ * for both modes is guarded by the theme tests). Non-palette design tokens ride
+ * along in `theme.custom` so shared components can style from the theme alone —
+ * never from app state and never from literals.
  */
 
-/**
- * Design tokens: warm low-glare paper, a calm emerald
- * "Quran green" primary, a distinct gold accent (dark text), and higher-contrast
- * ink/muted for extended reading. Theme tests guard the contrast matrix.
- */
-export const tokens = {
-  color: {
-    bg: '#f6f1e7', // warm ivory paper — softer, lower glare for long reading
-    surface: '#fffdf7', // soft warm white — cards don't glare against the cream
-    ink: '#26312b', // deep warm charcoal-green — ~13:1 on surface
-    muted: '#5c6b62', // warm sage gray — AA (5.5:1) on surface
-    primary: '#0e6f61', // calm emerald "Quran green"
-    primaryStrong: '#0a5348', // hover/press dark tone
-    successStrong: '#256444', // accessible text on pale success status surfaces
-    warnStrong: '#904207', // accessible text on pale warning status surfaces
-    accent: '#c9a24a', // gold highlight (dua/reciter, chart "pending"); dark text
-    success: '#2f7d55', // natural leaf green
-    warn: '#b45309', // amber caution — kept distinct from the red danger tone
-    danger: '#b23a2e', // warm brick red — clear but less alarming
-    border: '#e5ddcb', // warm sand hairline
-    white: '#ffffff',
-  },
-  radius: {
-    button: 12, // 0.75rem — buttons, fields, chips, badges, pills, bars
-    card: 18, // softer 1.125rem — cards/sections/dialogs ( refresh)
-  },
-  font: {
-    // Exposed as CSS vars in globalStyles.ts so the UI and Quran font stacks
-    // share one retained global definition.
-    ui: 'var(--font-ui)',
-  },
-} as const;
+/** Non-palette redesign tokens exposed to components via `theme.custom`. */
+export interface CustomThemeTokens {
+  gold: string;
+  goldSoft: string;
+  goldInk: string;
+  heroInk: string;
+  onEmerald: string;
+  cellRem: string;
+  tabActiveBg: string;
+  tabActiveInk: string;
+  tabIdle: string;
+  readerBg: string;
+  medalCenter: string;
+  surahBandInk: string;
+  heroGrad: string;
+  heroGlow: string;
+  heroPill: string;
+  heroPillBorder: string;
+  heroShimmer: string;
+  cardShadow: string;
+  btnShadow: string;
+  /** Resolved card background — a gradient string, or a solid color for strength "none". */
+  cardBg: string;
+  primaryBtnGradient: string;
+  radii: typeof RADII;
+  motion: typeof MOTION;
+}
+
+declare module '@mui/material/styles' {
+  interface Theme {
+    custom: CustomThemeTokens;
+  }
+  interface ThemeOptions {
+    custom?: CustomThemeTokens;
+  }
+}
+
+export interface KhatmaThemeOptions {
+  /** Card-gradient strength; a runtime parameter, defaults to the design's "subtle". */
+  cardStrength?: GradientStrength;
+  /** Card-gradient angle in degrees; defaults to the design's 160. */
+  cardAngle?: number;
+}
 
 /**
- * Build the app theme. Exported as a factory so tests can construct a fresh
- * instance; `appTheme` is the shared singleton the provider consumes.
+ * Build the app theme for one mode. Exported as a factory so the provider can
+ * rebuild on theme-mode changes and tests can construct fresh instances.
  */
-export function createAppTheme(): Theme {
+export function createKhatmaTheme(
+  mode: ThemeMode = 'light',
+  opts: KhatmaThemeOptions = {},
+): Theme {
+  const t = TOKENS[mode];
+
+  const custom: CustomThemeTokens = {
+    gold: t.gold,
+    goldSoft: t.goldSoft,
+    goldInk: t.goldInk,
+    heroInk: t.heroInk,
+    onEmerald: t.onEmerald,
+    cellRem: t.cellRem,
+    tabActiveBg: t.tabActiveBg,
+    tabActiveInk: t.tabActiveInk,
+    tabIdle: t.tabIdle,
+    readerBg: t.readerBg,
+    medalCenter: t.medalCenter,
+    surahBandInk: t.surahBandInk,
+    heroGrad: t.heroGrad,
+    heroGlow: t.heroGlow,
+    heroPill: t.heroPill,
+    heroPillBorder: t.heroPillBorder,
+    heroShimmer: t.heroShimmer,
+    cardShadow: t.cardShadow,
+    btnShadow: t.btnShadow,
+    cardBg: cardGradient(mode, opts.cardStrength ?? 'subtle', opts.cardAngle ?? 160),
+    primaryBtnGradient: primaryBtnGradient(mode),
+    radii: RADII,
+    motion: MOTION,
+  };
+
   return createTheme({
     // RTL is the app's only direction (Arabic). Pairs with the stylis RTL
     // Emotion cache in rtlCache.ts and `dir="rtl"` set by AppThemeProvider.
     direction: 'rtl',
 
+    custom,
+
     palette: {
-      mode: 'light',
+      // `mode` alone makes MUI internals (dialogs, menus, hover/disabled
+      // overlays, form controls) resolve dark-correct defaults.
+      mode,
       primary: {
-        main: tokens.color.primary,
-        // Revive the otherwise-dead `--color-primary-strong` as the dark tone
-        // MUI needs these tonal offsets for hover and press states.
-        dark: tokens.color.primaryStrong,
-        contrastText: tokens.color.white,
+        main: t.emerald,
+        dark: t.emerald2,
+        contrastText: t.onEmerald,
       },
-      // Gold `--color-accent` (dua/reciter highlight, chart "pending"). It reads
-      // as a bright gold, so filled secondary surfaces carry DARK ink text
-      // rather than white (legible + premium) — the one semantic color that does
-      // not use white contrast ( refresh; guarded in the theme test).
+      // Gold accent surfaces carry dark ink text in light mode (the accent is
+      // bright); in dark mode the near-black onEmerald keeps it legible on the
+      // still-bright gold.
       secondary: {
-        main: tokens.color.accent,
-        contrastText: tokens.color.ink,
+        main: t.gold,
+        contrastText: mode === 'light' ? t.ink : t.onEmerald,
       },
       success: {
-        main: tokens.color.success,
-        dark: tokens.color.successStrong,
-        contrastText: tokens.color.white,
+        main: t.success,
+        dark: t.successStrong,
+        contrastText: t.onEmerald,
       },
       // Warning amber remains distinct from the lighter gold accent.
       warning: {
-        main: tokens.color.warn,
-        dark: tokens.color.warnStrong,
-        contrastText: tokens.color.white,
+        main: t.warn,
+        dark: t.warnStrong,
+        contrastText: t.onEmerald,
       },
-      error: { main: tokens.color.danger, contrastText: tokens.color.white },
+      error: { main: t.danger, contrastText: t.onEmerald },
       background: {
-        default: tokens.color.bg, // warm paper
-        paper: tokens.color.surface,
+        default: t.bg,
+        paper: t.surface,
       },
       text: {
-        primary: tokens.color.ink,
-        secondary: tokens.color.muted,
+        primary: t.ink,
+        secondary: t.muted,
       },
-      divider: tokens.color.border,
+      divider: t.border,
     },
 
     typography: {
-      // Keep the established stack via the CSS variable: Tajawal
-      // preferred, system-ui fallback. No third-party font runtime is added;
-      // self-hosting can be added later without changing component styles.
-      fontFamily: tokens.font.ui,
+      // Keep the established stack via the CSS variable (its value is
+      // FONTS.ui, defined once in globalStyles.ts); the redesign does not
+      // change fonts.
+      fontFamily: 'var(--font-ui)',
       fontWeightRegular: 400,
       fontWeightMedium: 500,
       fontWeightBold: 700,
-      // App type scale. Heading color is applied where headings are used, not
-      // globally. Roomier body line heights support senior reading comfort.
-      h1: { fontSize: '1.875rem', lineHeight: 1.2, fontWeight: 700 },
-      h2: { fontSize: '1.5rem', lineHeight: 1.3333, fontWeight: 700 },
-      h3: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 },
+      // App type scale. The redesign's display weight is 800 for page/hero
+      // titles. Roomier body line heights support senior reading comfort.
+      h1: { fontSize: '1.875rem', lineHeight: 1.2, fontWeight: 800 },
+      h2: { fontSize: '1.5rem', lineHeight: 1.3333, fontWeight: 800 },
+      h3: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 700 },
       subtitle1: { fontSize: '1.125rem', lineHeight: 1.5556, fontWeight: 600 },
       body1: { fontSize: '1rem', lineHeight: 1.65 },
       body2: { fontSize: '0.875rem', lineHeight: 1.55 },
       caption: { fontSize: '0.75rem', lineHeight: 1.4 },
     },
 
-    // Common radius = the button radius (12px). Cards/pills that differ (16px /
-    // full) are overridden per-component in .
-    shape: { borderRadius: tokens.radius.button },
+    // Common radius = the button radius. Cards/pills that differ are
+    // overridden per-component from `custom.radii`.
+    shape: { borderRadius: RADII.button },
 
     // Compact 4px spacing unit used throughout the app.
     spacing: 4,
@@ -123,38 +177,64 @@ export function createAppTheme(): Theme {
     },
 
     // Shared primitive defaults. These keep page-level components from
-    // repeating the legacy radius, spacing, disabled, and surface treatments.
+    // repeating radius, spacing, disabled, and surface treatments.
     components: {
+      // Keep Paper surfaces exactly on the `surface` token: MUI's dark-mode
+      // elevation overlay would otherwise lighten dialogs and menus.
+      MuiPaper: {
+        styleOverrides: {
+          root: { backgroundImage: 'none' },
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
           root: {
             textTransform: 'none',
-            fontWeight: 600,
+            fontWeight: 700,
+            // Senior-friendly touch target for regular buttons; dense rows use
+            // size="small", hero CTAs use size="large".
+            minHeight: 44,
             '&.Mui-disabled': { opacity: 0.5 },
           },
+          sizeSmall: { minHeight: 36 },
           sizeLarge: {
             minHeight: 56,
             paddingBlock: 16,
             fontSize: '1.125rem',
           },
         },
+        variants: [
+          {
+            props: { variant: 'contained', color: 'primary' },
+            style: {
+              background: custom.primaryBtnGradient,
+              boxShadow: custom.btnShadow,
+              '&:hover': { boxShadow: custom.btnShadow },
+            },
+          },
+        ],
       },
       MuiCard: {
         defaultProps: { variant: 'outlined' },
         styleOverrides: {
           root: {
-            borderColor: tokens.color.border,
-            borderRadius: tokens.radius.card,
-            // Softer, warmer layered shadow — gentle depth that reads
-            // modern and calm rather than the flat legacy 1px hairline.
-            boxShadow: '0 1px 2px rgb(38 49 43 / 4%), 0 6px 20px rgb(38 49 43 / 5%)',
+            borderColor: t.border,
+            borderRadius: RADII.card,
+            // The tweakable card gradient over the solid surface fallback.
+            // Split into color+image so MuiPaper's backgroundImage reset can
+            // never race the gradient.
+            backgroundColor: t.surface,
+            backgroundImage: custom.cardBg.startsWith('linear-gradient')
+              ? custom.cardBg
+              : 'none',
+            boxShadow: custom.cardShadow,
           },
         },
       },
       MuiDialog: {
         styleOverrides: {
-          paper: { borderRadius: tokens.radius.card },
+          paper: { borderRadius: RADII.card },
         },
       },
       MuiTextField: {
@@ -165,7 +245,7 @@ export function createAppTheme(): Theme {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { backgroundColor: tokens.color.bg },
+          root: { backgroundColor: t.bg },
         },
       },
       MuiCheckbox: {
@@ -180,7 +260,7 @@ export function createAppTheme(): Theme {
           root: {
             minHeight: 24,
             height: 'auto',
-            borderRadius: tokens.radius.button,
+            borderRadius: RADII.pill,
           },
         },
       },
@@ -188,15 +268,12 @@ export function createAppTheme(): Theme {
         styleOverrides: {
           root: {
             height: 8,
-            borderRadius: tokens.radius.button,
-            backgroundColor: tokens.color.border,
+            borderRadius: RADII.pill,
+            backgroundColor: t.cellRem,
           },
-          bar: { borderRadius: tokens.radius.button },
+          bar: { borderRadius: RADII.pill },
         },
       },
     },
   });
 }
-
-/** Shared singleton theme consumed by {@link AppThemeProvider}. */
-export const appTheme = createAppTheme();

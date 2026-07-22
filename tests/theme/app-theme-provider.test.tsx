@@ -1,15 +1,39 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { Button, MenuItem, Select } from '@mui/material';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { Button, MenuItem, Select, useTheme } from '@mui/material';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
+import { useThemeSettings } from '@/app/providers/themeSettingsContext';
 import { retainedGlobalStyles } from '@/theme/globalStyles';
+import { createKhatmaTheme } from '@/theme/muiTheme';
+import { TOKENS } from '@/theme/tokens';
 
 /** Emotion tags its injected `<style>` with `data-emotion="<key> <ids…>"`. */
 function hasRtlCacheStyleTag(): boolean {
   return document.querySelector('style[data-emotion^="mui-rtl"]') !== null;
 }
 
+/** Surfaces the active mode and background so tests can observe theme swaps. */
+function ModeProbe() {
+  const theme = useTheme();
+  const { mode, setMode } = useThemeSettings();
+  return (
+    <button
+      data-mode={mode}
+      data-palette-mode={theme.palette.mode}
+      data-bg={theme.palette.background.default}
+      onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+    >
+      تبديل المظهر
+    </button>
+  );
+}
+
 describe('AppThemeProvider — RTL foundation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('forces the document direction and language to Arabic RTL', () => {
     render(
       <AppThemeProvider>
@@ -63,8 +87,11 @@ describe('AppThemeProvider — RTL foundation', () => {
     expect(hasRtlCacheStyleTag()).toBe(true);
 
     // The retained layer defines the bundled Quran font, the UI/Quran font vars,
-    // and the scalable mushaf text class.
-    const styles = retainedGlobalStyles as Record<string, Record<string, string>> &
+    // the scalable mushaf text class, and the redesign motion vocabulary.
+    const styles = retainedGlobalStyles(createKhatmaTheme('light')) as unknown as Record<
+      string,
+      Record<string, string>
+    > &
       Record<'@font-face', Array<Record<string, string>>>;
     // Both bundled Quran webfaces ship, in fallback order.
     expect(styles['@font-face'].map((face) => face.fontFamily)).toEqual([
@@ -75,5 +102,44 @@ describe('AppThemeProvider — RTL foundation', () => {
     expect(styles[':root']!['--font-quran']).toContain('Amiri Quran');
     expect(styles['.quran-text']!.fontFamily).toBe('var(--font-quran)');
     expect(styles['.quran-text']!.fontSize).toBe('calc(1.6rem * var(--reading-scale))');
+
+    // Redesign additions: gold ayah markers, the four keyframes, and the
+    // reduced-motion kill-switch.
+    expect(styles['.ayah-marker']!.color).toBe(TOKENS.light.gold);
+    for (const keyframe of ['fadeUp', 'shimmer', 'floaty', 'ringIn']) {
+      expect(styles[`@keyframes ${keyframe}`]).toBeDefined();
+    }
+    expect(styles['@media (prefers-reduced-motion: reduce)']).toMatchObject({
+      '*, *::before, *::after': { animation: 'none !important' },
+    });
+  });
+
+  it('defaults to light, flips to dark via settings, and persists the choice', async () => {
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<meta name="theme-color" content="#f6f1e7">',
+    );
+    const user = userEvent.setup();
+    render(
+      <AppThemeProvider>
+        <ModeProbe />
+      </AppThemeProvider>,
+    );
+
+    const probe = screen.getByRole('button', { name: 'تبديل المظهر' });
+    expect(probe).toHaveAttribute('data-mode', 'light');
+    expect(probe).toHaveAttribute('data-bg', TOKENS.light.bg);
+
+    await user.click(probe);
+
+    expect(probe).toHaveAttribute('data-mode', 'dark');
+    expect(probe).toHaveAttribute('data-palette-mode', 'dark');
+    expect(probe).toHaveAttribute('data-bg', TOKENS.dark.bg);
+    expect(localStorage.getItem('khatma.themeMode')).toBe('dark');
+    expect(
+      document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+    ).toBe(TOKENS.dark.bg);
+
+    document.querySelector('meta[name="theme-color"]')?.remove();
   });
 });

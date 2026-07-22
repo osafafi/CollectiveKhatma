@@ -5,6 +5,7 @@ import {
   useLastReadPage,
   useReadingScale,
   useRememberedMemberId,
+  useThemeMode,
 } from '@/app/persistence';
 
 describe('React browser-persistence hooks', () => {
@@ -57,6 +58,20 @@ describe('React browser-persistence hooks', () => {
     localStorage.setItem('khatma.lastReadPage', '20.5');
     const invalid = renderHook(() => useLastReadPage());
     expect(invalid.result.current[0]).toBe(1);
+  });
+
+  it('defaults the theme mode to light, persists changes, and rejects junk values', () => {
+    localStorage.setItem('khatma.themeMode', 'sepia');
+    const { result } = renderHook(() => useThemeMode());
+
+    expect(result.current[0]).toBe('light');
+
+    act(() => result.current[1]('dark'));
+    expect(result.current[0]).toBe('dark');
+    expect(localStorage.getItem('khatma.themeMode')).toBe('dark');
+
+    const resumed = renderHook(() => useThemeMode());
+    expect(resumed.result.current[0]).toBe('dark');
   });
 
   it('uses the exact per-khatma acknowledgement key and only accepts value 1', () => {

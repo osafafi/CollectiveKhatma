@@ -57,14 +57,19 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     emerald2: '#0a5348',
     gold: '#c9a24a',
     goldSoft: '#f4ead0',
-    goldInk: '#8a6a1f',
+    // Handoff proposed #8a6a1f (4.2:1 on goldSoft); nudged darker to clear the
+    // repo's WCAG-AA 4.5 floor for chip text.
+    goldInk: '#806018',
     heroInk: '#eafaf4',
     onEmerald: '#ffffff',
     cellRem: '#e5ddcb',
     tabActiveBg: 'rgba(14,111,97,.13)',
     tabActiveInk: '#0a5348',
     tabIdle: '#94a199',
-    danger: '#c0492f',
+    // Handoff proposed #c0492f, which lands at 4.4:1 on the app background —
+    // below the repo's pinned WCAG-AA 4.5 floor. The pre-redesign brick red
+    // stays (visually near-identical, contrast-proven).
+    danger: '#b23a2e',
     success: '#2f7d55',
     successStrong: '#256444',
     warn: '#b45309',

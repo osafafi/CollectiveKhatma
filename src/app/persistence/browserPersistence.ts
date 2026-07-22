@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_READING_SCALE, type ReadingScale } from '@/theme/reading';
+import type { ThemeMode } from '@/theme/tokens';
 
 const MEMBER_ID_KEY = 'khatma.memberId';
 const READING_SCALE_KEY = 'khatma.readingScale';
 const LAST_READ_PAGE_KEY = 'khatma.lastReadPage';
+const THEME_MODE_KEY = 'khatma.themeMode';
 const DU3A_ACK_PREFIX = 'khatma.du3aAck.';
 
 export const TOTAL_QURAN_PAGES = 604;
@@ -37,6 +39,24 @@ export function useReadingScale(): PersistentValue<ReadingScale> {
   return [scale, setScale];
 }
 
+/**
+ * Persist the light/dark theme choice shared by the member and admin entries
+ * (same origin → same storage). Light is the default; the Settings screens own
+ * the only toggle.
+ */
+export function useThemeMode(): PersistentValue<ThemeMode> {
+  const [mode, setModeState] = useState<ThemeMode>(() =>
+    parseThemeMode(read(THEME_MODE_KEY)),
+  );
+
+  const setMode = useCallback((nextMode: ThemeMode): void => {
+    setModeState(nextMode);
+    write(THEME_MODE_KEY, nextMode);
+  }, []);
+
+  return [mode, setMode];
+}
+
 /** Resume and update the browse reader's last valid mushaf page. */
 export function useLastReadPage(): PersistentValue<number> {
   const [page, setPageState] = useState(() =>
@@ -66,6 +86,10 @@ export function useDu3aAcknowledgement(
   }, [key]);
 
   return [acknowledged, acknowledge];
+}
+
+function parseThemeMode(value: string | null): ThemeMode {
+  return value === 'dark' ? 'dark' : 'light';
 }
 
 function parseReadingScale(value: string | null): ReadingScale {
