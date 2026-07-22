@@ -53,6 +53,8 @@ export const strings = {
     switchPerson: 'لست أنت؟',
     // Navigation / headings
     khatmasHeading: 'ختماتي',
+    activeCountWord: 'جارية',
+    previousHeading: 'السابقة',
     back: 'رجوع',
     openKhatma: 'فتح الختمة',
     // Current round

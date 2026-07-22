@@ -1,4 +1,5 @@
-import { Chip, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
@@ -17,7 +18,7 @@ export function MyRoundCard({ khatma, assignment, memberId }: MyRoundCardProps) 
   const chunk = latestReadableChunk(assignment);
   if (!chunk) {
     return (
-      <SurfaceCard title={strings.member.todayHeading}>
+      <SurfaceCard title={strings.member.todayHeading} appear={0}>
         <Typography color="text.secondary">
           {strings.member.awaitingDistribution}
         </Typography>
@@ -26,7 +27,7 @@ export function MyRoundCard({ khatma, assignment, memberId }: MyRoundCardProps) 
   }
 
   return (
-    <SurfaceCard title={strings.member.todayHeading}>
+    <SurfaceCard title={strings.member.todayHeading} appear={0}>
       <PagesRow pages={chunk.pages} />
       <RoundActions
         key={`${khatma.id}:${chunk.round}`}
@@ -45,11 +46,27 @@ function PagesRow({ pages }: { pages: readonly number[] }) {
       <Typography sx={{ fontWeight: 600 }}>{pagesCount(pages.length)}</Typography>
       <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
         {pages.map((page) => (
-          <Chip
+          // The design's gold page tiles (mock 2a): goldSoft surface, goldInk
+          // number, generous touch size.
+          <Box
             key={page}
-            label={toArabicDigits(page)}
-            sx={{ bgcolor: 'background.default', fontSize: '1.125rem' }}
-          />
+            component="span"
+            sx={(theme) => ({
+              minWidth: 52,
+              textAlign: 'center',
+              fontSize: '1.125rem',
+              fontWeight: 700,
+              fontVariantNumeric: 'tabular-nums',
+              color: theme.custom.goldInk,
+              bgcolor: theme.custom.goldSoft,
+              border: `1px solid ${alpha(theme.custom.gold, 0.35)}`,
+              borderRadius: `${theme.custom.radii.button}px`,
+              px: 1.5,
+              py: 2,
+            })}
+          >
+            {toArabicDigits(page)}
+          </Box>
         ))}
       </Stack>
     </Stack>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useWriteOperation } from '@/app/operations';
-import { AppButton, AppTextField } from '@/components/primitives';
+import { AppButton, AppTextField, CollapsibleCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import {
@@ -42,28 +42,12 @@ export function MemberFeedbackSection({
   };
 
   return (
-    <Paper
-      component="details"
+    <CollapsibleCard
+      title={strings.settings.feedbackTitle}
       open={open}
-      onToggle={(event) => onOpenChange(event.currentTarget.open)}
-      variant="outlined"
-      sx={{ overflow: 'hidden', borderRadius: 3 }}
+      onOpenChange={onOpenChange}
     >
-      <Box
-        component="summary"
-        sx={{
-          cursor: 'pointer',
-          px: 4,
-          py: 3,
-          color: 'primary.main',
-          fontSize: '1.125rem',
-          fontWeight: 700,
-          userSelect: 'none',
-        }}
-      >
-        {strings.settings.feedbackTitle}
-      </Box>
-      <Stack spacing={2} sx={{ borderTop: 1, borderColor: 'divider', p: 4 }}>
+      <Stack spacing={2}>
         <AppTextField
           label={strings.settings.feedbackLabel}
           value={message}
@@ -99,6 +83,6 @@ export function MemberFeedbackSection({
           </Typography>
         ) : null}
       </Stack>
-    </Paper>
+    </CollapsibleCard>
   );
 }

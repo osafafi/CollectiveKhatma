@@ -137,7 +137,10 @@ describe('member khatma routes', () => {
       name: `${strings.member.openKhatma}: ${firstTitle}`,
     });
     expect(firstLink).toHaveAttribute('href', '#/khatma/first');
-    expect(within(firstLink).getByText('٥٠٪')).toBeVisible();
+    // The redesigned row card folds the percent into the group-progress caption.
+    expect(
+      within(firstLink).getByText(`${strings.member.groupProgress} ٥٠٪`),
+    ).toBeVisible();
     expect(within(firstLink).getByText(/٢ صفحات/)).toBeVisible();
     expect(
       within(firstLink).getByRole('img', {
@@ -155,7 +158,12 @@ describe('member khatma routes', () => {
       expect.stringContaining('/khatma-images/placeholder.svg'),
     );
     expect(screen.queryByText(seriesTitle(irrelevant, toArabicDigits))).toBeNull();
-    expect(screen.getAllByRole('link', { name: /فتح الختمة/ })).toHaveLength(2);
+    // Two active series cards + the completed khatma in the redesign's
+    // "previous" section (mock 4a).
+    expect(screen.getAllByRole('link', { name: /فتح الختمة/ })).toHaveLength(3);
+    expect(
+      screen.getByRole('heading', { name: strings.member.previousHeading }),
+    ).toBeVisible();
 
     expect(harness.subscriptions.assignment(first.id).counts().active).toBe(1);
     expect(harness.subscriptions.assignment(latest.id).counts().active).toBe(1);
@@ -170,7 +178,9 @@ describe('member khatma routes', () => {
       screen.getByRole('heading', { name: seriesTitle(first, toArabicDigits) }),
     ).toBeVisible();
     expect(
-      screen.getByRole('img', { name: strings.admin.seriesImageAlt }),
+      // The hero artwork is decorative (the title carries identity), so it is
+      // aria-hidden and only reachable with the hidden option.
+      screen.getByRole('img', { name: strings.admin.seriesImageAlt, hidden: true }),
     ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
   });
 
@@ -279,8 +289,14 @@ describe('member khatma routes', () => {
         name: seriesTitle(active, toArabicDigits),
       }),
     ).toBeVisible();
-    expect(screen.getByText(`${strings.member.startedWord} 2026-07-01`)).toBeVisible();
-    expect(screen.getByText(`${strings.member.roundWord} ٢`)).toBeVisible();
+    // The hero folds round + start date into one line (mock 2a).
+    expect(
+      screen.getByText(
+        (content) =>
+          content.includes(`${strings.member.startedWord} 2026-07-01`) &&
+          content.includes(`${strings.member.roundWord} ٢`),
+      ),
+    ).toBeVisible();
     expect(screen.getByRole('alert')).toHaveTextContent(strings.member.warningNote);
     expect(screen.getByText('٢ صفحات')).toBeVisible();
     expect(screen.getByText('٣')).toBeVisible();
@@ -296,7 +312,13 @@ describe('member khatma routes', () => {
     expect(
       screen.getByRole('heading', { name: strings.member.historyHeading }),
     ).toBeVisible();
-    expect(screen.getByText(/أهل القرآن ١ · اكتملت في 2026-06-30/)).toBeVisible();
+    // The redesigned history collapsible starts closed (mock 2a); open it to
+    // reveal the split title/date row.
+    await harness.user.click(
+      screen.getByRole('heading', { name: strings.member.historyHeading }),
+    );
+    expect(screen.getByText('أهل القرآن ١')).toBeVisible();
+    expect(screen.getByText(`${strings.member.completedOn} 2026-06-30`)).toBeVisible();
 
     harness.subscriptions.assignment(active.id).emit([makeAssignment(amina.id), other]);
     expect(screen.getByText(strings.member.awaitingDistribution)).toBeVisible();

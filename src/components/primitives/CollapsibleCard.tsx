@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
-import { Box, Paper } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { appearSx } from './appearSx';
 import { mergeSx } from './mergeSx';
@@ -11,6 +11,10 @@ export interface CollapsibleCardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
+  /** Summary trailing content (percent, count pill) shown before the chevron. */
+  summaryEnd?: ReactNode;
+  /** Heading level of the summary title (a real heading for AT navigation). */
+  headingComponent?: 'h2' | 'h3';
   /** List position for the staggered fadeUp entry; omit for no motion. */
   appear?: number;
   sx?: SxProps<Theme>;
@@ -27,6 +31,8 @@ export function CollapsibleCard({
   open,
   onOpenChange,
   children,
+  summaryEnd,
+  headingComponent = 'h3',
   appear,
   sx,
 }: CollapsibleCardProps) {
@@ -67,26 +73,38 @@ export function CollapsibleCard({
           '&::-webkit-details-marker': { display: 'none' },
         }}
       >
-        <Box
-          component="span"
-          sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'text.primary' }}
+        <Typography
+          component={headingComponent}
+          sx={{ m: 0, fontSize: '1.125rem', fontWeight: 700, color: 'text.primary' }}
         >
           {title}
-        </Box>
+        </Typography>
         <Box
           component="span"
-          className="collapsible-chev"
-          aria-hidden="true"
-          sx={(theme) => ({
-            display: 'flex',
-            color: 'text.secondary',
-            transition: `transform ${theme.custom.motion.fast} ${theme.custom.motion.easing}`,
-          })}
+          sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 'none' }}
         >
-          <ExpandMoreRoundedIcon />
+          {summaryEnd}
+          <Chevron />
         </Box>
       </Box>
       <Box sx={{ px: 4, pb: 4 }}>{children}</Box>
     </Paper>
+  );
+}
+
+function Chevron() {
+  return (
+    <Box
+      component="span"
+      className="collapsible-chev"
+      aria-hidden="true"
+      sx={(theme) => ({
+        display: 'flex',
+        color: 'text.secondary',
+        transition: `transform ${theme.custom.motion.fast} ${theme.custom.motion.easing}`,
+      })}
+    >
+      <ExpandMoreRoundedIcon />
+    </Box>
   );
 }

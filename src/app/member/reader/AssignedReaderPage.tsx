@@ -9,7 +9,12 @@ import { toArabicDigits } from '@/content/quran/symbols';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import type { RoundChunk } from '@/domain/types';
 import { useMemberIdentity } from '../memberIdentityContext';
-import { QuranPageContent, ReaderNav, StickyChrome } from './readerParts';
+import {
+  QuranPageContent,
+  ReaderBackground,
+  ReaderNav,
+  StickyChrome,
+} from './readerParts';
 import { clampIndex, prefetchNeighbors } from './readerPaging';
 
 /**
@@ -85,6 +90,7 @@ function AssignedReaderCore({
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
+      <ReaderBackground />
       <QuranPageContent page={page} />
       <StickyChrome>
         <ReaderNav

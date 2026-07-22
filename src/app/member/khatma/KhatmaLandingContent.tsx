@@ -1,11 +1,13 @@
 import { Stack, Typography } from '@mui/material';
 import { memberHash } from '@/app/routing/routes';
+import { HeroHeader } from '@/components/navigation';
 import { AppButton, KhatmaSeriesArtwork, NoticeBanner } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { warningLevel } from '@/domain/distribution';
 import { completedInSeries, seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
+import { useMemberIdentity } from '../memberIdentityContext';
 import { formatIsoDate } from './formatting';
 import { GroupProgressCard } from './GroupProgressCard';
 import { HistoryCard } from './HistoryCard';
@@ -28,9 +30,11 @@ export function KhatmaLandingContent({
   memberId,
   paused,
 }: KhatmaLandingContentProps) {
+  const { member } = useMemberIdentity();
   const mine = assignments.find((assignment) => assignment.memberId === memberId);
   const warning = mine ? warningLevel(mine.missedStreak) : 'none';
   const history = completedInSeries(allKhatmas, khatma.seriesId);
+  const title = seriesTitle(khatma, toArabicDigits);
 
   return (
     <Stack
@@ -39,62 +43,63 @@ export function KhatmaLandingContent({
       data-react-surface="member"
       data-route="khatma"
     >
-      <AppButton
-        quiet
-        variant="text"
-        href={memberHash.khatmas()}
-        sx={{ alignSelf: 'start' }}
+      <HeroHeader
+        eyebrow={member?.name ? `${strings.member.greeting}، ${member.name}` : undefined}
+        title={title}
+        titleComponent="h1"
+        avatar={
+          <KhatmaSeriesArtwork
+            variant="avatar"
+            imageName={khatma.imageName}
+            alt={strings.admin.seriesImageAlt}
+            size={62}
+          />
+        }
+        avatarVariant="plain"
+        action={
+          <AppButton
+            quiet
+            variant="text"
+            href={memberHash.khatmas()}
+            sx={(theme) => ({ color: theme.custom.heroInk })}
+          >
+            {strings.member.khatmasHeading}
+          </AppButton>
+        }
+        sx={{ pb: 11 }}
       >
-        {strings.member.khatmasHeading}
-      </AppButton>
+        <RoundLine khatma={khatma} />
+      </HeroHeader>
 
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-        <KhatmaSeriesArtwork
-          variant="avatar"
-          imageName={khatma.imageName}
-          alt={strings.admin.seriesImageAlt}
-          size={72}
-        />
-        <Typography component="h1" variant="h2" color="primary.main">
-          {seriesTitle(khatma, toArabicDigits)}
-        </Typography>
+      {/* Cards overlap the hero's rounded bottom edge, per mock 2a. */}
+      <Stack spacing={4} sx={{ mt: -10, position: 'relative', zIndex: 1 }}>
+        {warning !== 'none' ? (
+          <NoticeBanner tone={warning === 'red' ? 'danger' : 'warning'}>
+            ⚠ {strings.member.warningNote}
+          </NoticeBanner>
+        ) : null}
+
+        {paused ? (
+          <NoticeBanner tone="primary" sx={{ textAlign: 'center' }}>
+            {strings.member.pausedNote}
+          </NoticeBanner>
+        ) : mine ? (
+          <MyRoundCard khatma={khatma} assignment={mine} memberId={memberId} />
+        ) : null}
+
+        <GroupProgressCard khatma={khatma} assignments={assignments} roster={roster} />
+
+        {history.length > 0 ? <HistoryCard khatmas={history} /> : null}
       </Stack>
-      <RoundLine khatma={khatma} />
-
-      {warning !== 'none' ? (
-        <NoticeBanner tone={warning === 'red' ? 'danger' : 'warning'}>
-          ⚠ {strings.member.warningNote}
-        </NoticeBanner>
-      ) : null}
-
-      {paused ? (
-        <NoticeBanner tone="primary" sx={{ textAlign: 'center' }}>
-          {strings.member.pausedNote}
-        </NoticeBanner>
-      ) : mine ? (
-        <MyRoundCard khatma={khatma} assignment={mine} memberId={memberId} />
-      ) : null}
-
-      <GroupProgressCard khatma={khatma} assignments={assignments} roster={roster} />
-
-      {history.length > 0 ? <HistoryCard khatmas={history} /> : null}
     </Stack>
   );
 }
 
 function RoundLine({ khatma }: { khatma: Khatma }) {
   return (
-    <Stack
-      direction="row"
-      spacing={3}
-      sx={{ justifyContent: 'space-between', color: 'text.secondary' }}
-    >
-      <Typography>
-        {strings.member.roundWord} {toArabicDigits(Math.max(1, khatma.roundCount))}
-      </Typography>
-      <Typography>
-        {strings.member.startedWord} {formatIsoDate(khatma.createdAt)}
-      </Typography>
-    </Stack>
+    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+      {strings.member.roundWord} {toArabicDigits(Math.max(1, khatma.roundCount))} ·{' '}
+      {strings.member.startedWord} {formatIsoDate(khatma.createdAt)}
+    </Typography>
   );
 }

@@ -15,6 +15,11 @@ export interface HeroHeaderProps {
   titleComponent?: 'h1' | 'div';
   /** Floating avatar chip content (initials/emoji) rendered before the texts. */
   avatar?: ReactNode;
+  /**
+   * `chip` (default) wraps the avatar in the frosted 44px pill; `plain`
+   * renders the node as-is (e.g. khatma cover art) with only the float.
+   */
+  avatarVariant?: 'chip' | 'plain';
   /** Action slot at the inline-end (bell button, count pill). */
   action?: ReactNode;
   /** Extra hero row(s) below the title: search field, jump pills. */
@@ -36,6 +41,7 @@ export function HeroHeader({
   title,
   titleComponent = 'div',
   avatar,
+  avatarVariant = 'chip',
   action,
   children,
   compact = false,
@@ -97,18 +103,22 @@ export function HeroHeader({
             <Box
               aria-hidden="true"
               sx={(theme) => ({
-                width: 44,
-                height: 44,
                 flex: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: `${theme.custom.radii.button}px`,
-                bgcolor: theme.custom.heroPill,
-                border: `1px solid ${theme.custom.heroPillBorder}`,
-                fontWeight: 700,
-                fontSize: '1rem',
                 animation: `floaty ${theme.custom.motion.floaty} ${theme.custom.motion.easingSoft} infinite`,
+                ...(avatarVariant === 'chip'
+                  ? {
+                      width: 44,
+                      height: 44,
+                      borderRadius: `${theme.custom.radii.button}px`,
+                      bgcolor: theme.custom.heroPill,
+                      border: `1px solid ${theme.custom.heroPillBorder}`,
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                    }
+                  : null),
               })}
             >
               {avatar}

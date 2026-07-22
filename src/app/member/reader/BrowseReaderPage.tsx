@@ -7,12 +7,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 import { useMemberNavigate } from '@/app/routing/hooks';
 import { useLastReadPage } from '@/app/persistence';
 import { getQuranIndex, getSurahs } from '@/content/quran/loader';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
-import { QuranPageContent, ReaderNav, StickyChrome } from './readerParts';
+import {
+  QuranPageContent,
+  ReaderBackground,
+  ReaderNav,
+  StickyChrome,
+} from './readerParts';
 import {
   TOTAL_PAGES,
   clampPage,
@@ -64,11 +70,12 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="quran">
+      <ReaderBackground />
       <StickyChrome>
         <Typography
           component="h1"
-          color="primary.main"
-          sx={{ textAlign: 'center', fontSize: '1.125rem', fontWeight: 700 }}
+          color="inherit"
+          sx={{ textAlign: 'center', fontSize: '1.125rem', fontWeight: 800 }}
         >
           {strings.reader.browseTitle}
         </Typography>
@@ -149,6 +156,19 @@ function JumpControls({
   );
 }
 
+/** Frosted hero-pill treatment for the jump controls inside the chrome. */
+const heroFieldSx = (theme: Theme) => ({
+  '& .MuiOutlinedInput-root': {
+    backgroundColor: theme.custom.heroPill,
+    color: theme.custom.heroInk,
+    borderRadius: `${theme.custom.radii.pill}px`,
+    '& fieldset': { borderColor: theme.custom.heroPillBorder },
+    '&:hover fieldset': { borderColor: theme.custom.heroPillBorder },
+    '& .MuiSvgIcon-root': { color: theme.custom.heroInk },
+  },
+  '& .MuiInputLabel-root': { color: theme.custom.heroInk },
+});
+
 /** A reset-on-select jump menu: it triggers navigation without tracking a value. */
 function JumpSelect({
   label,
@@ -160,7 +180,7 @@ function JumpSelect({
   onJump: (page: number) => void;
 }) {
   return (
-    <FormControl size="small" sx={{ minWidth: 128 }}>
+    <FormControl size="small" sx={[{ minWidth: 128 }, heroFieldSx]}>
       <Select
         value=""
         displayEmpty
@@ -223,7 +243,7 @@ function PageJumpInput({
           'aria-label': strings.reader.goToPage,
         },
       }}
-      sx={{ width: 96, '& input': { fontVariantNumeric: 'tabular-nums' } }}
+      sx={[{ width: 96, '& input': { fontVariantNumeric: 'tabular-nums' } }, heroFieldSx]}
     />
   );
 }
