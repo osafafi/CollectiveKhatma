@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Stack, Typography } from '@mui/material';
+import { AppearanceSettingsCard } from '@/app/appearance/AppearanceSettingsCard';
 import { useWriteOperation } from '@/app/operations';
 import {
   AppButton,
@@ -11,6 +12,7 @@ import { strings } from '@/content/strings.ar';
 import { personAvatar } from '@/domain/personAppearance';
 import type { Person } from '@/domain/types';
 import type { ReadingScale } from '@/theme/reading';
+import { MemberHero } from './MemberHero';
 import { useMemberIdentity } from './memberIdentityContext';
 import { MemberFeedbackSection } from './MemberFeedbackSection';
 
@@ -36,16 +38,16 @@ export function SettingsPage({
 
   return (
     <Stack spacing={4}>
-      <Typography component="h1" variant="h2" color="primary.main">
-        {strings.nav.settings}
-      </Typography>
-      {member ? <AvatarEditor key={member.id} person={member} /> : null}
+      <MemberHero title={strings.nav.settings} />
+      {/* Design order (mock 2c): appearance → reading size → avatar → feedback. */}
+      <AppearanceSettingsCard />
       <ReadingScaleControl
         readingScale={readingScale}
         onReadingScaleChange={onReadingScaleChange}
         open={open}
         onOpenChange={onOpenChange}
       />
+      {member ? <AvatarEditor key={member.id} person={member} /> : null}
       <MemberFeedbackSection open={feedbackOpen} onOpenChange={onFeedbackOpenChange} />
     </Stack>
   );

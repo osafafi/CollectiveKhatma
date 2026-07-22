@@ -5,16 +5,19 @@ import { resolve } from 'node:path';
 const outputDirectory = resolve('dist');
 const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 
+// 2026-07: redesign landed (theme factory with a light+dark token map, motion
+// keyframes, hero header chrome; fonts unchanged). Measured after Phase 6:
+// member 353.7/518.4 kB, admin 358.4/523.2 kB — budgets hold ~5-10 kB slack.
 const budgets = {
   member: {
     entry: 'index.html',
-    initialJavaScriptGzipBytes: 350_000,
-    initialTransferBytes: 525_000,
+    initialJavaScriptGzipBytes: 360_000,
+    initialTransferBytes: 528_000,
   },
   admin: {
     entry: 'admin-nano.html',
-    initialJavaScriptGzipBytes: 375_000,
-    initialTransferBytes: 530_000,
+    initialJavaScriptGzipBytes: 368_000,
+    initialTransferBytes: 533_000,
   },
 };
 

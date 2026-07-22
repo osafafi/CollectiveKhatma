@@ -16,11 +16,11 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
 import type { Assignment, Khatma, Person } from '@/domain/types';
-import { tokens } from '@/theme/muiTheme';
 import {
   buildQuranPageEntries,
   pageIndexAtGridPoint,
@@ -77,6 +77,7 @@ export function QuranPageGrid({
   neighborCount = DEFAULT_NEIGHBOR_COUNT,
   longPressMs = DEFAULT_LONG_PRESS_MS,
 }: QuranPageGridProps) {
+  const pageMapColors = usePageMapColors();
   const entries = useMemo(
     () => buildQuranPageEntries(khatma, assignments),
     [assignments, khatma],
@@ -203,7 +204,7 @@ export function QuranPageGrid({
       sx={{
         border: 1,
         borderColor: 'divider',
-        borderRadius: '12px !important',
+        borderRadius: (theme) => `${theme.custom.radii.button}px !important`,
         bgcolor: 'background.default',
         boxShadow: 'none',
         overflow: 'visible',
@@ -259,7 +260,7 @@ export function QuranPageGrid({
               touchAction: activeIndex === null ? 'pan-y' : 'none',
               userSelect: 'none',
               WebkitTouchCallout: 'none',
-              borderRadius: 2,
+              borderRadius: (theme) => `${theme.custom.radii.cardSm}px`,
             }}
           >
             {entries.map((entry, index) => {
@@ -298,9 +299,9 @@ export function QuranPageGrid({
                     aspectRatio: '1',
                     minWidth: 0,
                     borderRadius: '2px',
-                    bgcolor: pageColor(entry.state),
+                    bgcolor: pageMapColors[entry.state].bg,
                     border: '1px solid',
-                    borderColor: pageBorderColor(entry.state),
+                    borderColor: pageMapColors[entry.state].border,
                     transform: `scaleX(${scale}) scaleY(${verticalScale})`,
                     transformOrigin: 'bottom center',
                     transition: 'transform 130ms cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -325,7 +326,7 @@ export function QuranPageGrid({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            bgcolor: pageBorderColor(entry.state),
+                            bgcolor: pageMapColors[entry.state].border,
                             color: pageTextColor(entry.state),
                             overflow: 'hidden',
                             pointerEvents: 'none',
@@ -450,6 +451,7 @@ function countStates(entries: readonly QuranPageEntry[]): Record<QuranPageState,
 }
 
 function PageMapLegend({ counts }: { counts: Record<QuranPageState, number> }) {
+  const pageMapColors = usePageMapColors();
   const items: ReadonlyArray<{ state: QuranPageState; label: string }> = [
     { state: 'done', label: strings.admin.legendDone },
     { state: 'assigned', label: strings.admin.legendPending },
@@ -467,9 +469,9 @@ function PageMapLegend({ counts }: { counts: Record<QuranPageState, number> }) {
               width: 10,
               height: 10,
               borderRadius: '2px',
-              bgcolor: pageColor(state),
+              bgcolor: pageMapColors[state].bg,
               border: '1px solid',
-              borderColor: pageBorderColor(state),
+              borderColor: pageMapColors[state].border,
             }}
           />
           <Typography variant="caption" color="text.secondary">
@@ -481,26 +483,35 @@ function PageMapLegend({ counts }: { counts: Record<QuranPageState, number> }) {
   );
 }
 
-function pageColor(state: QuranPageState): string {
-  switch (state) {
-    case 'done':
-      return tokens.color.primary;
-    case 'assigned':
-      return tokens.color.accent;
-    case 'remaining':
-      return 'grey.300';
-  }
+interface PageStateColors {
+  bg: string;
+  border: string;
 }
 
-function pageBorderColor(state: QuranPageState): string {
-  switch (state) {
-    case 'done':
-      return tokens.color.primaryStrong;
-    case 'assigned':
-      return mixHex(tokens.color.accent, tokens.color.ink, 0.24);
-    case 'remaining':
-      return 'grey.400';
-  }
+/**
+ * Resolve the page-map cell colors from the active theme so the grid stays
+ * correct in both modes (done=primary, assigned=gold accent, remaining=the
+ * design's "remaining cell" token).
+ */
+function usePageMapColors(): Record<QuranPageState, PageStateColors> {
+  const theme = useTheme();
+  return useMemo(
+    () => ({
+      done: {
+        bg: theme.palette.primary.main,
+        border: theme.palette.primary.dark,
+      },
+      assigned: {
+        bg: theme.palette.secondary.main,
+        border: mixHex(theme.palette.secondary.main, theme.palette.text.primary, 0.24),
+      },
+      remaining: {
+        bg: theme.custom.cellRem,
+        border: theme.palette.divider,
+      },
+    }),
+    [theme],
+  );
 }
 
 function pageTextColor(state: QuranPageState): string {

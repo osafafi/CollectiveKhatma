@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { MemberHero } from '@/app/member/MemberHero';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberIdentitySummary } from '@/app/member/MemberIdentitySummary';
 import { MemberShell } from '@/app/member/MemberShell';
@@ -22,6 +23,9 @@ function MemberExperience() {
   return (
     <MemberIdentityBoundary>
       <MemberShell>
+        {/* The redesign shows the member name in the hero (identity summary
+            keeps only heading + actions), so the probe includes both. */}
+        <MemberHero />
         <MemberIdentitySummary />
       </MemberShell>
     </MemberIdentityBoundary>

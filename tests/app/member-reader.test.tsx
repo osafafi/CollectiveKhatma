@@ -162,6 +162,20 @@ describe('member browse reader', () => {
     expect(await screen.findByText(/page-body-2/)).toBeVisible();
   });
 
+  it('places matched navigation actions in RTL book order', () => {
+    renderMember({ route: '/quran/2', data: { roster: [amina] } });
+
+    const previous = screen.getByRole('button', { name: /السابقة/ });
+    const next = screen.getByRole('button', { name: /التالية/ });
+
+    expect(previous).toBeEnabled();
+    expect(next).toBeEnabled();
+    expect(previous).toHaveClass('MuiButton-contained');
+    expect(next).toHaveClass('MuiButton-contained');
+    expect(document.documentElement).toHaveAttribute('dir', 'rtl');
+    expect(previous.compareDocumentPosition(next)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it('disables the next control at the last page on a deep link', () => {
     renderMember({ route: '/quran/604', data: { roster: [amina] } });
 
@@ -200,7 +214,7 @@ describe('member browse reader', () => {
 
 describe('member assigned reader', () => {
   it('reads the assigned chunk, navigates, and finishes the round', async () => {
-    const khatma = makeKhatma('k1');
+    const khatma = makeKhatma('k1', { imageName: '1.jpeg' });
     const markRoundDone = vi
       .fn<WriteOperations['markRoundDone']>()
       .mockResolvedValue(undefined);
@@ -216,11 +230,28 @@ describe('member assigned reader', () => {
       operations: { ...writeOperations, markRoundDone },
     });
 
-    expect(await screen.findByText('صفحة ١٠ · ١ من ٣')).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: strings.reader.assignedTitle }),
+    ).toBeVisible();
+    expect(screen.getByText(`${amina.name} A`)).toBeVisible();
+
+    const pageCount = screen.getByText('٣ صفحات');
+    const khatmaTitle = screen.getByText('سلسلة k1 ١');
+    const khatmaArtwork = screen.getByRole('img', {
+      name: strings.admin.seriesImageAlt,
+    });
+    expect(khatmaTitle.previousElementSibling).toBe(khatmaArtwork);
+    expect(khatmaArtwork).toHaveAttribute('src', '/khatma-images/1.jpeg');
+    expect(pageCount).toHaveStyle({ height: '40px' });
+    expect(khatmaArtwork).toHaveStyle({ height: '40px' });
+    const progressIndicator = await screen.findByText('١ من ٣');
+    expect(progressIndicator).toBeVisible();
+    expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة ١٠');
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     await harness.user.click(
       screen.getByRole('button', { name: strings.member.finishedToday }),
@@ -245,13 +276,15 @@ describe('member assigned reader', () => {
     });
 
     await harness.user.click(await screen.findByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     // An unrelated tick (same round, streak bumped) must not reset page or scroll.
     harness.subscriptions
       .assignment(khatma.id)
       .emit([makeAssignment(amina.id, [round(1, [10, 11, 12])], {}, 4)]);
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     // A new round remounts the reader fresh at its first page.
     harness.subscriptions.assignment(khatma.id).emit([
@@ -259,7 +292,8 @@ describe('member assigned reader', () => {
         1: 100,
       }),
     ]);
-    expect(await screen.findByText('صفحة ٢٠ · ١ من ٢')).toBeVisible();
+    expect(await screen.findByText('١ من ٢')).toBeVisible();
+    expect(screen.getByText('صفحة ٢٠')).toBeVisible();
   });
 
   it('shows loading, no-pages, and paused states', () => {

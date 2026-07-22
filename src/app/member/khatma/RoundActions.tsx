@@ -1,3 +1,4 @@
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { Stack, Typography } from '@mui/material';
 import { ReleasedChunkError, useWriteOperation } from '@/app/operations';
 import { memberHash } from '@/app/routing/routes';
@@ -43,6 +44,7 @@ export function RoundActions({
       </AppButton>
       <AppButton
         hero
+        startIcon={<CheckRoundedIcon />}
         disabled={markDone.isPending}
         onClick={() => {
           void markDone.execute(khatmaId, memberId, chunk.round);

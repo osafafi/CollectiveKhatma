@@ -53,6 +53,8 @@ export const strings = {
     switchPerson: 'لست أنت؟',
     // Navigation / headings
     khatmasHeading: 'ختماتي',
+    activeCountWord: 'جارية',
+    previousHeading: 'السابقة',
     back: 'رجوع',
     openKhatma: 'فتح الختمة',
     // Current round
@@ -87,10 +89,22 @@ export const strings = {
   personal: {
     heading: 'صفحتي الشخصية',
     myKhatmas: 'ختماتي',
+    pendingAssignmentsHeading: 'صفحات بانتظار القراءة',
+    assignedPages: 'الصفحات المعيّنة',
+    noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',
+    quranCompletionHeading: 'إجمالي ما أتممت',
+    quranPageTotal: 'من ٦٠٤ صفحة',
+    quranDonutCaption: 'من المصحف',
+    topReadersLead: 'أنت ضمن أفضل',
+    topReadersTail: 'من القرّاء',
+    completedKhatmas: 'ختمات مكتملة',
+    pagesThisMonth: 'صفحات هذا الشهر',
+    longestDailyStreak: 'أطول تتابع (يوم)',
   },
   // In-app mushaf reader — both the free-browse tab and the assigned-pages flow.
   reader: {
     browseTitle: 'المصحف الشريف',
+    assignedTitle: 'صفحاتي اليومية',
     surah: 'السورة',
     surahHeading: 'سورة',
     juz: 'الجزء',
@@ -107,6 +121,9 @@ export const strings = {
   },
   settings: {
     title: 'الإعدادات',
+    appearanceTitle: 'مظهر التطبيق',
+    themeLight: 'فاتح',
+    themeDark: 'داكن',
     avatarTitle: 'الصورة الرمزية',
     avatarLabel: 'رمز تعبيري (اختياري)',
     avatarHelper:
@@ -230,6 +247,7 @@ export const strings = {
 
     // Khatmas list + per-khatma page
     khatmasHeading: 'كل الختمات',
+    khatmaDetailTitle: 'تفاصيل الختمة',
     statusActive: 'جارية',
     statusCompleted: 'مكتملة',
     progressLabel: 'تقدّم المجموعة',

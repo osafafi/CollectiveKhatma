@@ -1,5 +1,7 @@
 export { AppButton } from './AppButton';
 export type { AppButtonProps } from './AppButton';
+export { CollapsibleCard } from './CollapsibleCard';
+export type { CollapsibleCardProps } from './CollapsibleCard';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export type { ConfirmationDialogProps } from './ConfirmationDialog';
 export { AppCheckboxField, AppSelectField, AppSliderField, AppTextField } from './Fields';
@@ -21,5 +23,6 @@ export { ReadingScaleControl } from './ReadingScaleControl';
 export type { ReadingScaleControlProps } from './ReadingScaleControl';
 export { NoticeBanner, StatusChip } from './StatusDisplay';
 export type { NoticeBannerProps, StatusChipProps, StatusTone } from './StatusDisplay';
+export { appearSx } from './appearSx';
 export { NestedSurface, SurfaceCard } from './SurfaceCard';
 export type { NestedSurfaceProps, SurfaceCardProps } from './SurfaceCard';

@@ -45,23 +45,21 @@ export function AdminFeedbackInbox() {
           });
           setOpen(true);
         }}
-        sx={{
-          position: 'absolute',
-          right: 0,
-          top: '50%',
-          transform: 'translateY(-50%)',
+        sx={(theme) => ({
+          // The hero's frosted pill button (mock 5a); rendered inside the
+          // shell hero's action slot.
           display: 'grid',
           width: 44,
           height: 44,
           p: 0,
           placeItems: 'center',
-          border: 0,
-          borderRadius: '50%',
-          bgcolor: 'transparent',
-          color: 'text.primary',
+          borderRadius: `${theme.custom.radii.button}px`,
+          border: `1px solid ${theme.custom.heroPillBorder}`,
+          bgcolor: theme.custom.heroPill,
+          color: theme.custom.heroInk,
           cursor: 'pointer',
-          '&:hover': { bgcolor: 'action.hover' },
-        }}
+          '&:hover': { bgcolor: theme.custom.heroPillBorder },
+        })}
       >
         <Box
           component="span"
@@ -100,7 +98,7 @@ export function AdminFeedbackInbox() {
         fullWidth
         maxWidth={false}
         aria-labelledby={drawerTitleId}
-        sx={{
+        sx={(theme) => ({
           '& .MuiDialog-container': {
             position: 'relative',
             alignItems: 'flex-start',
@@ -115,15 +113,15 @@ export function AdminFeedbackInbox() {
             height: `${ADMIN_FEEDBACK_DRAWER_HEIGHT_PERCENT}vh`,
             maxHeight: `${ADMIN_FEEDBACK_DRAWER_HEIGHT_PERCENT}vh`,
             m: 0,
-            borderRadius: '24px 24px 24px 24px',
+            borderRadius: `${theme.custom.radii.card}px`,
             transformOrigin: '0 0',
-            animation: 'feedbackDrawerIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+            animation: `feedbackDrawerIn ${theme.custom.motion.fast} ${theme.custom.motion.easing}`,
           },
           '@keyframes feedbackDrawerIn': {
             from: { transform: 'scale(0)', opacity: 0 },
             to: { transform: 'scale(1)', opacity: 1 },
           },
-        }}
+        })}
       >
         <Box sx={{ height: '100%', overflowY: 'auto', p: { xs: 3, sm: 4 } }}>
           <Stack spacing={3} sx={{ width: 'min(100%, 896px)', mx: 'auto' }}>
@@ -193,7 +191,7 @@ function FeedbackMessage({ feedback }: { feedback: MemberFeedback }) {
     deleteFeedback.state.status === 'failure';
 
   return (
-    <NestedSurface sx={{ borderRadius: '15px' }}>
+    <NestedSurface>
       <Stack spacing={2}>
         <Stack
           direction="row"

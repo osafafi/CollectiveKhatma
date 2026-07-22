@@ -115,7 +115,7 @@ describe('admin Settings', () => {
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
-    await user.click(within(disclosure!).getByText(strings.settings.title));
+    await user.click(disclosure!.querySelector('summary')!);
 
     const slider = screen.getByRole('slider', { name: strings.settings.fontSize });
     expect(slider).toHaveAttribute('aria-valuenow', '4');
@@ -130,12 +130,25 @@ describe('admin Settings', () => {
     expect(localStorage.getItem('khatma.readingScale')).toBe('5');
   });
 
+  it('offers the same appearance toggle as the member app and persists it', async () => {
+    const { user } = renderSettings({ roster: [amina], khatmas: [] });
+
+    const group = screen.getByRole('group', { name: strings.settings.appearanceTitle });
+    const darkButton = within(group).getByRole('button', {
+      name: strings.settings.themeDark,
+    });
+    expect(darkButton).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(darkButton);
+
+    expect(darkButton).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem('khatma.themeMode')).toBe('dark');
+  });
+
   it('keeps the reading-scale disclosure open across route navigation', async () => {
     const { user } = renderSettings({ roster: [amina], khatmas: [] });
 
-    await user.click(
-      within(document.querySelector('details')!).getByText(strings.settings.title),
-    );
+    await user.click(document.querySelector('details')!.querySelector('summary')!);
     expect(document.querySelector('details')).toHaveAttribute('open');
 
     await user.click(screen.getByRole('link', { name: strings.admin.navHome }));

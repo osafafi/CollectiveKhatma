@@ -43,10 +43,6 @@ export function AdminRosterPage() {
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="roster">
-      <Typography component="h1" variant="h2" color="primary.main">
-        {strings.admin.rosterHeading}
-      </Typography>
-
       <SurfaceCard>
         <AppTextField
           type="search"

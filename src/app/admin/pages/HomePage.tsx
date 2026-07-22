@@ -59,10 +59,6 @@ export function AdminHomePage() {
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="home">
-      <Typography component="h1" variant="h2" color="primary.main">
-        {strings.admin.homeHeading}
-      </Typography>
-
       {groups.length === 0 ? (
         // Before the first khatmas snapshot this empty card also shows transiently
         // (no dedicated loading state), matching the legacy dashboard.
@@ -223,14 +219,14 @@ function PendingReaders({
 
   return (
     <Box
-      sx={{
-        borderRadius: 1,
+      sx={(theme) => ({
+        borderRadius: `${theme.custom.radii.cardSm}px`,
         bgcolor: 'background.default',
         p: 3,
         color: 'text.secondary',
-      }}
+      })}
     >
-      <Typography sx={{ fontWeight: 600 }}>{strings.admin.pendingHeading}</Typography>
+      <Typography sx={{ fontWeight: 700 }}>{strings.admin.pendingHeading}</Typography>
       <Stack
         component="ul"
         spacing={1}
@@ -281,14 +277,14 @@ function Warnings({
       disableGutters
       elevation={0}
       slotProps={{ transition: { unmountOnExit: true } }}
-      sx={{
+      sx={(theme) => ({
         border: 1,
         borderColor: 'divider',
-        borderRadius: '12px !important',
+        borderRadius: `${theme.custom.radii.button}px !important`,
         bgcolor: 'background.default',
         boxShadow: 'none',
         '&:before': { display: 'none' },
-      }}
+      })}
     >
       <AccordionSummary
         expandIcon={<ExpandMoreRoundedIcon />}
@@ -428,11 +424,13 @@ function DistributeAction({
           {strings.admin.distributedToday}
         </Typography>
       ) : null}
+      {/* Full-width senior CTA per mock 5a; redistribute stays quieter. */}
       <AppButton
+        hero
         variant={distributedToday ? 'outlined' : 'contained'}
         disabled={busy}
         onClick={() => void run(distributedToday)}
-        sx={{ alignSelf: 'start', ...(busy ? { opacity: 0.5 } : undefined) }}
+        sx={busy ? { opacity: 0.5 } : undefined}
       >
         {distributedToday ? strings.admin.redistribute : strings.admin.distribute}
       </AppButton>

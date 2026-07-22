@@ -13,7 +13,7 @@ export function KhatmasList({ khatmas }: { khatmas: readonly Khatma[] }) {
   const entries = khatmasListEntries(khatmas);
   if (entries.length === 0) {
     return (
-      <SurfaceCard title={strings.admin.khatmasHeading}>
+      <SurfaceCard>
         <Typography color="text.secondary">{strings.admin.noActive}</Typography>
       </SurfaceCard>
     );
@@ -23,7 +23,7 @@ export function KhatmasList({ khatmas }: { khatmas: readonly Khatma[] }) {
     return b.createdAt - a.createdAt;
   });
   return (
-    <SurfaceCard title={strings.admin.khatmasHeading}>
+    <SurfaceCard>
       <Stack spacing={0}>
         {ordered.map((khatma) => (
           <KhatmaListLine key={khatma.id} khatma={khatma} />

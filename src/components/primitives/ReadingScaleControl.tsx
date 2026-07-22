@@ -1,5 +1,6 @@
-import { Box, Paper, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { AppSliderField } from './Fields';
+import { CollapsibleCard } from './CollapsibleCard';
 import { strings } from '@/content/strings.ar';
 import type { ReadingScale } from '@/theme/reading';
 
@@ -16,9 +17,10 @@ export interface ReadingScaleControlProps {
  * and admin ([`AdminSettingsPage`](../../app/admin/pages/SettingsPage.tsx)) Settings
  * pages, not a fork per app.
  *
- * A native `<details>` popover whose open/close state is lifted to the caller so
- * it survives the route-change re-renders that keep the route content mounted;
- * the slider live-applies + persists the scale through `useReadingScale`.
+ * A native `<details>` collapsible (via {@link CollapsibleCard}) whose
+ * open/close state is lifted to the caller so it survives the route-change
+ * re-renders that keep the route content mounted; the slider live-applies +
+ * persists the scale through `useReadingScale`.
  */
 export function ReadingScaleControl({
   readingScale,
@@ -27,28 +29,12 @@ export function ReadingScaleControl({
   onOpenChange,
 }: ReadingScaleControlProps) {
   return (
-    <Paper
-      component="details"
+    <CollapsibleCard
+      title={strings.settings.fontSize}
       open={open}
-      onToggle={(event) => onOpenChange(event.currentTarget.open)}
-      variant="outlined"
-      sx={{ overflow: 'hidden', borderRadius: 3 }}
+      onOpenChange={onOpenChange}
     >
-      <Box
-        component="summary"
-        sx={{
-          cursor: 'pointer',
-          px: 4,
-          py: 3,
-          color: 'primary.main',
-          fontSize: '1.125rem',
-          fontWeight: 700,
-          userSelect: 'none',
-        }}
-      >
-        {strings.settings.title}
-      </Box>
-      <Stack spacing={3} sx={{ borderTop: 1, borderColor: 'divider', p: 4 }}>
+      <Stack spacing={3}>
         <AppSliderField
           label={strings.settings.fontSize}
           value={readingScale}
@@ -58,10 +44,22 @@ export function ReadingScaleControl({
           step={1}
           marks
         />
-        <Box component="p" className="quran-text" sx={{ m: 0, textAlign: 'center' }}>
+        <Box
+          component="p"
+          className="quran-text"
+          sx={(theme) => ({
+            m: 0,
+            textAlign: 'center',
+            p: 3,
+            borderRadius: `${theme.custom.radii.button}px`,
+            bgcolor: 'background.default',
+            border: '1px solid',
+            borderColor: 'divider',
+          })}
+        >
           {strings.settings.sample}
         </Box>
       </Stack>
-    </Paper>
+    </CollapsibleCard>
   );
 }

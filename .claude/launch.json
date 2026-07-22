@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "emulators",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "emulators"],
+      "port": 4000
+    },
+    {
       "name": "dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

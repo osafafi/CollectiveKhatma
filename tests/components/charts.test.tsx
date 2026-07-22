@@ -11,7 +11,7 @@ import {
 } from '@/components/charts';
 import { strings } from '@/content/strings.ar';
 import type { Assignment, Khatma, Person } from '@/domain/types';
-import { tokens } from '@/theme/muiTheme';
+import { TOKENS } from '@/theme/tokens';
 
 function renderThemed(ui: ReactElement) {
   return render(<AppThemeProvider>{ui}</AppThemeProvider>);
@@ -42,7 +42,7 @@ describe('DonutChart', () => {
     const { container } = renderThemed(<DonutChart percent={0} />);
     const circles = container.querySelectorAll('circle');
     expect(circles).toHaveLength(1);
-    expect(circles[0]).toHaveAttribute('stroke', tokens.color.border);
+    expect(circles[0]).toHaveAttribute('stroke', TOKENS.light.border);
   });
 
   it('draws a primary fill arc proportional to the percentage', () => {
@@ -51,8 +51,8 @@ describe('DonutChart', () => {
     expect(circles).toHaveLength(2);
 
     const [track, fill] = circles;
-    expect(track).toHaveAttribute('stroke', tokens.color.border);
-    expect(fill).toHaveAttribute('stroke', tokens.color.primary);
+    expect(track).toHaveAttribute('stroke', TOKENS.light.border);
+    expect(fill).toHaveAttribute('stroke', TOKENS.light.emerald);
     expect(fill).toHaveAttribute(
       'stroke-dasharray',
       `${(CIRCUMFERENCE * 57) / 100} ${CIRCUMFERENCE}`,
@@ -96,15 +96,15 @@ describe('SegmentBar', () => {
     expect(fills).toHaveLength(3);
     expect(fills[0]).toHaveStyle({
       flexGrow: '342',
-      backgroundColor: tokens.color.primary,
+      backgroundColor: TOKENS.light.emerald,
     });
     expect(fills[1]).toHaveStyle({
       flexGrow: '48',
-      backgroundColor: tokens.color.accent,
+      backgroundColor: TOKENS.light.gold,
     });
     expect(fills[2]).toHaveStyle({
       flexGrow: '214',
-      backgroundColor: tokens.color.border,
+      backgroundColor: TOKENS.light.border,
     });
   });
 
@@ -127,7 +127,7 @@ describe('SegmentBar', () => {
     const { container } = renderThemed(<SegmentBar segments={empty} />);
     const fills = barOf(container).children;
     expect(fills).toHaveLength(1);
-    expect(fills[0]).toHaveStyle({ backgroundColor: tokens.color.border });
+    expect(fills[0]).toHaveStyle({ backgroundColor: TOKENS.light.border });
     expect(screen.getByText('قُرئت: ٠')).toBeInTheDocument();
   });
 });

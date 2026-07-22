@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { appTheme, createAppTheme, tokens } from '@/theme/muiTheme';
+import { alpha } from '@mui/material/styles';
+import { createKhatmaTheme } from '@/theme/muiTheme';
 import { retainedGlobalStyles } from '@/theme/globalStyles';
+import { TOKENS, cardGradient, primaryBtnGradient, type ThemeMode } from '@/theme/tokens';
 
 type Rgb = readonly [number, number, number];
 
@@ -25,148 +27,239 @@ function contrastRatio(foreground: Rgb, background: Rgb): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function composite(foreground: Rgb, background: Rgb, alpha: number): Rgb {
+function composite(foreground: Rgb, background: Rgb, alphaChannel: number): Rgb {
   return foreground.map((channel, index) =>
-    Math.round(channel * alpha + background[index]! * (1 - alpha)),
+    Math.round(channel * alphaChannel + background[index]! * (1 - alphaChannel)),
   ) as unknown as Rgb;
 }
 
+const MODES: readonly ThemeMode[] = ['light', 'dark'];
+
 describe('MUI theme — token mapping', () => {
-  it('is right-to-left', () => {
-    expect(appTheme.direction).toBe('rtl');
+  it('is right-to-left in both modes', () => {
+    for (const mode of MODES) {
+      expect(createKhatmaTheme(mode).direction).toBe('rtl');
+    }
   });
 
-  it('applies the accessible app palette onto the MUI palette', () => {
-    // Pinned refreshed values — fresh, senior-friendly, reading-comfortable.
-    // WCAG-AA contrast evidence is in docs/react-migration/tasks/.md.
-    expect(appTheme.palette.background.default).toBe('#f6f1e7');
-    expect(appTheme.palette.background.paper).toBe('#fffdf7');
-    expect(appTheme.palette.text.primary).toBe('#26312b');
-    expect(appTheme.palette.text.secondary).toBe('#5c6b62');
-    expect(appTheme.palette.primary.main).toBe('#0e6f61');
-    expect(appTheme.palette.primary.dark).toBe('#0a5348');
-    expect(appTheme.palette.secondary.main).toBe('#c9a24a');
-    expect(appTheme.palette.success.main).toBe('#2f7d55');
-    expect(appTheme.palette.warning.main).toBe('#b45309');
-    expect(appTheme.palette.error.main).toBe('#b23a2e');
-    expect(appTheme.palette.divider).toBe('#e5ddcb');
+  it('pins the light palette (unchanged from the pre-redesign refresh)', () => {
+    const theme = createKhatmaTheme('light');
+    expect(theme.palette.mode).toBe('light');
+    expect(theme.palette.background.default).toBe('#f6f1e7');
+    expect(theme.palette.background.paper).toBe('#fffdf7');
+    expect(theme.palette.text.primary).toBe('#26312b');
+    expect(theme.palette.text.secondary).toBe('#5c6b62');
+    expect(theme.palette.primary.main).toBe('#0e6f61');
+    expect(theme.palette.primary.dark).toBe('#0a5348');
+    expect(theme.palette.secondary.main).toBe('#c9a24a');
+    expect(theme.palette.success.main).toBe('#2f7d55');
+    expect(theme.palette.warning.main).toBe('#b45309');
+    expect(theme.palette.error.main).toBe('#b23a2e');
+    expect(theme.palette.divider).toBe('#e5ddcb');
   });
 
-  it('pins the theme tokens and splits accent from warning', () => {
-    expect(tokens.color.bg).toBe('#f6f1e7');
-    expect(tokens.color.surface).toBe('#fffdf7');
-    expect(tokens.color.ink).toBe('#26312b');
-    expect(tokens.color.muted).toBe('#5c6b62');
-    expect(tokens.color.primary).toBe('#0e6f61');
-    expect(tokens.color.primaryStrong).toBe('#0a5348');
-    expect(tokens.color.accent).toBe('#c9a24a');
-    expect(tokens.color.success).toBe('#2f7d55');
-    expect(tokens.color.successStrong).toBe('#256444');
-    expect(tokens.color.warn).toBe('#b45309');
-    expect(tokens.color.warnStrong).toBe('#904207');
-    expect(tokens.color.danger).toBe('#b23a2e');
-    expect(tokens.color.border).toBe('#e5ddcb');
-    // Theme-map R3 resolved: the gold accent and the amber warn are now distinct.
-    expect(tokens.color.accent).not.toBe(tokens.color.warn);
+  it('pins the dark palette onto the dark token map', () => {
+    const theme = createKhatmaTheme('dark');
+    expect(theme.palette.mode).toBe('dark');
+    expect(theme.palette.background.default).toBe(TOKENS.dark.bg);
+    expect(theme.palette.background.paper).toBe(TOKENS.dark.surface);
+    expect(theme.palette.text.primary).toBe(TOKENS.dark.ink);
+    expect(theme.palette.text.secondary).toBe(TOKENS.dark.muted);
+    expect(theme.palette.primary.main).toBe(TOKENS.dark.emerald);
+    expect(theme.palette.primary.dark).toBe(TOKENS.dark.emerald2);
+    expect(theme.palette.secondary.main).toBe(TOKENS.dark.gold);
+    expect(theme.palette.error.main).toBe(TOKENS.dark.danger);
+    expect(theme.palette.divider).toBe(TOKENS.dark.border);
   });
 
-  it('sets white contrastText on filled semantics, dark ink on the gold accent', () => {
-    expect(appTheme.palette.primary.contrastText).toBe('#ffffff');
+  it('keeps the gold accent distinct from the warning amber in both modes', () => {
+    for (const mode of MODES) {
+      expect(TOKENS[mode].gold).not.toBe(TOKENS[mode].warn);
+    }
+  });
+
+  it('gives filled semantics legible contrast text per mode', () => {
+    const light = createKhatmaTheme('light');
+    expect(light.palette.primary.contrastText).toBe('#ffffff');
     // Gold accent is light → dark ink text for legibility.
-    expect(appTheme.palette.secondary.contrastText).toBe('#26312b');
-    expect(appTheme.palette.success.contrastText).toBe('#ffffff');
-    expect(appTheme.palette.warning.contrastText).toBe('#ffffff');
-    expect(appTheme.palette.error.contrastText).toBe('#ffffff');
+    expect(light.palette.secondary.contrastText).toBe('#26312b');
+    expect(light.palette.success.contrastText).toBe('#ffffff');
+    expect(light.palette.error.contrastText).toBe('#ffffff');
+
+    // Dark-mode fills are bright, so they carry the near-black onEmerald ink.
+    const dark = createKhatmaTheme('dark');
+    for (const semantic of [
+      'primary',
+      'secondary',
+      'success',
+      'warning',
+      'error',
+    ] as const) {
+      expect(dark.palette[semantic].contrastText).toBe(TOKENS.dark.onEmerald);
+    }
   });
 
-  it('keeps text, tinted statuses, and keyboard focus above WCAG contrast floors', () => {
-    const backgrounds = [rgb(tokens.color.bg), rgb(tokens.color.surface)];
-    const normalTextColors = [
-      rgb(tokens.color.ink),
-      rgb(tokens.color.muted),
-      rgb(tokens.color.primary),
-      rgb(tokens.color.danger),
-    ];
+  it.each(MODES)('keeps %s text, statuses, and focus above WCAG floors', (mode) => {
+    const t = TOKENS[mode];
+    const backgrounds = [rgb(t.bg), rgb(t.surface)];
+    const normalTextColors = [rgb(t.ink), rgb(t.muted), rgb(t.emerald), rgb(t.danger)];
 
     for (const background of backgrounds) {
       for (const foreground of normalTextColors) {
         expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
       }
-      for (const statusColor of [
-        rgb(tokens.color.successStrong),
-        rgb(tokens.color.warnStrong),
-      ]) {
+      for (const statusColor of [rgb(t.successStrong), rgb(t.warnStrong)]) {
         const tintedBackground = composite(statusColor, background, 0.1);
         expect(contrastRatio(statusColor, tintedBackground)).toBeGreaterThanOrEqual(4.5);
       }
 
-      const focusRing = composite(rgb(tokens.color.primary), background, 0.7);
+      const focusRing = composite(rgb(t.emerald), background, 0.7);
       expect(contrastRatio(focusRing, background)).toBeGreaterThanOrEqual(3);
     }
 
-    const styles = retainedGlobalStyles as Record<string, Record<string, string>>;
-    expect(styles[':focus-visible']!.outline).toBe('3px solid rgba(14, 111, 97, 0.7)');
+    // Redesign pairings: button text on the primary fill, chip text on the
+    // gold-soft surface.
+    expect(contrastRatio(rgb(t.onEmerald), rgb(t.emerald))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(rgb(t.goldInk), rgb(t.goldSoft))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('derives the focus ring from the mode primary in the retained globals', () => {
+    for (const mode of MODES) {
+      const theme = createKhatmaTheme(mode);
+      const styles = retainedGlobalStyles(theme) as unknown as Record<
+        string,
+        Record<string, string>
+      >;
+      expect(styles[':focus-visible']!.outline).toBe(
+        `3px solid ${alpha(TOKENS[mode].emerald, 0.7)}`,
+      );
+      expect(styles[':root']!.colorScheme).toBe(mode);
+    }
   });
 
   it('uses the app 4px spacing unit', () => {
-    expect(appTheme.spacing(2)).toBe('8px');
-    expect(appTheme.spacing(4)).toBe('16px');
-    expect(appTheme.spacing(28)).toBe('112px');
+    const theme = createKhatmaTheme('light');
+    expect(theme.spacing(2)).toBe('8px');
+    expect(theme.spacing(4)).toBe('16px');
+    expect(theme.spacing(28)).toBe('112px');
   });
 
   it('uses the app responsive breakpoints', () => {
-    expect(appTheme.breakpoints.values.md).toBe(768);
-    expect(appTheme.breakpoints.values.lg).toBe(1024);
-    expect(appTheme.breakpoints.values.xs).toBe(0);
-    expect(appTheme.breakpoints.values.sm).toBe(640);
-    expect(appTheme.breakpoints.values.xl).toBe(1280);
+    const theme = createKhatmaTheme('light');
+    expect(theme.breakpoints.values.md).toBe(768);
+    expect(theme.breakpoints.values.lg).toBe(1024);
+    expect(theme.breakpoints.values.xs).toBe(0);
+    expect(theme.breakpoints.values.sm).toBe(640);
+    expect(theme.breakpoints.values.xl).toBe(1280);
   });
 
-  it('uses the button radius as the common shape radius', () => {
-    expect(appTheme.shape.borderRadius).toBe(12);
+  it('uses the redesign button radius as the common shape radius', () => {
+    expect(createKhatmaTheme('light').shape.borderRadius).toBe(14);
   });
 
-  it('uses the app UI font stack and type scale', () => {
-    expect(appTheme.typography.fontFamily).toBe('var(--font-ui)');
-    expect(appTheme.typography.fontWeightMedium).toBe(500);
-    expect(appTheme.typography.fontWeightBold).toBe(700);
-    expect(appTheme.typography.h1.fontSize).toBe('1.875rem');
-    expect(appTheme.typography.h2.fontSize).toBe('1.5rem');
-    expect(appTheme.typography.body1.fontSize).toBe('1rem');
-    expect(appTheme.typography.caption.fontSize).toBe('0.75rem');
+  it('uses the app UI font stack and type scale with the display weight', () => {
+    const theme = createKhatmaTheme('light');
+    expect(theme.typography.fontFamily).toBe('var(--font-ui)');
+    expect(theme.typography.fontWeightMedium).toBe(500);
+    expect(theme.typography.fontWeightBold).toBe(700);
+    expect(theme.typography.h1.fontSize).toBe('1.875rem');
+    expect(theme.typography.h1.fontWeight).toBe(800);
+    expect(theme.typography.h2.fontSize).toBe('1.5rem');
+    expect(theme.typography.body1.fontSize).toBe('1rem');
+    expect(theme.typography.caption.fontSize).toBe('0.75rem');
   });
 
-  it('exposes a factory that builds an independent theme instance', () => {
-    const fresh = createAppTheme();
-    expect(fresh).not.toBe(appTheme);
-    expect(fresh.direction).toBe('rtl');
-    expect(fresh.palette.primary.main).toBe(appTheme.palette.primary.main);
+  it('exposes the redesign token bag on theme.custom', () => {
+    for (const mode of MODES) {
+      const theme = createKhatmaTheme(mode);
+      const t = TOKENS[mode];
+      expect(theme.custom.gold).toBe(t.gold);
+      expect(theme.custom.goldSoft).toBe(t.goldSoft);
+      expect(theme.custom.goldInk).toBe(t.goldInk);
+      expect(theme.custom.heroGrad).toBe(t.heroGrad);
+      expect(theme.custom.heroInk).toBe(t.heroInk);
+      expect(theme.custom.cellRem).toBe(t.cellRem);
+      expect(theme.custom.tabActiveBg).toBe(t.tabActiveBg);
+      expect(theme.custom.tabActiveInk).toBe(t.tabActiveInk);
+      expect(theme.custom.tabIdle).toBe(t.tabIdle);
+      expect(theme.custom.readerBg).toBe(t.readerBg);
+      expect(theme.custom.cardShadow).toBe(t.cardShadow);
+      expect(theme.custom.btnShadow).toBe(t.btnShadow);
+      expect(theme.custom.primaryBtnGradient).toBe(primaryBtnGradient(mode));
+      expect(theme.custom.cardBg).toBe(cardGradient(mode, 'subtle', 160));
+      expect(theme.custom.radii.card).toBe(20);
+      expect(theme.custom.radii.tabPill).toBe(16);
+      expect(theme.custom.motion.base).toBe('0.5s');
+    }
+  });
+
+  it('feeds card-gradient factory options into theme.custom.cardBg', () => {
+    const bold = createKhatmaTheme('light', { cardStrength: 'bold', cardAngle: 90 });
+    expect(bold.custom.cardBg).toBe(cardGradient('light', 'bold', 90));
+
+    const none = createKhatmaTheme('dark', { cardStrength: 'none' });
+    expect(none.custom.cardBg).toBe(TOKENS.dark.surface);
+  });
+
+  it('resolves card gradients from strength and angle parameters', () => {
+    // Strength none collapses to the solid surface (no gradient string).
+    expect(cardGradient('light', 'none')).toBe(TOKENS.light.surface);
+    expect(cardGradient('dark', 'none')).toBe(TOKENS.dark.surface);
+    // Subtle/bold interpolate the angle into a two-stop gradient.
+    expect(cardGradient('light', 'subtle', 160)).toContain('linear-gradient(160deg');
+    expect(cardGradient('light', 'bold', 200)).toContain('linear-gradient(200deg');
+    expect(cardGradient('dark')).toContain('linear-gradient(160deg');
+  });
+
+  it('builds independent theme instances per call', () => {
+    const first = createKhatmaTheme('light');
+    const second = createKhatmaTheme('light');
+    expect(first).not.toBe(second);
+    expect(second.palette.primary.main).toBe(first.palette.primary.main);
   });
 
   it('centralizes shared component defaults', () => {
-    expect(appTheme.components?.MuiButton?.defaultProps).toMatchObject({
+    const theme = createKhatmaTheme('light');
+    const t = TOKENS.light;
+    expect(theme.components?.MuiButton?.defaultProps).toMatchObject({
       disableElevation: true,
     });
-    expect(appTheme.components?.MuiButton?.styleOverrides?.root).toMatchObject({
+    expect(theme.components?.MuiButton?.styleOverrides?.root).toMatchObject({
       textTransform: 'none',
-      fontWeight: 600,
+      fontWeight: 700,
+      minHeight: 44,
     });
-    expect(appTheme.components?.MuiButton?.styleOverrides?.sizeLarge).toMatchObject({
+    expect(theme.components?.MuiButton?.styleOverrides?.sizeLarge).toMatchObject({
       minHeight: 56,
     });
-    expect(appTheme.components?.MuiCard?.styleOverrides?.root).toMatchObject({
-      borderRadius: 18,
-      borderColor: tokens.color.border,
+    // The primary CTA gradient rides on the contained+primary variant.
+    expect(theme.components?.MuiButton?.variants?.[0]).toMatchObject({
+      props: { variant: 'contained', color: 'primary' },
+      style: {
+        background: primaryBtnGradient('light'),
+        boxShadow: t.btnShadow,
+      },
     });
-    expect(appTheme.components?.MuiChip?.styleOverrides?.root).toMatchObject({
-      borderRadius: 12,
+    expect(theme.components?.MuiCard?.styleOverrides?.root).toMatchObject({
+      borderRadius: 20,
+      borderColor: t.border,
+      backgroundColor: t.surface,
+      backgroundImage: cardGradient('light', 'subtle', 160),
+      boxShadow: t.cardShadow,
     });
-    expect(appTheme.components?.MuiLinearProgress?.styleOverrides?.root).toMatchObject({
+    // The dark elevation overlay must never lighten Paper surfaces.
+    expect(theme.components?.MuiPaper?.styleOverrides?.root).toMatchObject({
+      backgroundImage: 'none',
+    });
+    expect(theme.components?.MuiChip?.styleOverrides?.root).toMatchObject({
+      borderRadius: 10,
+    });
+    expect(theme.components?.MuiLinearProgress?.styleOverrides?.root).toMatchObject({
       height: 8,
-      backgroundColor: tokens.color.border,
+      backgroundColor: t.cellRem,
     });
-    expect(appTheme.components?.MuiOutlinedInput?.styleOverrides?.root).toMatchObject({
-      backgroundColor: tokens.color.bg,
+    expect(theme.components?.MuiOutlinedInput?.styleOverrides?.root).toMatchObject({
+      backgroundColor: t.bg,
     });
   });
 });

@@ -24,7 +24,7 @@ function segmentColor(theme: Theme, color: BarSegmentColor): string {
     case 'accent':
       return theme.palette.secondary.main;
     case 'neutral':
-      return theme.palette.divider;
+      return theme.custom.cellRem;
   }
 }
 
@@ -48,12 +48,18 @@ export function SegmentBar({ segments }: SegmentBarProps) {
           width: '100%',
           gap: '2px',
           overflow: 'hidden',
-          borderRadius: 1, // theme.shape — the legacy `rounded-button` 12px
+          // Fully-rounded pill ends on the 12px-tall bar (design §3.6).
+          borderRadius: theme.custom.radii.pill + 'px',
         }}
       >
         {visible.length === 0 ? (
           <Box
-            sx={{ height: '100%', width: '100%', bgcolor: 'divider', borderRadius: 1 }}
+            sx={{
+              height: '100%',
+              width: '100%',
+              bgcolor: theme.custom.cellRem,
+              borderRadius: theme.custom.radii.pill + 'px',
+            }}
           />
         ) : (
           visible.map((segment, index) => (

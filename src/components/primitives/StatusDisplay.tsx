@@ -3,7 +3,8 @@ import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { mergeSx } from './mergeSx';
 
-export type StatusTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
+export type StatusTone =
+  'neutral' | 'primary' | 'accent' | 'success' | 'warning' | 'danger';
 
 export interface StatusChipProps extends Omit<ChipProps, 'color' | 'variant'> {
   tone?: StatusTone;
@@ -36,7 +37,7 @@ export function NoticeBanner({
       sx={mergeSx((theme) => {
         const color = toneColor(theme, tone);
         return {
-          borderRadius: 3,
+          borderRadius: `${theme.custom.radii.button}px`,
           bgcolor: alpha(color, 0.1),
           color,
           px: 4,
@@ -53,7 +54,14 @@ function statusSx(tone: StatusTone): SxProps<Theme> {
   return (theme) => {
     const color = toneColor(theme, tone);
     return {
-      bgcolor: tone === 'neutral' ? theme.palette.background.default : alpha(color, 0.1),
+      // The design's "completed" chip sits on the solid gold-soft surface;
+      // other tones keep their translucent tint over the ambient background.
+      bgcolor:
+        tone === 'neutral'
+          ? theme.palette.background.default
+          : tone === 'accent'
+            ? theme.custom.goldSoft
+            : alpha(color, 0.1),
       color,
       fontWeight: tone === 'warning' || tone === 'danger' ? 600 : 400,
     };
@@ -64,6 +72,8 @@ function toneColor(theme: Theme, tone: StatusTone): string {
   switch (tone) {
     case 'primary':
       return theme.palette.primary.main;
+    case 'accent':
+      return theme.custom.goldInk;
     case 'success':
       return theme.palette.success.dark;
     case 'warning':
