@@ -30,3 +30,13 @@ export const appShellContentSx = {
   // Clear the fixed bottom bar on mobile; relax once it becomes a rail.
   pb: { xs: 28, lg: 8 },
 } as const;
+
+/**
+ * Cancels {@link appShellContentSx}'s padding so a hero header bleeds
+ * edge-to-edge at the top of a routed page (mirror of `px`/`pt` above).
+ */
+export const heroBleedSx = {
+  mx: -4,
+  mt: -4,
+  mb: 0,
+} as const;

@@ -77,7 +77,7 @@ describe('member personal and settings routes', () => {
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
-    await harness.user.click(within(disclosure!).getByText(strings.settings.title));
+    await harness.user.click(disclosure!.querySelector('summary')!);
 
     const slider = screen.getByRole('slider', { name: strings.settings.fontSize });
     expect(slider).toHaveAttribute('aria-valuenow', '4');
@@ -184,7 +184,7 @@ describe('member personal and settings routes', () => {
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
-    await harness.user.click(within(disclosure!).getByText(strings.settings.title));
+    await harness.user.click(disclosure!.querySelector('summary')!);
     expect(disclosure).toHaveAttribute('open');
 
     await harness.user.click(screen.getByRole('link', { name: strings.nav.personal }));

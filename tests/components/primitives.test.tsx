@@ -17,6 +17,7 @@ import {
   AppSelectField,
   AppSliderField,
   AppTextField,
+  CollapsibleCard,
   NoticeBanner,
   NumberStepper,
   ProgressView,
@@ -201,17 +202,49 @@ describe('Shared numeric and display primitives', () => {
     renderThemed(
       <div>
         <StatusChip tone="warning" label="First warning" />
+        <StatusChip tone="accent" label="Completed" />
         <NoticeBanner tone="danger">Returned pages</NoticeBanner>
         <ProgressView value={120} label="Group progress" />
       </div>,
     );
 
     expect(screen.getByText('First warning')).toBeInTheDocument();
+    // The redesign's gold "completed" chip tone.
+    expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Returned pages');
     const progress = screen.getByRole('progressbar', { name: 'Group progress' });
     expect(progress).toHaveAttribute('aria-valuenow', '100');
     expect(progress).toHaveAttribute('aria-valuetext', '١٠٠٪');
     expect(screen.getByText('١٠٠٪')).toBeInTheDocument();
+  });
+
+  function CollapsibleHarness() {
+    const [open, setOpen] = useState(false);
+    return (
+      <CollapsibleCard title="Group progress" open={open} onOpenChange={setOpen}>
+        <div data-testid="collapsible-body">hidden details</div>
+      </CollapsibleCard>
+    );
+  }
+
+  it('keeps CollapsibleCard a native details/summary with a rotating chevron', async () => {
+    const user = userEvent.setup();
+    const { container } = renderThemed(<CollapsibleHarness />);
+
+    const details = container.querySelector('details');
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute('open');
+    expect(container.querySelector('.collapsible-chev')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+
+    await user.click(screen.getByText('Group progress'));
+    expect(details).toHaveAttribute('open');
+    expect(screen.getByTestId('collapsible-body')).toBeVisible();
+
+    await user.click(screen.getByText('Group progress'));
+    expect(details).not.toHaveAttribute('open');
   });
 });
 

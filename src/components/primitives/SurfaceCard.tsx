@@ -9,6 +9,7 @@ import {
   type PaperProps,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { appearSx } from './appearSx';
 import { mergeSx } from './mergeSx';
 
 export interface SurfaceCardProps {
@@ -22,6 +23,11 @@ export interface SurfaceCardProps {
   /** Optional explicit accessible name for a clickable card. */
   linkLabel?: string;
   headingComponent?: 'h2' | 'h3';
+  /**
+   * List position for the fadeUp entry animation; stagger caps at the design's
+   * 0.16s so long lists do not crawl. Omit for no entry motion.
+   */
+  appear?: number;
   sx?: SxProps<Theme>;
 }
 
@@ -34,6 +40,7 @@ export function SurfaceCard({
   href,
   linkLabel,
   headingComponent = 'h2',
+  appear,
   sx,
 }: SurfaceCardProps) {
   const generatedId = useId();
@@ -63,7 +70,7 @@ export function SurfaceCard({
     <Card
       component="section"
       aria-labelledby={titleId}
-      sx={mergeSx({ overflow: 'hidden' }, sx)}
+      sx={mergeSx(mergeSx({ overflow: 'hidden' }, appearSx(appear)), sx)}
     >
       {href ? (
         <CardActionArea href={href} aria-label={linkLabel}>
@@ -78,14 +85,25 @@ export function SurfaceCard({
 
 export type NestedSurfaceProps = Omit<PaperProps, 'variant'>;
 
-/** Lower-elevation bordered section used inside dashboard cards. */
+/**
+ * Lower-elevation bordered section used inside dashboard cards. Pinned to the
+ * solid app background: the tweakable card gradient must never reach nested
+ * surfaces (design §2.4).
+ */
 export function NestedSurface({ children, sx, ...props }: NestedSurfaceProps) {
   return (
     <Paper
       {...props}
       component={props.component ?? 'section'}
       variant="outlined"
-      sx={mergeSx({ p: 3, borderRadius: 3 }, sx)}
+      sx={mergeSx(
+        (theme) => ({
+          p: 3,
+          borderRadius: `${theme.custom.radii.cardSm}px`,
+          bgcolor: 'background.default',
+        }),
+        sx,
+      )}
     >
       {children}
     </Paper>

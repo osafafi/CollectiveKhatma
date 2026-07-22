@@ -83,7 +83,7 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
                 aria-current={active ? 'page' : undefined}
                 underline="none"
                 color="inherit"
-                sx={{
+                sx={(theme) => ({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -93,11 +93,25 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
                   py: 2,
                   minHeight: appNavLayout.mobile.minTargetHeight,
                   fontSize: '0.75rem', // text-xs
-                  fontWeight: 600,
-                  color: active ? 'primary.main' : 'text.secondary',
-                }}
+                  fontWeight: active ? 700 : 500,
+                  color: active ? theme.custom.tabActiveInk : theme.custom.tabIdle,
+                })}
               >
-                <NavIcon name={tab.iconName} />
+                {/* The redesign's active-tab pill sits behind the icon only. */}
+                <Box
+                  component="span"
+                  sx={(theme) => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 56,
+                    height: 32,
+                    borderRadius: `${theme.custom.radii.tabPill}px`,
+                    bgcolor: active ? theme.custom.tabActiveBg : 'transparent',
+                  })}
+                >
+                  <NavIcon name={tab.iconName} />
+                </Box>
                 <Box component="span">{tab.label}</Box>
               </Link>
             </Box>

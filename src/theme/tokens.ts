@@ -148,7 +148,11 @@ export const MOTION = {
   fast: '0.25s',
   base: '0.5s',
   slow: '0.8s',
+  /** Ambient loops (design §4): hero shimmer sweep and idle avatar float. */
+  shimmer: '5s',
+  floaty: '6s',
   easing: 'cubic-bezier(.2,.7,.3,1)',
+  easingSoft: 'ease-in-out',
 } as const;
 
 /** Card gradient — derived from user params, never hardcoded per component. */

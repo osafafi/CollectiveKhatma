@@ -6,6 +6,7 @@ import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { AppHashRouter } from '@/app/routing/AppHashRouter';
 import { MemberShell } from '@/app/member/MemberShell';
 import { AdminShell } from '@/app/admin/AdminShell';
+import { HeroHeader } from '@/components/navigation';
 import {
   appNavLayout,
   appShellContentSx,
@@ -90,6 +91,15 @@ describe('Member shell navigation', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
+  it('backs every tab icon with the redesign pill span (icon inside a sized span)', () => {
+    renderMember();
+    const nav = screen.getByRole('navigation', { name: strings.common.appName });
+    for (const link of within(nav).getAllByRole('link')) {
+      const pill = link.querySelector('span > .icon-mask')?.parentElement;
+      expect(pill).not.toBeNull();
+    }
+  });
+
   it('follows the logical RTL navigation order by keyboard', async () => {
     const user = userEvent.setup();
     renderMember();
@@ -116,6 +126,46 @@ describe('Member shell navigation', () => {
     expect(
       within(nav).getByRole('link', { name: strings.nav.settings }),
     ).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('HeroHeader', () => {
+  it('renders eyebrow, title, avatar chip, action slot, and extra rows as pure props', () => {
+    render(
+      <AppThemeProvider>
+        <HeroHeader
+          eyebrow="السلام عليكم ورحمة الله"
+          title="أم محمد"
+          avatar="أم"
+          action={<button>إجراء</button>}
+        >
+          <input aria-label="بحث" />
+        </HeroHeader>
+      </AppThemeProvider>,
+    );
+
+    expect(screen.getByText('السلام عليكم ورحمة الله')).toBeInTheDocument();
+    expect(screen.getByText('أم محمد')).toBeInTheDocument();
+    // The avatar chip is decorative; identity is carried by the title text.
+    expect(screen.getByText('أم')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('button', { name: 'إجراء' })).toBeInTheDocument();
+    expect(screen.getByLabelText('بحث')).toBeInTheDocument();
+  });
+
+  it('stays a plain div title by default and becomes the page h1 only on request', () => {
+    const { rerender } = render(
+      <AppThemeProvider>
+        <HeroHeader title="نظرة عامة" />
+      </AppThemeProvider>,
+    );
+    expect(screen.queryByRole('heading', { name: 'نظرة عامة' })).toBeNull();
+
+    rerender(
+      <AppThemeProvider>
+        <HeroHeader title="نظرة عامة" titleComponent="h1" />
+      </AppThemeProvider>,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'نظرة عامة' })).toBeVisible();
   });
 });
 

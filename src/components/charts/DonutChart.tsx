@@ -23,14 +23,20 @@ export function DonutChart({ percent, size = 112 }: DonutChartProps) {
   const circumference = 2 * Math.PI * r;
 
   return (
-    <Box sx={{ position: 'relative', display: 'inline-block' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        display: 'inline-block',
+        animation: `ringIn ${theme.custom.motion.slow} ${theme.custom.motion.easing} both`,
+      }}
+    >
       <svg viewBox="0 0 96 96" width={size} height={size} role="img" aria-label={label}>
         <circle
           cx="48"
           cy="48"
           r={r}
           fill="none"
-          stroke={theme.palette.divider}
+          stroke={theme.custom.cellRem}
           strokeWidth={stroke}
         />
         {clamped > 0 ? (
@@ -59,8 +65,9 @@ export function DonutChart({ percent, size = 112 }: DonutChartProps) {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '1.125rem', // text-lg
-          fontWeight: 700,
+          fontWeight: 800, // the redesign's ring display weight
           fontVariantNumeric: 'tabular-nums',
+          color: 'primary.main',
         }}
       >
         {label}

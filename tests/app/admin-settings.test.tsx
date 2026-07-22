@@ -115,7 +115,7 @@ describe('admin Settings', () => {
     const disclosure = document.querySelector('details');
 
     expect(disclosure).not.toBeNull();
-    await user.click(within(disclosure!).getByText(strings.settings.title));
+    await user.click(disclosure!.querySelector('summary')!);
 
     const slider = screen.getByRole('slider', { name: strings.settings.fontSize });
     expect(slider).toHaveAttribute('aria-valuenow', '4');
@@ -148,9 +148,7 @@ describe('admin Settings', () => {
   it('keeps the reading-scale disclosure open across route navigation', async () => {
     const { user } = renderSettings({ roster: [amina], khatmas: [] });
 
-    await user.click(
-      within(document.querySelector('details')!).getByText(strings.settings.title),
-    );
+    await user.click(document.querySelector('details')!.querySelector('summary')!);
     expect(document.querySelector('details')).toHaveAttribute('open');
 
     await user.click(screen.getByRole('link', { name: strings.admin.navHome }));
