@@ -92,6 +92,14 @@ export const strings = {
     pendingAssignmentsHeading: 'صفحات بانتظار القراءة',
     assignedPages: 'الصفحات المعيّنة',
     noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',
+    quranCompletionHeading: 'إجمالي ما أتممت',
+    quranPageTotal: 'من ٦٠٤ صفحة',
+    quranDonutCaption: 'من المصحف',
+    topReadersLead: 'أنت ضمن أفضل',
+    topReadersTail: 'من القرّاء',
+    completedKhatmas: 'ختمات مكتملة',
+    pagesThisMonth: 'صفحات هذا الشهر',
+    longestDailyStreak: 'أطول تتابع (يوم)',
   },
   // In-app mushaf reader — both the free-browse tab and the assigned-pages flow.
   reader: {

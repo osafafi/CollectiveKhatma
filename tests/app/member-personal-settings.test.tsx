@@ -6,7 +6,6 @@ import { writeOperations, type WriteOperations } from '@/app/operations';
 import { formatPercent } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
-import { lifetimePercent } from '@/domain/progress';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
   renderWithAppProviders,
@@ -71,9 +70,8 @@ function renderMember(options: RenderWithAppProvidersOptions = {}) {
   return renderWithAppProviders(<TestMemberExperience />, options);
 }
 
-function lifetimeInsight(completedPageCount: number): string {
-  const percent = lifetimePercent(completedPageCount);
-  return `${strings.member.lifetimeLead} ${toArabicDigits(completedPageCount)} ${strings.member.lifetimeTail} (${formatPercent(percent)})`;
+function topReaderInsight(percent: number): string {
+  return `${strings.personal.topReadersLead} ${formatPercent(percent)} ${strings.personal.topReadersTail}`;
 }
 
 describe('member personal and settings routes', () => {
@@ -83,24 +81,108 @@ describe('member personal and settings routes', () => {
   });
 
   it('renders the empty personal insight and follows live member updates', () => {
-    const harness = renderMember({ route: '/personal' });
+    const harness = renderMember({
+      route: '/personal',
+      data: { roster: [amina] },
+    });
 
     expect(screen.getByRole('heading', { name: strings.personal.heading })).toBeVisible();
-    expect(screen.getByText(lifetimeInsight(0))).toBeVisible();
+    const completion = screen.getByRole('region', {
+      name: strings.personal.quranCompletionHeading,
+    });
     expect(
-      screen.getByRole('progressbar', { name: strings.member.lifetimeLead }),
-    ).toHaveAttribute('aria-valuenow', '0');
+      within(completion).getByText(toArabicDigits(0), {
+        selector: 'span.MuiTypography-root',
+      }),
+    ).toBeVisible();
+    expect(within(completion).getByRole('img', { name: formatPercent(0) })).toBeVisible();
+    expect(within(completion).getByText(topReaderInsight(100))).toBeVisible();
 
     const completedPages = Array.from({ length: 151 }, (_, index) => index + 1);
     harness.subscriptions.roster.emit([
       { ...amina, name: 'Amina updated', completedPages },
+      {
+        ...amina,
+        id: 'leader',
+        name: 'Leader',
+        completedPages: [...completedPages, 152],
+      },
+      { ...amina, id: 'tied', name: 'Tied', completedPages },
+      { ...amina, id: 'behind', name: 'Behind', completedPages: [] },
     ]);
 
     expect(screen.getByText('Amina updated')).toBeVisible();
-    expect(screen.getByText(lifetimeInsight(151))).toBeVisible();
     expect(
-      screen.getByRole('progressbar', { name: strings.member.lifetimeLead }),
-    ).toHaveAttribute('aria-valuenow', '25');
+      within(completion).getByText(toArabicDigits(151), {
+        selector: 'span.MuiTypography-root',
+      }),
+    ).toBeVisible();
+    expect(
+      within(completion).getByRole('img', { name: formatPercent(25) }),
+    ).toBeVisible();
+    expect(within(completion).getByText(topReaderInsight(50))).toBeVisible();
+  });
+
+  it('derives history metadata and subscribes to completed khatmas only on the personal route', async () => {
+    const active = makeKhatma('active');
+    const firstCompleted = makeKhatma('completed-first', {
+      status: 'completed',
+      remainingPages: [],
+    });
+    const secondCompleted = makeKhatma('completed-second', {
+      status: 'completed',
+      remainingPages: [],
+    });
+    const now = new Date();
+    const thisMonth = (day: number): number =>
+      new Date(now.getFullYear(), now.getMonth(), day, 12).getTime();
+    const harness = renderMember({
+      route: '/personal',
+      data: {
+        roster: [amina],
+        khatmas: [active, firstCompleted, secondCompleted],
+        assignments: {
+          [active.id]: [assignment([round(1, [1, 2])], { 1: thisMonth(5) })],
+          [firstCompleted.id]: [assignment([round(1, [3, 4, 5])], { 1: thisMonth(6) })],
+          [secondCompleted.id]: [assignment([round(1, [6])], { 1: thisMonth(8) })],
+        },
+      },
+    });
+    const completion = screen.getByRole('region', {
+      name: strings.personal.quranCompletionHeading,
+    });
+
+    expect(
+      within(
+        within(completion).getByRole('region', {
+          name: strings.personal.completedKhatmas,
+        }),
+      ).getByText(toArabicDigits(2)),
+    ).toBeVisible();
+    expect(
+      within(
+        within(completion).getByRole('region', {
+          name: strings.personal.pagesThisMonth,
+        }),
+      ).getByText(toArabicDigits(6)),
+    ).toBeVisible();
+    expect(
+      within(
+        within(completion).getByRole('region', {
+          name: strings.personal.longestDailyStreak,
+        }),
+      ).getByText(toArabicDigits(2)),
+    ).toBeVisible();
+    expect(harness.subscriptions.assignment(firstCompleted.id).counts().active).toBe(1);
+    expect(harness.subscriptions.assignment(secondCompleted.id).counts().active).toBe(1);
+
+    await harness.user.click(screen.getByRole('link', { name: strings.nav.settings }));
+    expect(
+      await screen.findByRole('heading', { name: strings.nav.settings }),
+    ).toBeVisible();
+    expect(harness.subscriptions.assignment(active.id).counts().active).toBe(1);
+    expect(harness.subscriptions.assignment(firstCompleted.id).counts().active).toBe(0);
+    expect(harness.subscriptions.assignment(secondCompleted.id).counts().active).toBe(0);
   });
 
   it('lists every pending khatma assignment and opens its reader directly', () => {

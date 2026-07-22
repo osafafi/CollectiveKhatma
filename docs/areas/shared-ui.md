@@ -40,7 +40,8 @@ Component recipes:
   chevron, lifted open state, optional `summaryEnd` and heading level.
 - `SurfaceCard` takes `appear` for the staggered fadeUp entry; `StatusChip`
   adds the gold `accent` tone; `DonutChart` = the progress ring (ringIn,
-  cellRem track); `SegmentBar` neutral tone = cellRem; `AppNav` renders the
+  cellRem track) and accepts an optional short center caption; `SegmentBar`
+  neutral tone = cellRem; `AppNav` renders the
   56×32 active pill on the bottom bar and the desktop rail.
 
 Hard rules:

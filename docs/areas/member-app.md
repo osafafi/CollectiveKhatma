@@ -20,7 +20,10 @@ Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 
 Hard rules:
 
-- Member subscribes only to own active khatmas.
+- Persistent member listeners subscribe only to the selected member's active
+  khatmas. While the personal route is mounted, it additionally retains that
+  member's completed-khatma assignment histories for read-only insights, then
+  releases those historical listeners when the route unmounts.
 - Reader position survives unrelated live snapshots.
 - Released chunk cannot be marked done.
 - Completion interrupt hides normal nav until acknowledged.
@@ -37,6 +40,13 @@ Hard rules:
   artwork, the numbered series title, assigned page count/numbers, and opens
   that khatma's assigned reader directly; an empty message replaces the list
   when every current chunk is done.
+- The personal page's Quran summary mirrors the reference donut layout and
+  keeps its three gradient statistic tiles inside the same completion card. It
+  derives every value from existing snapshots: unique lifetime Quran pages and
+  roster-relative top-reader percentage, completed khatmas still listing the
+  member, pages credited in the current local calendar month, and the longest
+  run of local calendar days with a completed round. Released/empty rounds do
+  not count, and multiple completions on one date count as one streak day.
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
   together with admin Settings) → reading size → avatar → feedback.
 - Reader chrome is the slim gradient hero; group progress opens and series

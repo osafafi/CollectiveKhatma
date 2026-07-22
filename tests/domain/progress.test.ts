@@ -5,9 +5,10 @@ import {
   hasPendingChunk,
   isRoundDone,
   khatmaProgress,
+  memberReadingInsights,
   pendingReaders,
 } from '@/domain/progress';
-import type { Assignment, RoundChunk } from '@/domain/types';
+import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 
 function chunk(
   round: number,
@@ -120,5 +121,111 @@ describe('khatmaProgress', () => {
 describe('pending readers', () => {
   it('lists members with a pending chunk (admin §8 list)', () => {
     expect(pendingReaders([partly, finished, flagged, fresh])).toEqual(['a']);
+  });
+});
+
+describe('memberReadingInsights', () => {
+  const atLocalNoon = (year: number, month: number, day: number): number =>
+    new Date(year, month - 1, day, 12).getTime();
+
+  const member = (id: string, completedPages: number[]): Person => ({
+    id,
+    name: id,
+    completedPages,
+    pagesPerDay: 2,
+    enabled: true,
+    createdAt: 1,
+  });
+
+  const khatma = (
+    status: Khatma['status'],
+    memberIds: string[],
+  ): Pick<Khatma, 'status' | 'memberIds'> => ({ status, memberIds });
+
+  it('derives rank, completed khatmas, monthly pages, and the longest daily streak', () => {
+    const history: Assignment[] = [
+      {
+        memberId: 'selected',
+        rounds: [
+          chunk(1, '2026-06-30', [1]),
+          chunk(2, '2026-07-01', [2, 3]),
+          chunk(3, '2026-07-01', [4]),
+          chunk(4, '2026-07-02', [5, 6, 7]),
+          chunk(5, '2026-07-04', [8]),
+        ],
+        doneByRound: {
+          1: atLocalNoon(2026, 6, 30),
+          2: atLocalNoon(2026, 7, 1),
+          3: atLocalNoon(2026, 7, 1),
+          4: atLocalNoon(2026, 7, 2),
+          5: atLocalNoon(2026, 7, 4),
+        },
+        missedStreak: 0,
+      },
+    ];
+
+    expect(
+      memberReadingInsights({
+        memberId: 'selected',
+        roster: [
+          member('leader', [1, 2, 3, 4, 5]),
+          member('selected', [1, 2, 3]),
+          member('tied', [7, 8, 9]),
+          member('behind', []),
+        ],
+        khatmas: [
+          khatma('completed', ['selected']),
+          khatma('completed', ['selected', 'leader']),
+          khatma('completed', ['leader']),
+          khatma('active', ['selected']),
+        ],
+        assignments: history,
+        referenceTime: atLocalNoon(2026, 7, 22),
+      }),
+    ).toEqual({
+      completedPageCount: 3,
+      quranPercent: 0,
+      topReaderPercent: 50,
+      completedKhatmas: 2,
+      pagesReadThisMonth: 7,
+      longestDailyStreak: 3,
+    });
+  });
+
+  it('ignores other members, released rounds, empty rounds, and invalid done marks', () => {
+    const released = chunk(1, '2026-07-20', [1, 2], true);
+    const empty = chunk(2, '2026-07-20', []);
+    const invalid = chunk(3, '2026-07-20', [3]);
+
+    expect(
+      memberReadingInsights({
+        memberId: 'selected',
+        roster: [member('selected', [])],
+        khatmas: [],
+        assignments: [
+          {
+            memberId: 'selected',
+            rounds: [released, empty, invalid],
+            doneByRound: {
+              1: atLocalNoon(2026, 7, 20),
+              2: atLocalNoon(2026, 7, 20),
+              3: Number.NaN,
+            },
+            missedStreak: 0,
+          },
+          {
+            memberId: 'other',
+            rounds: [chunk(1, '2026-07-20', [4, 5])],
+            doneByRound: { 1: atLocalNoon(2026, 7, 20) },
+            missedStreak: 0,
+          },
+        ],
+        referenceTime: atLocalNoon(2026, 7, 22),
+      }),
+    ).toMatchObject({
+      topReaderPercent: 100,
+      pagesReadThisMonth: 0,
+      longestDailyStreak: 0,
+    });
   });
 });

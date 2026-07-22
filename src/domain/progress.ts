@@ -1,6 +1,6 @@
 /** Pure progress / insight calculations (REQUIREMENTS §6, §8). */
 
-import type { Assignment, Khatma, RoundChunk } from './types';
+import type { Assignment, Khatma, Person, RoundChunk } from './types';
 
 export const QURAN_TOTAL_PAGES = 604;
 
@@ -14,6 +14,116 @@ export function lifetimePercent(
 ): number {
   if (quranPages <= 0) return 0;
   return Math.round((completedPageCount / quranPages) * 100);
+}
+
+export interface MemberReadingInsights {
+  /** Unique Quran pages present in the roster's lifetime completion set. */
+  completedPageCount: number;
+  /** Whole-Quran completion percentage derived from that lifetime set. */
+  quranPercent: number;
+  /** Best-rank percentile among the current roster (ties share the better rank). */
+  topReaderPercent: number;
+  /** Completed khatmas in which the selected member still appears as a participant. */
+  completedKhatmas: number;
+  /** Pages credited by done timestamps in the reference time's local calendar month. */
+  pagesReadThisMonth: number;
+  /** Longest run of consecutive local calendar days containing a credited completion. */
+  longestDailyStreak: number;
+}
+
+export interface MemberReadingInsightsInput {
+  memberId: string;
+  roster: readonly Pick<Person, 'id' | 'completedPages'>[];
+  khatmas: readonly Pick<Khatma, 'status' | 'memberIds'>[];
+  /** Assignment history from every selected-member khatma, active and completed. */
+  assignments: readonly Assignment[];
+  /** Epoch ms used to select "this month"; defaults to the user's current time. */
+  referenceTime?: number;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
+
+/**
+ * Personal-page metadata derived entirely from the existing roster, khatma,
+ * round-history, and done-timestamp fields. No persisted counters are needed.
+ */
+export function memberReadingInsights({
+  memberId,
+  roster,
+  khatmas,
+  assignments,
+  referenceTime = Date.now(),
+}: MemberReadingInsightsInput): MemberReadingInsights {
+  const member = roster.find((person) => person.id === memberId);
+  const completedPageCount = member?.completedPages.length ?? 0;
+  const readersAhead = member
+    ? roster.filter(
+        (person) => person.completedPages.length > member.completedPages.length,
+      ).length
+    : 0;
+  const topReaderPercent = member
+    ? Math.ceil(((readersAhead + 1) / roster.length) * 100)
+    : 0;
+  const referenceDate = new Date(referenceTime);
+  const referenceYear = referenceDate.getFullYear();
+  const referenceMonth = referenceDate.getMonth();
+  const readingDays = new Set<number>();
+  let pagesReadThisMonth = 0;
+
+  for (const assignment of assignments) {
+    if (assignment.memberId !== memberId) continue;
+
+    for (const chunk of assignment.rounds) {
+      const completedAt = assignment.doneByRound?.[chunk.round];
+      if (
+        chunk.released === true ||
+        chunk.pages.length === 0 ||
+        completedAt === undefined ||
+        !Number.isFinite(completedAt)
+      ) {
+        continue;
+      }
+
+      const completedDate = new Date(completedAt);
+      if (Number.isNaN(completedDate.getTime())) continue;
+
+      if (
+        completedDate.getFullYear() === referenceYear &&
+        completedDate.getMonth() === referenceMonth
+      ) {
+        pagesReadThisMonth += chunk.pages.length;
+      }
+
+      readingDays.add(
+        Date.UTC(
+          completedDate.getFullYear(),
+          completedDate.getMonth(),
+          completedDate.getDate(),
+        ) / DAY_MS,
+      );
+    }
+  }
+
+  let longestDailyStreak = 0;
+  let currentStreak = 0;
+  let previousDay: number | undefined;
+  for (const day of [...readingDays].sort((a, b) => a - b)) {
+    currentStreak =
+      previousDay !== undefined && day === previousDay + 1 ? currentStreak + 1 : 1;
+    longestDailyStreak = Math.max(longestDailyStreak, currentStreak);
+    previousDay = day;
+  }
+
+  return {
+    completedPageCount,
+    quranPercent: lifetimePercent(completedPageCount),
+    topReaderPercent,
+    completedKhatmas: khatmas.filter(
+      (khatma) => khatma.status === 'completed' && khatma.memberIds.includes(memberId),
+    ).length,
+    pagesReadThisMonth,
+    longestDailyStreak,
+  };
 }
 
 /** A khatma's group completion as a whole-number percent of its total pages. */

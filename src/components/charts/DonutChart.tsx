@@ -6,6 +6,8 @@ export interface DonutChartProps {
   percent: number;
   /** Rendered square edge in px (legacy default 112; admin metrics rows use 88). */
   size?: number;
+  /** Optional short caption rendered beneath the percentage inside the ring. */
+  caption?: string;
 }
 
 /**
@@ -13,7 +15,7 @@ export interface DonutChartProps {
  * the middle. The single source of identity is the accompanying title, so no
  * legend is needed. Track and fill colors come from the MUI theme.
  */
-export function DonutChart({ percent, size = 112 }: DonutChartProps) {
+export function DonutChart({ percent, size = 112, caption }: DonutChartProps) {
   const theme = useTheme();
   const clamped = clampPercent(percent);
   const label = formatPercent(clamped);
@@ -62,15 +64,32 @@ export function DonutChart({ percent, size = 112 }: DonutChartProps) {
           position: 'absolute',
           inset: 0,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '1.125rem', // text-lg
-          fontWeight: 800, // the redesign's ring display weight
           fontVariantNumeric: 'tabular-nums',
-          color: 'primary.main',
         }}
       >
-        {label}
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{
+            color: 'primary.main',
+            fontSize: caption ? '1.375rem' : '1.125rem',
+            fontWeight: 800,
+            lineHeight: 1.2,
+          }}
+        >
+          {label}
+        </Box>
+        {caption ? (
+          <Box
+            component="span"
+            sx={{ color: 'text.secondary', fontSize: '0.75rem', lineHeight: 1.3 }}
+          >
+            {caption}
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );
