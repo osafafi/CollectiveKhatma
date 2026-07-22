@@ -36,5 +36,7 @@ Hard rules:
   together with admin Settings) → reading size → avatar → feedback.
 - Reader chrome is the slim gradient hero; group progress opens and series
   history collapses by default on the khatma landing (local state).
+- Assigned-reader navigation follows RTL book direction: previous is on the
+  right, next is on the left, and both enabled actions share the primary style.
 
 Update this doc when member routes, subscriptions, reader, finish, or persistence changes.

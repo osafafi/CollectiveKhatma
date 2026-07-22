@@ -76,8 +76,8 @@ interface ReaderNavProps {
 }
 
 /**
- * Nav row per mock 3a: التالية leads as the primary gradient action (reading
- * flows to the next page), the indicator sits centered, السابقة is quiet.
+ * RTL book navigation: السابقة sits on the right and التالية on the left,
+ * with matching primary treatments whenever each action is enabled.
  */
 export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderNavProps) {
   return (
@@ -86,8 +86,8 @@ export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderN
       spacing={3}
       sx={{ alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <AppButton onClick={onNext} disabled={atEnd} sx={{ opacity: atEnd ? 0.4 : 1 }}>
-        {strings.reader.next} ›
+      <AppButton onClick={onPrev} disabled={atStart} sx={{ opacity: atStart ? 0.4 : 1 }}>
+        ‹ {strings.reader.prev}
       </AppButton>
       <Typography
         component="span"
@@ -100,14 +100,8 @@ export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderN
       >
         {indicator}
       </Typography>
-      <AppButton
-        variant="outlined"
-        color="inherit"
-        onClick={onPrev}
-        disabled={atStart}
-        sx={{ opacity: atStart ? 0.4 : 1, color: 'text.secondary' }}
-      >
-        ‹ {strings.reader.prev}
+      <AppButton onClick={onNext} disabled={atEnd} sx={{ opacity: atEnd ? 0.4 : 1 }}>
+        {strings.reader.next} ›
       </AppButton>
     </Stack>
   );

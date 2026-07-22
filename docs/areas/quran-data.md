@@ -18,5 +18,7 @@ Hard rules:
 - App reads committed data. No runtime Quran API.
 - Generator rewrites the dataset and needs network. Do not run casually.
 - Keep text attribution and bundled Quran font license.
+- Both mushaf readers place previous on the right and next on the left, with
+  matching primary styles while enabled and muted styling only at a boundary.
 
 Update this doc when dataset shape, loader, symbols, reader rendering, or scope mapping changes.

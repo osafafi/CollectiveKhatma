@@ -162,6 +162,20 @@ describe('member browse reader', () => {
     expect(await screen.findByText(/page-body-2/)).toBeVisible();
   });
 
+  it('places matched navigation actions in RTL book order', () => {
+    renderMember({ route: '/quran/2', data: { roster: [amina] } });
+
+    const previous = screen.getByRole('button', { name: /السابقة/ });
+    const next = screen.getByRole('button', { name: /التالية/ });
+
+    expect(previous).toBeEnabled();
+    expect(next).toBeEnabled();
+    expect(previous).toHaveClass('MuiButton-contained');
+    expect(next).toHaveClass('MuiButton-contained');
+    expect(document.documentElement).toHaveAttribute('dir', 'rtl');
+    expect(previous.compareDocumentPosition(next)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it('disables the next control at the last page on a deep link', () => {
     renderMember({ route: '/quran/604', data: { roster: [amina] } });
 
