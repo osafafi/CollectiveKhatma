@@ -20,6 +20,8 @@ Hard rules:
 - Keep text attribution and bundled Quran font license.
 - Both mushaf readers place previous on the right and next on the left, with
   matching primary styles while enabled and muted styling only at a boundary.
+- Assigned-reader navigation stacks chunk progress above the mushaf page number
+  and uses the sticky bar's high-contrast text color.
 - Assigned Quran text is preceded by the compact member, page-count, khatma
   title, and series-artwork header; the free-browse reader keeps its jump header.
 

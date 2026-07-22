@@ -73,13 +73,22 @@ interface ReaderNavProps {
   atStart: boolean;
   atEnd: boolean;
   indicator: string;
+  progressIndicator?: string;
 }
 
 /**
  * RTL book navigation: السابقة sits on the right and التالية on the left,
- * with matching primary treatments whenever each action is enabled.
+ * with matching primary treatments whenever each action is enabled. Assigned
+ * reading adds its chunk progress above the mushaf page label.
  */
-export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderNavProps) {
+export function ReaderNav({
+  onPrev,
+  onNext,
+  atStart,
+  atEnd,
+  indicator,
+  progressIndicator,
+}: ReaderNavProps) {
   return (
     <Stack
       direction="row"
@@ -89,17 +98,39 @@ export function ReaderNav({ onPrev, onNext, atStart, atEnd, indicator }: ReaderN
       <AppButton onClick={onPrev} disabled={atStart} sx={{ opacity: atStart ? 0.4 : 1 }}>
         ‹ {strings.reader.prev}
       </AppButton>
-      <Typography
+      <Box
         component="span"
-        color="text.secondary"
         sx={{
-          fontSize: '0.875rem',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.25,
           fontVariantNumeric: 'tabular-nums',
           textAlign: 'center',
         }}
       >
-        {indicator}
-      </Typography>
+        {progressIndicator ? (
+          <Typography
+            component="span"
+            color="inherit"
+            sx={{ fontSize: '0.875rem', fontWeight: 700, lineHeight: 1.3 }}
+          >
+            {progressIndicator}
+          </Typography>
+        ) : null}
+        <Typography
+          component="span"
+          color={progressIndicator ? 'inherit' : 'text.secondary'}
+          sx={{
+            fontSize: '0.875rem',
+            fontWeight: progressIndicator ? 600 : 400,
+            lineHeight: 1.3,
+          }}
+        >
+          {indicator}
+        </Typography>
+      </Box>
       <AppButton onClick={onNext} disabled={atEnd} sx={{ opacity: atEnd ? 0.4 : 1 }}>
         {strings.reader.next} ›
       </AppButton>

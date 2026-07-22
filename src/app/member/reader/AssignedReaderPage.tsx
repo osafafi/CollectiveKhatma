@@ -101,7 +101,8 @@ function AssignedReaderCore({
     prefetchNeighbors(pages, index);
   }, [pages, index]);
 
-  const indicator = `${strings.reader.page} ${toArabicDigits(page)} · ${toArabicDigits(index + 1)} ${strings.reader.of} ${toArabicDigits(pages.length)}`;
+  const indicator = `${strings.reader.page} ${toArabicDigits(page)}`;
+  const progressIndicator = `${toArabicDigits(index + 1)} ${strings.reader.of} ${toArabicDigits(pages.length)}`;
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
@@ -120,6 +121,7 @@ function AssignedReaderCore({
           atStart={index === 0}
           atEnd={index === pages.length - 1}
           indicator={indicator}
+          progressIndicator={progressIndicator}
         />
       </StickyChrome>
 

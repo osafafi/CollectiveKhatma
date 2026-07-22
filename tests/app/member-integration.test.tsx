@@ -183,7 +183,8 @@ describe('member application integration', () => {
 
     // Landing -> assigned reader.
     await harness.user.click(readLink);
-    expect(await screen.findByText('صفحة ١٠ · ١ من ٣')).toBeVisible();
+    expect(await screen.findByText('١ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١٠')).toBeVisible();
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     // Reader -> finish the round.
@@ -306,7 +307,8 @@ describe('member application integration', () => {
 
     // Acknowledgement restores the underlying reader with its page and chrome.
     expect(localStorage.getItem(`khatma.du3aAck.${completed.id}`)).toBe('1');
-    expect(await screen.findByText('صفحة ١٠ · ١ من ٣')).toBeVisible();
+    expect(await screen.findByText('١ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١٠')).toBeVisible();
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
     expect(
       screen.getByRole('navigation', { name: strings.common.appName }),

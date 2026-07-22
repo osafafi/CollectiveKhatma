@@ -239,11 +239,14 @@ describe('member assigned reader', () => {
     expect(
       screen.getByRole('img', { name: strings.admin.seriesImageAlt }),
     ).toHaveAttribute('src', '/khatma-images/1.jpeg');
-    expect(await screen.findByText('صفحة ١٠ · ١ من ٣')).toBeVisible();
+    const progressIndicator = await screen.findByText('١ من ٣');
+    expect(progressIndicator).toBeVisible();
+    expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة ١٠');
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     await harness.user.click(
       screen.getByRole('button', { name: strings.member.finishedToday }),
@@ -268,13 +271,15 @@ describe('member assigned reader', () => {
     });
 
     await harness.user.click(await screen.findByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     // An unrelated tick (same round, streak bumped) must not reset page or scroll.
     harness.subscriptions
       .assignment(khatma.id)
       .emit([makeAssignment(amina.id, [round(1, [10, 11, 12])], {}, 4)]);
-    expect(screen.getByText('صفحة ١١ · ٢ من ٣')).toBeVisible();
+    expect(screen.getByText('٢ من ٣')).toBeVisible();
+    expect(screen.getByText('صفحة ١١')).toBeVisible();
 
     // A new round remounts the reader fresh at its first page.
     harness.subscriptions.assignment(khatma.id).emit([
@@ -282,7 +287,8 @@ describe('member assigned reader', () => {
         1: 100,
       }),
     ]);
-    expect(await screen.findByText('صفحة ٢٠ · ١ من ٢')).toBeVisible();
+    expect(await screen.findByText('١ من ٢')).toBeVisible();
+    expect(screen.getByText('صفحة ٢٠')).toBeVisible();
   });
 
   it('shows loading, no-pages, and paused states', () => {
