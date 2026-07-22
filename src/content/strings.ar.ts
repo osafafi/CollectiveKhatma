@@ -89,6 +89,9 @@ export const strings = {
   personal: {
     heading: 'صفحتي الشخصية',
     myKhatmas: 'ختماتي',
+    pendingAssignmentsHeading: 'صفحات بانتظار القراءة',
+    assignedPages: 'الصفحات المعيّنة',
+    noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',
   },
   // In-app mushaf reader — both the free-browse tab and the assigned-pages flow.
   reader: {

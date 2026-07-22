@@ -7,7 +7,7 @@ import { formatPercent } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { lifetimePercent } from '@/domain/progress';
-import type { Person } from '@/domain/types';
+import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
   renderWithAppProviders,
   type RenderWithAppProvidersOptions,
@@ -21,6 +21,42 @@ const amina: Person = {
   enabled: true,
   createdAt: 1,
 };
+
+function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
+  return {
+    id,
+    seriesId: `series-${id}`,
+    seriesName: `ختمة ${id}`,
+    seriesNumber: 1,
+    totalPages: 6,
+    scope: { kind: 'range', fromPage: 1, toPage: 6 },
+    memberIds: [amina.id],
+    capacities: { [amina.id]: { pages: 2, surahs: 0, juz: 0 } },
+    duaReciterId: amina.id,
+    status: 'active',
+    remainingPages: [3, 4, 5, 6],
+    roundCount: 1,
+    createdAt: 1,
+    ...overrides,
+  };
+}
+
+function assignment(
+  rounds: RoundChunk[],
+  doneByRound: Record<number, number> = {},
+): Assignment {
+  return { memberId: amina.id, rounds, doneByRound, missedStreak: 0 };
+}
+
+function round(roundNumber: number, pages: number[]): RoundChunk {
+  return {
+    round: roundNumber,
+    date: '2026-07-22',
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+  };
+}
 
 function TestMemberExperience() {
   return (
@@ -65,6 +101,77 @@ describe('member personal and settings routes', () => {
     expect(
       screen.getByRole('progressbar', { name: strings.member.lifetimeLead }),
     ).toHaveAttribute('aria-valuenow', '25');
+  });
+
+  it('lists every pending khatma assignment and opens its reader directly', () => {
+    const first = makeKhatma('first', {
+      seriesName: 'أهل القرآن',
+      imageName: 'green-arch.svg',
+      createdAt: 1,
+    });
+    const second = makeKhatma('second', {
+      seriesName: 'رفقة النور',
+      seriesNumber: 2,
+      createdAt: 2,
+    });
+    const alreadyDone = makeKhatma('done');
+    const completed = makeKhatma('completed', { status: 'completed' });
+    const firstAssignment = assignment([round(1, [1, 2])]);
+    const harness = renderMember({
+      route: '/personal',
+      data: {
+        roster: [amina],
+        khatmas: [first, second, alreadyDone, completed],
+        assignments: {
+          [first.id]: [firstAssignment],
+          [second.id]: [assignment([round(1, [5, 6])])],
+          [alreadyDone.id]: [assignment([round(1, [3, 4])], { 1: 10 })],
+          [completed.id]: [assignment([round(1, [1, 2])])],
+        },
+      },
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: strings.personal.pendingAssignmentsHeading,
+      }),
+    ).toBeVisible();
+
+    const firstTitle = `أهل القرآن ${toArabicDigits(1)}`;
+    const firstLink = screen.getByRole('link', {
+      name: `${strings.reader.readMyPages}: ${firstTitle}`,
+    });
+    expect(firstLink).toHaveAttribute('href', '#/khatma/first/read');
+    expect(within(firstLink).getByRole('img')).toHaveAttribute(
+      'src',
+      '/khatma-images/green-arch.svg',
+    );
+    expect(
+      within(firstLink).getByText(`${toArabicDigits(2)} ${strings.member.pagesWord}`),
+    ).toBeVisible();
+    expect(
+      within(firstLink).getByText(
+        `${strings.personal.assignedPages}: ${toArabicDigits(1)}، ${toArabicDigits(2)}`,
+      ),
+    ).toBeVisible();
+
+    const secondTitle = `رفقة النور ${toArabicDigits(2)}`;
+    expect(
+      screen.getByRole('link', {
+        name: `${strings.reader.readMyPages}: ${secondTitle}`,
+      }),
+    ).toHaveAttribute('href', '#/khatma/second/read');
+    expect(screen.queryByText(`ختمة done ${toArabicDigits(1)}`)).toBeNull();
+    expect(screen.queryByText(`ختمة completed ${toArabicDigits(1)}`)).toBeNull();
+
+    harness.subscriptions
+      .assignment(first.id)
+      .emit([{ ...firstAssignment, doneByRound: { 1: 20 } }]);
+    expect(
+      screen.queryByRole('link', {
+        name: `${strings.reader.readMyPages}: ${firstTitle}`,
+      }),
+    ).toBeNull();
   });
 
   it('restores, live-applies, and persists the five-level reading scale', async () => {

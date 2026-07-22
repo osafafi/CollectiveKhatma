@@ -11,6 +11,7 @@ import { toArabicDigits } from '@/content/quran/symbols';
 import { lifetimePercent } from '@/domain/progress';
 import { MemberHero } from './MemberHero';
 import { MemberIdentitySummary } from './MemberIdentitySummary';
+import { PendingAssignmentsCard } from './PendingAssignmentsCard';
 import { useMemberIdentity } from './memberIdentityContext';
 
 /** Selected-member identity plus lifetime Quran-reading insight (mock 2b). */
@@ -25,7 +26,8 @@ export function PersonalPage() {
     <Stack spacing={4}>
       <MemberHero />
       <MemberIdentitySummary />
-      <SurfaceCard title={strings.member.lifetimeLead} appear={0}>
+      <PendingAssignmentsCard />
+      <SurfaceCard title={strings.member.lifetimeLead} appear={1}>
         <Stack
           direction="row"
           spacing={4}
