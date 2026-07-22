@@ -135,7 +135,7 @@ function ImageChoice({
         appearance: 'none',
         border: 2,
         borderColor: selected ? 'primary.main' : 'divider',
-        borderRadius: 3,
+        borderRadius: (theme) => `${theme.custom.radii.cardSm}px`,
         overflow: 'hidden',
         p: 0,
         bgcolor: 'background.paper',

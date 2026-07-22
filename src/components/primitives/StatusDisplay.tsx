@@ -37,7 +37,7 @@ export function NoticeBanner({
       sx={mergeSx((theme) => {
         const color = toneColor(theme, tone);
         return {
-          borderRadius: 3,
+          borderRadius: `${theme.custom.radii.button}px`,
           bgcolor: alpha(color, 0.1),
           color,
           px: 4,

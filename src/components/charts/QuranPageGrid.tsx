@@ -204,7 +204,7 @@ export function QuranPageGrid({
       sx={{
         border: 1,
         borderColor: 'divider',
-        borderRadius: '12px !important',
+        borderRadius: (theme) => `${theme.custom.radii.button}px !important`,
         bgcolor: 'background.default',
         boxShadow: 'none',
         overflow: 'visible',
@@ -260,7 +260,7 @@ export function QuranPageGrid({
               touchAction: activeIndex === null ? 'pan-y' : 'none',
               userSelect: 'none',
               WebkitTouchCallout: 'none',
-              borderRadius: 2,
+              borderRadius: (theme) => `${theme.custom.radii.cardSm}px`,
             }}
           >
             {entries.map((entry, index) => {

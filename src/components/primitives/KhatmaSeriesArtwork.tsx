@@ -47,14 +47,14 @@ export function KhatmaSeriesArtwork({
       src={src}
       alt={alt}
       onError={fallbackToPlaceholder}
-      sx={{
+      sx={(theme) => ({
         width: size,
         height: size,
         flexShrink: 0,
         objectFit: 'cover',
-        borderRadius: 3,
+        borderRadius: `${theme.custom.radii.cardSm}px`,
         bgcolor: 'background.default',
-      }}
+      })}
     />
   );
 }

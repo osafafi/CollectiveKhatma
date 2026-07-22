@@ -79,7 +79,7 @@ export function CreateKhatmaScopeControls({
               gap: 2,
               maxHeight: 224,
               overflowY: 'auto',
-              borderRadius: 3,
+              borderRadius: (theme) => `${theme.custom.radii.cardSm}px`,
               bgcolor: 'background.default',
               p: 2,
             }}

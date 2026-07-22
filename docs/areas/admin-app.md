@@ -31,6 +31,11 @@ Hard rules:
   by `ADMIN_FEEDBACK_DRAWER_HEIGHT_PERCENT` (default 70).
 - The Khatmas list hides completed rounds already represented by a later or
   active round, retaining only the last round of a fully ended series.
+- The shell hero owns the route title as the page `h1` (pages dropped their own
+  heading; the khatma detail keeps its series-name `h1`) and hosts the feedback
+  bell in its action slot.
+- Admin Settings includes the shared appearance (light/dark) card; the choice
+  persists in `khatma.themeMode`, shared with the member entry.
 - Admin URL is obscure, not secure. No auth.
 
 Update this doc when admin route, page ownership, draft, or subscription scope changes.

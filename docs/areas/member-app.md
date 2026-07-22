@@ -28,6 +28,13 @@ Hard rules:
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread
   document with the selected member id and current name on every submission.
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage`,
-  `khatma.du3aAck.${khatmaId}`.
+  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`.
+- `MemberHero` shows the member name app-wide (greeting variant on lists,
+  title variant on Settings); the khatmas list also shows a read-only
+  "previous" section of completed khatmas the member took part in.
+- Settings order: appearance (light/dark toggle, the ONLY toggle location
+  together with admin Settings) → reading size → avatar → feedback.
+- Reader chrome is the slim gradient hero; group progress opens and series
+  history collapses by default on the khatma landing (local state).
 
 Update this doc when member routes, subscriptions, reader, finish, or persistence changes.
