@@ -21,8 +21,16 @@ Hard rules:
 - Pending pages stay with reader and block a new chunk.
 - Only admin release returns held pages.
 - Remaining pages stay sorted.
+- Loose-page distribution advances from the oldest remaining pages as a front
+  block. It does not skip a page inside the block just because the selected
+  reader completed that page in an earlier khatma.
+- Ready readers are tiered clean before flagged. Within a tier, the planner first
+  chooses the capacity that creates the fewest internal gaps in the next front
+  block, then the reader with the lowest lifetime completed-page overlap;
+  rotated roster order breaks ties.
 - `capacities.surahs` is a Surah id and `capacities.juz` is a Juz number; each
-  selected whole unit is pulled from wherever it remains in the pool.
+  selected whole unit is pulled from wherever it remains in the pool, so an
+  explicit whole-unit addition may make the final combined chunk non-consecutive.
 - Same local date blocks a second normal distribution.
 - Redistribution recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;

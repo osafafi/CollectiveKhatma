@@ -127,27 +127,6 @@ describe('takeChunk', () => {
     expect(pool).toEqual([]);
   });
 
-  it('prefers pages the member has never completed', () => {
-    const pool = range(1, 6);
-    expect(takeChunk(pool, cap(2), undefined, [1, 2, 5])).toEqual([3, 4]);
-    expect(pool).toEqual([1, 2, 5, 6]);
-  });
-
-  it('falls back to completed pages after full coverage', () => {
-    const pool = range(1, 4);
-    expect(takeChunk(pool, cap(2), undefined, range(1, 4))).toEqual([1, 2]);
-    expect(pool).toEqual([3, 4]);
-  });
-
-  it("expands a member's unique coverage across repeated khatma pools", () => {
-    const completed = new Set<number>();
-    for (let cycle = 0; cycle < 3; cycle++) {
-      const pages = takeChunk(range(1, 6), cap(2), undefined, [...completed]);
-      pages.forEach((page) => completed.add(page));
-    }
-    expect([...completed].sort((a, b) => a - b)).toEqual(range(1, 6));
-  });
-
   it('pulls a specific surah from the middle of the pool', () => {
     const pool = range(1, 7);
     expect(takeChunk(pool, cap(0, 3, 0), units)).toEqual([5, 6, 7]); // surah 3 = pages 5-7
@@ -251,11 +230,90 @@ describe('planDistribution — serving', () => {
     expect(plan.khatmaUpdates[0]?.remainingPages).toEqual([5, 6, 7]);
   });
 
-  it("rotates first choice and avoids each member's prior pages", () => {
+  it('keeps loose pages consecutive even when the reader has completed an inside page', () => {
+    const priorRound = assignment('a', [chunk(1, [1, 2])], { 1: 100 });
+    const plan = planDistribution(
+      input({
+        khatmas: [khatma('k1', range(11, 31), 1, [priorRound])],
+        members: [coveredMember('a', 5, range(15, 26))],
+      }),
+    );
+
+    expect(chunkFor(plan, 'a')?.pages).toEqual(range(11, 15));
+    expect(chunkFor(plan, 'a')?.round).toBe(2);
+    expect(plan.khatmaUpdates[0]?.remainingPages).toEqual(range(16, 31));
+  });
+
+  it('uses different capacities to clear a fragmented front without member gaps', () => {
+    const plan = planDistribution(
+      input({
+        khatmas: [
+          khatma('k1', [...range(11, 14), ...range(27, 35)], 1, [
+            assignment('a'),
+            assignment('b'),
+          ]),
+        ],
+        members: [member('a', 5), member('b', 4)],
+      }),
+    );
+
+    expect(plan.chunks.map(({ memberId, pages }) => ({ memberId, pages }))).toEqual([
+      { memberId: 'b', pages: range(11, 14) },
+      { memberId: 'a', pages: range(27, 31) },
+    ]);
+    expect(plan.khatmaUpdates[0]?.remainingPages).toEqual(range(32, 35));
+  });
+
+  it('matches the next consecutive block to the reader with least prior overlap', () => {
+    const plan = planDistribution(
+      input({
+        khatmas: [khatma('k1', range(11, 25), 0, [assignment('a'), assignment('b')])],
+        members: [
+          coveredMember('a', 5, range(11, 15)),
+          coveredMember('b', 5, range(16, 20)),
+        ],
+      }),
+    );
+
+    expect(plan.chunks).toEqual([
+      {
+        khatmaId: 'k1',
+        memberId: 'b',
+        round: 1,
+        pages: range(11, 15),
+        loosePages: range(11, 15),
+      },
+      {
+        khatmaId: 'k1',
+        memberId: 'a',
+        round: 1,
+        pages: range(16, 20),
+        loosePages: range(16, 20),
+      },
+    ]);
+    expect(plan.khatmaUpdates[0]?.remainingPages).toEqual(range(21, 25));
+  });
+
+  it('keeps clean readers ahead of flagged readers before matching history', () => {
+    const flagged = assignment('a', [chunk(1, [9, 10], true)], {}, 1);
+    const plan = planDistribution(
+      input({
+        khatmas: [khatma('k1', range(1, 6), 1, [flagged, assignment('b')])],
+        members: [coveredMember('a', 2, []), coveredMember('b', 2, [1, 2])],
+      }),
+    );
+
+    expect(plan.chunks.map(({ memberId, pages }) => ({ memberId, pages }))).toEqual([
+      { memberId: 'b', pages: [1, 2] },
+      { memberId: 'a', pages: [3, 4] },
+    ]);
+  });
+
+  it('uses rotated roster order when history overlap is tied', () => {
     const plan = planDistribution(
       input({
         khatmas: [khatma('k2', range(1, 8), 0, [assignment('a'), assignment('b')], 2)],
-        members: [coveredMember('a', 3, [1, 2, 3]), coveredMember('b', 1, [4])],
+        members: [coveredMember('a', 3, []), coveredMember('b', 1, [])],
         newKhatmaSeriesNumber: 3,
       }),
     );
@@ -266,12 +324,10 @@ describe('planDistribution — serving', () => {
         khatmaId: 'k2',
         memberId: 'a',
         round: 1,
-        pages: [4, 5, 6],
-        loosePages: [4, 5, 6],
+        pages: [2, 3, 4],
+        loosePages: [2, 3, 4],
       },
     ]);
-    expect(chunkFor(plan, 'a')?.pages).not.toContain(1);
-    expect(chunkFor(plan, 'b')?.pages).not.toContain(4);
   });
 });
 

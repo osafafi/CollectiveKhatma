@@ -8,8 +8,9 @@
  * skipped (served nothing new) and their warning escalates by one — the pages
  * return to the pool only when the admin explicitly calls it in (see
  * `releaseChunk`). Each member's chunk is their additive {@link MemberCapacity}
- * (pages + a selected Surah + a selected Juz) taken from the oldest pool, preferring
- * material they have not completed in an earlier khatma.
+ * (pages + a selected Surah + a selected Juz) taken from the oldest pool. Loose
+ * pages advance from the front, preferring the member capacity that keeps the
+ * next block consecutive; lifetime history then breaks coverage differences.
  * The data layer applies the resulting plan in one Firestore transaction.
  */
 
@@ -21,7 +22,7 @@ export interface DistributionMember {
   id: string;
   /** Additive per-round reading capacity (pages + selected Surah + selected Juz). */
   capacity: MemberCapacity;
-  /** Lifetime Quran pages already completed; new material is preferred. */
+  /** Lifetime Quran pages already completed; used to match the next loose block. */
   completedPages: readonly number[];
   /** Disabled members are skipped entirely (no chunk, streak frozen). */
   enabled: boolean;
@@ -95,18 +96,17 @@ function mergeSorted(pool: number[], pages: number[]): number[] {
 
 /**
  * Serve one member's additive capacity from `pool` (mutating it):
- * `cap.pages` loose pages they have not completed before, PLUS the specific Surah
- * `cap.surahs` and specific Juz `cap.juz`. Whole units are pulled from wherever
- * they remain in the pool and are never split. Surah/Juz portions need
- * `unitOfPage` — without it they are skipped.
+ * the oldest `cap.pages` loose pages, PLUS the specific Surah `cap.surahs` and
+ * specific Juz `cap.juz`. Whole units are pulled from wherever they remain in
+ * the pool and are never split. Surah/Juz portions need `unitOfPage` — without
+ * it they are skipped.
  */
 export function takeChunk(
   pool: number[],
   cap: MemberCapacity,
   unitOfPage?: PageUnitMaps,
-  completedPages: readonly number[] = [],
 ): number[] {
-  return takeChunkParts(pool, cap, unitOfPage, completedPages).pages;
+  return takeChunkParts(pool, cap, unitOfPage).pages;
 }
 
 interface ChunkParts {
@@ -119,13 +119,11 @@ function takeChunkParts(
   pool: number[],
   cap: MemberCapacity,
   unitOfPage?: PageUnitMaps,
-  completedPages: readonly number[] = [],
 ): ChunkParts {
   const taken: number[] = [];
   const loosePages: number[] = [];
-  const completed = new Set(completedPages);
   const pages = Math.max(0, Math.floor(cap.pages));
-  takePreferredPages(pool, loosePages, pages, completed);
+  takeFrontPages(pool, loosePages, pages);
   taken.push(...loosePages);
   takeSpecificUnit(pool, taken, Math.max(0, Math.floor(cap.surahs)), unitOfPage?.surah);
   takeSpecificUnit(pool, taken, Math.max(0, Math.floor(cap.juz)), unitOfPage?.juz);
@@ -135,18 +133,13 @@ function takeChunkParts(
   };
 }
 
-/** Take unseen pages first, then fill any shortfall from the front of the pool. */
-function takePreferredPages(
-  pool: number[],
-  taken: number[],
-  count: number,
-  completed: ReadonlySet<number>,
-): void {
-  for (let i = 0; i < pool.length && taken.length < count;) {
-    if (!completed.has(pool[i]!)) taken.push(pool.splice(i, 1)[0]!);
-    else i++;
-  }
-  while (taken.length < count && pool.length > 0) taken.push(pool.shift()!);
+/**
+ * Take the oldest loose pages as one front slice. Because the normal pool is
+ * ascending and contiguous, this keeps a member's loose assignment consecutive
+ * instead of scanning past previously completed pages and creating holes.
+ */
+function takeFrontPages(pool: number[], taken: number[], count: number): void {
+  taken.push(...pool.splice(0, Math.min(count, pool.length)));
 }
 
 /** Pull every in-pool page of the selected unit id (`0` = none) into `taken`. */
@@ -168,6 +161,59 @@ function rotate<T>(items: readonly T[], offset: number): T[] {
   if (items.length === 0) return [];
   const start = ((offset % items.length) + items.length) % items.length;
   return [...items.slice(start), ...items.slice(0, start)];
+}
+
+interface FrontBlockScore {
+  gaps: number;
+  completed: number;
+  total: number;
+}
+
+/** Consecutiveness and prior coverage of this member's next front loose block. */
+function frontBlockScore(
+  member: DistributionMember,
+  pool: readonly number[],
+): FrontBlockScore | undefined {
+  const count = Math.min(Math.max(0, Math.floor(member.capacity.pages)), pool.length);
+  if (count === 0) return undefined;
+  const completed = new Set(member.completedPages);
+  let gaps = 0;
+  let overlap = 0;
+  for (let i = 0; i < count; i++) {
+    if (completed.has(pool[i]!)) overlap++;
+    if (i > 0 && pool[i]! !== pool[i - 1]! + 1) gaps++;
+  }
+  return { gaps, completed: overlap, total: count };
+}
+
+/**
+ * Match the next front loose block to the member whose capacity introduces the
+ * fewest gaps, then the lowest completed-page overlap. `members` is already in
+ * warning/rotation order, which breaks equal scores. Unit-only members keep
+ * their existing relative priority because a zero-page loose block cannot be
+ * scored.
+ */
+function pickFrontBlockMatch(
+  members: readonly DistributionMember[],
+  pool: readonly number[],
+): DistributionMember {
+  let best = members[0]!;
+  let bestScore = frontBlockScore(best, pool);
+  for (let i = 1; i < members.length; i++) {
+    const candidate = members[i]!;
+    const candidateScore = frontBlockScore(candidate, pool);
+    if (!bestScore || !candidateScore) continue;
+    const candidateWeighted = candidateScore.completed * bestScore.total;
+    const bestWeighted = bestScore.completed * candidateScore.total;
+    if (
+      candidateScore.gaps < bestScore.gaps ||
+      (candidateScore.gaps === bestScore.gaps && candidateWeighted < bestWeighted)
+    ) {
+      best = candidate;
+      bestScore = candidateScore;
+    }
+  }
+  return best;
 }
 
 /** A member's chunk located across the series' khatmas. */
@@ -232,13 +278,15 @@ function currentStreak(
  *    `missedStreak` climbs by one (the warning escalates by rounds waited). No
  *    prior chunk (new member) or already released → nothing to settle.
  * 2. ORDER the *ready* members (enabled and not holding a pending chunk): clean
- *    members first, then flagged, rotating first-choice priority by khatma number.
- * 3. SERVE each ready member their additive {@link MemberCapacity} from the
- *    oldest khatma's pool (via `takeChunk`), preferring Quran pages absent from
- *    their lifetime completion set. A chunk never spans two
- *    khatmas: when a pool can only partially fill it, that member gets the short
- *    chunk and the next member draws from the next pool. When every existing
- *    pool is empty, the round ROLLS OVER: khatma N+1 is minted from
+ *    members first, then flagged. Within each tier, match the oldest front pages
+ *    to the capacity that introduces the fewest gaps, then to the member with
+ *    the least lifetime overlap; rotated roster order breaks ties.
+ * 3. SERVE each matched member their additive {@link MemberCapacity} from the
+ *    oldest khatma's pool (via `takeChunk`). Loose pages come from the front so
+ *    normal chunks stay consecutive and old holes do not linger. A chunk never
+ *    spans two khatmas: when a pool can only partially fill it, that member gets
+ *    the short chunk and the next member draws from the next pool. When every
+ *    existing pool is empty, the round ROLLS OVER: khatma N+1 is minted from
  *    `newKhatmaPool` and serving continues from it.
  * 4. COMPLETE: any khatma whose pool is empty and whose chunks are all done or
  *    released (and that served nothing this round) is fully read. A pending
@@ -278,52 +326,48 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
   const servingSeriesNumber =
     pools.find((p) => p.pages.length > 0)?.seriesNumber ?? newKhatmaSeriesNumber;
   const rotatedReady = rotate(ready, Math.max(0, servingSeriesNumber - 1));
-  const serveOrder = [
-    ...rotatedReady.filter((m) => streakOf(m.id) === 0),
-    ...rotatedReady.filter((m) => streakOf(m.id) > 0),
+  const serveTiers = [
+    rotatedReady.filter((m) => streakOf(m.id) === 0),
+    rotatedReady.filter((m) => streakOf(m.id) > 0),
   ];
 
-  // 3. Serve coverage-aware additive chunks from the oldest non-empty pool.
+  // 3. Serve consecutive front chunks, matching history within each priority tier.
   const chunks: PlannedChunk[] = [];
   let rolloverPool: number[] | undefined;
   let rolloverServed = false;
-  for (const member of serveOrder) {
-    const source = pools.find((p) => p.pages.length > 0);
-    let khatmaId: string | null;
-    let round: number;
-    let parts: ChunkParts;
-    if (source) {
-      const khatma = khatmas.find((k) => k.id === source.id);
-      parts = takeChunkParts(
-        source.pages,
-        member.capacity,
-        unitOfPage,
-        member.completedPages,
-      );
-      if (parts.pages.length > 0) source.served = true;
-      khatmaId = source.id;
-      round = (khatma?.roundCount ?? 0) + 1;
-    } else {
-      // Rollover: every existing pool is empty — mint khatma N+1.
-      rolloverPool ??= [...newKhatmaPool];
-      parts = takeChunkParts(
-        rolloverPool,
-        member.capacity,
-        unitOfPage,
-        member.completedPages,
-      );
-      khatmaId = null;
-      round = 1;
-      if (parts.pages.length > 0) rolloverServed = true;
-    }
-    if (parts.pages.length > 0) {
-      chunks.push({
-        khatmaId,
-        memberId: member.id,
-        round,
-        pages: parts.pages,
-        loosePages: parts.loosePages,
-      });
+  for (const tier of serveTiers) {
+    const waiting = [...tier];
+    while (waiting.length > 0) {
+      const source = pools.find((p) => p.pages.length > 0);
+      if (!source) rolloverPool ??= [...newKhatmaPool];
+      const member = pickFrontBlockMatch(waiting, source?.pages ?? rolloverPool ?? []);
+      waiting.splice(waiting.indexOf(member), 1);
+
+      let khatmaId: string | null;
+      let round: number;
+      let parts: ChunkParts;
+      if (source) {
+        const khatma = khatmas.find((k) => k.id === source.id);
+        parts = takeChunkParts(source.pages, member.capacity, unitOfPage);
+        if (parts.pages.length > 0) source.served = true;
+        khatmaId = source.id;
+        round = (khatma?.roundCount ?? 0) + 1;
+      } else {
+        // Rollover: every existing pool is empty — mint khatma N+1.
+        parts = takeChunkParts(rolloverPool!, member.capacity, unitOfPage);
+        khatmaId = null;
+        round = 1;
+        if (parts.pages.length > 0) rolloverServed = true;
+      }
+      if (parts.pages.length > 0) {
+        chunks.push({
+          khatmaId,
+          memberId: member.id,
+          round,
+          pages: parts.pages,
+          loosePages: parts.loosePages,
+        });
+      }
     }
   }
 
