@@ -191,7 +191,7 @@ describe('member application integration', () => {
     await harness.user.click(
       screen.getByRole('button', { name: strings.member.finishedToday }),
     );
-    expect(markRoundDone).toHaveBeenCalledWith(khatma.id, amina.id, 1);
+    expect(markRoundDone).toHaveBeenCalledWith(khatma.id, amina.id, 1, [khatma.id]);
     expect(
       screen.getByText((content) => content.includes(strings.member.doneToday)),
     ).toBeVisible();

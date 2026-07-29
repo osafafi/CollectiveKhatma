@@ -49,6 +49,17 @@ export function completedInSeries(
     .sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));
 }
 
+/** Ids whose assignment warning copies must stay in sync for an active series. */
+export function activeKhatmaIdsInSeries(
+  khatmas: readonly Khatma[],
+  seriesId: string,
+): string[] {
+  return khatmas
+    .filter((khatma) => khatma.seriesId === seriesId && khatma.status === 'active')
+    .sort((a, b) => a.seriesNumber - b.seriesNumber)
+    .map((khatma) => khatma.id);
+}
+
 /**
  * Entries shown on the admin Khatmas page: every ongoing khatma, plus the final
  * completed khatma of a series only when that series has no ongoing or later

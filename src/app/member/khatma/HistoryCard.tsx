@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import { Box, Typography } from '@mui/material';
 import { CollapsibleCard, StatusChip } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
@@ -12,7 +13,15 @@ export function HistoryCard({ khatmas }: { khatmas: readonly Khatma[] }) {
   const [open, setOpen] = useState(false);
   return (
     <CollapsibleCard
-      title={strings.member.historyHeading}
+      title={
+        <Box
+          component="span"
+          sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}
+        >
+          <HistoryRoundedIcon color="primary" fontSize="small" />
+          <Box component="span">{strings.member.historyHeading}</Box>
+        </Box>
+      }
       open={open}
       onOpenChange={setOpen}
       appear={2}

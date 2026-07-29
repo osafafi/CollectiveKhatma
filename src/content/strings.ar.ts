@@ -75,6 +75,7 @@ export const strings = {
     // Insights & progress
     groupProgress: 'تقدّم المجموعة',
     completedRoundCount: 'أتمّوا صفحات الجولة',
+    pendingReadersHeading: 'بانتظار إتمام القراءة',
     lifetimeLead: 'أتممت قراءة',
     lifetimeTail: 'من ٦٠٤ صفحة من المصحف',
     // Series history
@@ -252,6 +253,7 @@ export const strings = {
     statusCompleted: 'مكتملة',
     progressLabel: 'تقدّم المجموعة',
     pendingHeading: 'لم يُكمِلوا صفحاتهم',
+    completedPagesHeading: 'أكملوا صفحاتهم',
     membersProgress: 'إنجاز الأعضاء',
     chunkDone: '✓ أُنجزت',
     chunkPending: 'قيد القراءة',

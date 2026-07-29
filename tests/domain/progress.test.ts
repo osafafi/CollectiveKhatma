@@ -7,6 +7,7 @@ import {
   khatmaProgress,
   memberReadingInsights,
   pendingReaders,
+  roundReaderRecords,
 } from '@/domain/progress';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 
@@ -121,6 +122,23 @@ describe('khatmaProgress', () => {
 describe('pending readers', () => {
   it('lists members with a pending chunk (admin §8 list)', () => {
     expect(pendingReaders([partly, finished, flagged, fresh])).toEqual(['a']);
+  });
+});
+
+describe('round reader records', () => {
+  it('keeps only current-round completions while retaining older pending chunks', () => {
+    const currentDone: Assignment = {
+      memberId: 'e',
+      rounds: [chunk(3, '2026-07-10', [30, 31])],
+      doneByRound: { 3: 4_000 },
+      missedStreak: 0,
+    };
+    expect(
+      roundReaderRecords([partly, finished, flagged, fresh, currentDone], 3),
+    ).toEqual({
+      completed: [{ memberId: 'e', round: 3, pages: [30, 31] }],
+      pending: [{ memberId: 'a', round: 2, pages: [5, 6] }],
+    });
   });
 });
 

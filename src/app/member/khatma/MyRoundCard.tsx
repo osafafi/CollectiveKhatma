@@ -1,3 +1,4 @@
+import AutoStoriesRoundedIcon from '@mui/icons-material/AutoStoriesRounded';
 import { Box, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { SurfaceCard } from '@/components/primitives';
@@ -12,13 +13,19 @@ interface MyRoundCardProps {
   khatma: Khatma;
   assignment: Assignment;
   memberId: string;
+  activeSeriesKhatmaIds: readonly string[];
 }
 
-export function MyRoundCard({ khatma, assignment, memberId }: MyRoundCardProps) {
+export function MyRoundCard({
+  khatma,
+  assignment,
+  memberId,
+  activeSeriesKhatmaIds,
+}: MyRoundCardProps) {
   const chunk = latestReadableChunk(assignment);
   if (!chunk) {
     return (
-      <SurfaceCard title={strings.member.todayHeading} appear={0}>
+      <SurfaceCard title={<RoundCardTitle />} appear={0}>
         <Typography color="text.secondary">
           {strings.member.awaitingDistribution}
         </Typography>
@@ -27,7 +34,7 @@ export function MyRoundCard({ khatma, assignment, memberId }: MyRoundCardProps) 
   }
 
   return (
-    <SurfaceCard title={strings.member.todayHeading} appear={0}>
+    <SurfaceCard title={<RoundCardTitle />} appear={0}>
       <PagesRow pages={chunk.pages} />
       <RoundActions
         key={`${khatma.id}:${chunk.round}`}
@@ -35,8 +42,18 @@ export function MyRoundCard({ khatma, assignment, memberId }: MyRoundCardProps) 
         memberId={memberId}
         chunk={chunk}
         storedDone={isRoundDone(assignment, chunk.round)}
+        activeSeriesKhatmaIds={activeSeriesKhatmaIds}
       />
     </SurfaceCard>
+  );
+}
+
+function RoundCardTitle() {
+  return (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}>
+      <AutoStoriesRoundedIcon color="primary" fontSize="small" />
+      <Box component="span">{strings.member.todayHeading}</Box>
+    </Box>
   );
 }
 

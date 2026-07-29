@@ -50,7 +50,11 @@ Hard rules:
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
   together with admin Settings) → reading size → avatar → feedback.
 - Reader chrome is the slim gradient hero; group progress opens and series
-  history collapses by default on the khatma landing (local state).
+  history collapses by default on the khatma landing (local state). Inside
+  group progress, pending readers have their own collapsed, count-labelled
+  disclosure whose avatar/name rows open in a two-column grid. The current
+  pages, group progress, history, and pending-reader headers use matching
+  semantic icons.
 - Assigned-reader navigation follows RTL book direction: previous is on the
   right, next is on the left, and both enabled actions share the primary style.
 - The assigned reader opens with a compact grid header: the daily-pages title

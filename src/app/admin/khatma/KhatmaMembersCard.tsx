@@ -7,6 +7,7 @@ import { strings } from '@/content/strings.ar';
 import type { Surah } from '@/content/quran/types';
 import { warningLevel } from '@/domain/distribution';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
+import { activeKhatmaIdsInSeries } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import { AddKhatmaMemberForm } from './AddKhatmaMemberForm';
 import { KhatmaCapacityEditor } from './KhatmaCapacityEditor';
@@ -87,16 +88,21 @@ function KhatmaMemberRow({
   const { confirm } = useConfirmation();
 
   const onClearWarning = () => {
-    const activeIds = khatmas
-      .filter((other) => other.seriesId === khatma.seriesId && other.status === 'active')
-      .map((other) => other.id);
+    const activeIds = activeKhatmaIdsInSeries(khatmas, khatma.seriesId);
     void clearWarning.execute(activeIds, assignment.memberId);
   };
 
   const onToggleChunk = () => {
     if (!chunk) return;
     if (done) void clearRoundDone.execute(khatma.id, assignment.memberId, chunk.round);
-    else void markRoundDone.execute(khatma.id, assignment.memberId, chunk.round);
+    else {
+      void markRoundDone.execute(
+        khatma.id,
+        assignment.memberId,
+        chunk.round,
+        activeKhatmaIdsInSeries(khatmas, khatma.seriesId),
+      );
+    }
   };
 
   const onReturnToPool = async () => {

@@ -5,7 +5,7 @@ import { AppButton, KhatmaSeriesArtwork, NoticeBanner } from '@/components/primi
 import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { warningLevel } from '@/domain/distribution';
-import { completedInSeries, seriesTitle } from '@/domain/series';
+import { activeKhatmaIdsInSeries, completedInSeries, seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
 import { useMemberIdentity } from '../memberIdentityContext';
 import { formatIsoDate } from './formatting';
@@ -34,6 +34,7 @@ export function KhatmaLandingContent({
   const mine = assignments.find((assignment) => assignment.memberId === memberId);
   const warning = mine ? warningLevel(mine.missedStreak) : 'none';
   const history = completedInSeries(allKhatmas, khatma.seriesId);
+  const activeSeriesKhatmaIds = activeKhatmaIdsInSeries(allKhatmas, khatma.seriesId);
   const title = seriesTitle(khatma, toArabicDigits);
 
   return (
@@ -84,7 +85,12 @@ export function KhatmaLandingContent({
             {strings.member.pausedNote}
           </NoticeBanner>
         ) : mine ? (
-          <MyRoundCard khatma={khatma} assignment={mine} memberId={memberId} />
+          <MyRoundCard
+            khatma={khatma}
+            assignment={mine}
+            memberId={memberId}
+            activeSeriesKhatmaIds={activeSeriesKhatmaIds}
+          />
         ) : null}
 
         <GroupProgressCard khatma={khatma} assignments={assignments} roster={roster} />

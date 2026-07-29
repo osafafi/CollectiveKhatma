@@ -69,6 +69,7 @@ export class ReleasedChunkError extends Error {
  * One-tap "I finished my pages" (REQUIREMENTS §6). Atomically, in one
  * transaction:
  *  - stamps round `round` done on the member's assignment, and
+ *  - resets the member's warning on every supplied active khatma in the series,
  *  - unions that round's pages into the person's lifetime `completedPages`
  *    (`roster/{memberId}`), which drives the personal insight.
  *
@@ -79,11 +80,15 @@ export function markRoundDone(
   khatmaId: string,
   memberId: string,
   round: number,
+  activeSeriesKhatmaIds: readonly string[] = [khatmaId],
 ): Promise<void> {
-  const assignmentRef = assignmentDoc(khatmaId, memberId);
+  const warningKhatmaIds = [...new Set([khatmaId, ...activeSeriesKhatmaIds])];
+  const assignmentRefs = warningKhatmaIds.map((id) => assignmentDoc(id, memberId));
   const personRef = doc(db, 'roster', memberId);
   return runTransaction(db, async (tx) => {
-    const snap = await tx.get(assignmentRef);
+    const assignmentSnaps = await Promise.all(assignmentRefs.map((ref) => tx.get(ref)));
+    const assignmentRef = assignmentDoc(khatmaId, memberId);
+    const snap = assignmentSnaps[warningKhatmaIds.indexOf(khatmaId)]!;
     if (!snap.exists()) {
       throw new Error(
         `markRoundDone: no assignment for ${memberId} in khatma ${khatmaId}`,
@@ -96,7 +101,19 @@ export function markRoundDone(
     if (!chunk) throw new Error(`markRoundDone: no round ${round} for ${memberId}`);
     if (chunk.released === true) throw new ReleasedChunkError();
 
-    tx.update(assignmentRef, { [`doneByRound.${round}`]: Date.now() });
+    tx.update(assignmentRef, {
+      [`doneByRound.${round}`]: Date.now(),
+      missedStreak: 0,
+    });
+    assignmentSnaps.forEach((warningSnap, index) => {
+      if (
+        warningKhatmaIds[index] !== khatmaId &&
+        warningSnap.exists() &&
+        (warningSnap.data() as Assignment).missedStreak !== 0
+      ) {
+        tx.update(assignmentRefs[index]!, { missedStreak: 0 });
+      }
+    });
     if (chunk.pages.length > 0) {
       tx.update(personRef, { completedPages: arrayUnion(...chunk.pages) });
     }

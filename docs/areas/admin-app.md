@@ -24,6 +24,11 @@ Hard rules:
 - Busy distribution blocks double press.
 - Dashboard warnings are grouped per khatma in a count-labelled accordion that
   is collapsed by default.
+- Each dashboard khatma groups retained round assignments into separate
+  count-labelled, collapsed pending and completed accordions. Pending rows show
+  the actual round, member avatar/name, and exact page ranges so lagging readers
+  remain visible; completed rows show only the current round's member
+  avatar/name and pages. Released chunks appear in neither list.
 - Admin assignment subscriptions cover active khatmas plus open detail.
 - The feedback listener is retained only by the mounted admin shell. Its header
   badge counts unread messages; the top drawer lists every message and supports

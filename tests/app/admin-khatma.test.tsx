@@ -221,7 +221,7 @@ describe('admin Khatma detail', () => {
     await user.click(
       screen.getByRole('button', { name: new RegExp(strings.admin.chunkPending) }),
     );
-    expect(operations.markRoundDone).toHaveBeenCalledWith('k', 'p1', 1);
+    expect(operations.markRoundDone).toHaveBeenCalledWith('k', 'p1', 1, ['k']);
   });
 
   it('clears a member warning across the series active khatmas', async () => {

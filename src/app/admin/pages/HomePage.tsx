@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Avatar,
   Box,
   Link,
   Stack,
@@ -34,7 +38,13 @@ import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
-import { currentChunk, khatmaProgress } from '@/domain/progress';
+import { personAvatar } from '@/domain/personAppearance';
+import {
+  currentChunk,
+  khatmaProgress,
+  roundReaderRecords,
+  type RoundReaderRecord,
+} from '@/domain/progress';
 import { pickDuaReciter } from '@/domain/rotation';
 import {
   activeSeriesGroups,
@@ -127,7 +137,11 @@ function KhatmaBlock({
       <Stack spacing={3}>
         <KhatmaMetrics khatma={khatma} assignments={assignments} />
         <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
-        <PendingReaders assignments={assignments} roster={roster} />
+        <RoundReadingStatus
+          currentRound={khatma.roundCount}
+          assignments={assignments}
+          roster={roster}
+        />
         <Warnings assignments={assignments} roster={roster} />
         <DistributeAction
           group={group}
@@ -201,58 +215,110 @@ function KhatmaMetrics({
   );
 }
 
-/** Readers still holding a current chunk, with their exact page ranges. */
-function PendingReaders({
+/** Completed and still-pending assignment history, collapsed by status. */
+function RoundReadingStatus({
+  currentRound,
   assignments,
   roster,
 }: {
+  currentRound: number;
   assignments: readonly Assignment[];
   roster: readonly Person[];
 }) {
-  const rows = assignments
-    .map((assignment) => ({ assignment, chunk: currentChunk(assignment) }))
-    .filter(
-      (row): row is { assignment: Assignment; chunk: NonNullable<typeof row.chunk> } =>
-        row.chunk !== undefined,
-    );
-  if (rows.length === 0) return null;
+  const records = roundReaderRecords(assignments, currentRound);
 
   return (
-    <Box
+    <Stack spacing={2}>
+      <ReaderStatusAccordion
+        title={strings.admin.pendingHeading}
+        icon={<AccessTimeRoundedIcon color="action" fontSize="small" />}
+        records={records.pending}
+        roster={roster}
+        showRound
+      />
+      <ReaderStatusAccordion
+        title={strings.admin.completedPagesHeading}
+        icon={<CheckCircleRoundedIcon color="success" fontSize="small" />}
+        records={records.completed}
+        roster={roster}
+      />
+    </Stack>
+  );
+}
+
+function ReaderStatusAccordion({
+  title,
+  icon,
+  records,
+  roster,
+  showRound = false,
+}: {
+  title: string;
+  icon: ReactNode;
+  records: readonly RoundReaderRecord[];
+  roster: readonly Person[];
+  showRound?: boolean;
+}) {
+  return (
+    <Accordion
+      disableGutters
+      elevation={0}
+      slotProps={{ transition: { unmountOnExit: true } }}
       sx={(theme) => ({
-        borderRadius: `${theme.custom.radii.cardSm}px`,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: `${theme.custom.radii.button}px !important`,
         bgcolor: 'background.default',
-        p: 3,
-        color: 'text.secondary',
+        boxShadow: 'none',
+        '&:before': { display: 'none' },
       })}
     >
-      <Typography sx={{ fontWeight: 700 }}>{strings.admin.pendingHeading}</Typography>
-      <Stack
-        component="ul"
-        spacing={1}
-        sx={{ listStyle: 'none', m: 0, mt: 2, p: 0, fontSize: '0.875rem' }}
+      <AccordionSummary
+        expandIcon={<ExpandMoreRoundedIcon />}
+        sx={{ minHeight: 52, px: 3, '& .MuiAccordionSummary-content': { my: 2 } }}
       >
-        {rows.map(({ assignment, chunk }) => (
-          <Box
-            component="li"
-            key={assignment.memberId}
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              gap: 2,
-            }}
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          {icon}
+          <Typography sx={{ fontWeight: 600 }}>
+            {title} ({toArabicDigits(records.length)})
+          </Typography>
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
+        {records.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            {strings.feedback.empty}
+          </Typography>
+        ) : (
+          <Stack
+            component="ul"
+            spacing={1}
+            sx={{ listStyle: 'none', m: 0, p: 0, fontSize: '0.875rem' }}
           >
-            <Typography component="span" sx={{ fontWeight: 500 }}>
-              {memberName(roster, assignment.memberId)}
-            </Typography>
-            <Typography component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-              {pageRanges(chunk.pages)}
-            </Typography>
-          </Box>
-        ))}
-      </Stack>
-    </Box>
+            {records.map((record) => (
+              <Box
+                component="li"
+                key={`${record.memberId}:${record.round}`}
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}
+              >
+                <MemberIdentity roster={roster} memberId={record.memberId} />
+                <Typography component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {showRound
+                    ? `${strings.admin.roundWord} ${toArabicDigits(record.round)} · `
+                    : ''}
+                  {pageRanges(record.pages)}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </AccordionDetails>
+    </Accordion>
   );
 }
 
@@ -290,9 +356,12 @@ function Warnings({
         expandIcon={<ExpandMoreRoundedIcon />}
         sx={{ minHeight: 52, px: 3, '& .MuiAccordionSummary-content': { my: 2 } }}
       >
-        <Typography sx={{ fontWeight: 600 }}>
-          {strings.admin.warningsHeading} ({toArabicDigits(flagged.length)})
-        </Typography>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          <WarningAmberRoundedIcon color="warning" fontSize="small" />
+          <Typography sx={{ fontWeight: 600 }}>
+            {strings.admin.warningsHeading} ({toArabicDigits(flagged.length)})
+          </Typography>
+        </Stack>
       </AccordionSummary>
       <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
@@ -310,6 +379,33 @@ function Warnings({
         </Stack>
       </AccordionDetails>
     </Accordion>
+  );
+}
+
+function MemberIdentity({
+  roster,
+  memberId,
+}: {
+  roster: readonly Person[];
+  memberId: string;
+}) {
+  const person = roster.find((candidate) => candidate.id === memberId);
+  const name = person?.name ?? memberId;
+  const avatar = person ? personAvatar(person) : '?';
+  return (
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', minWidth: 0 }}>
+      <Avatar
+        component="span"
+        role="img"
+        aria-label={`${name}: ${avatar}`}
+        sx={{ width: 30, height: 30, fontSize: '0.8rem' }}
+      >
+        {avatar}
+      </Avatar>
+      <Typography component="span" sx={{ minWidth: 0, fontWeight: 500 }}>
+        {name}
+      </Typography>
+    </Stack>
   );
 }
 

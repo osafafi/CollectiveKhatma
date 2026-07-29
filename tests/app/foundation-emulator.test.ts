@@ -228,14 +228,23 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      await adminDb
+        .collection('khatmas')
+        .doc(khatmaId)
+        .collection('assignments')
+        .doc(personId)
+        .update({ missedStreak: 2 });
       await markRoundDone(khatmaId, personId, 1);
       await vi.waitFor(
         () => {
           for (const client of [adminClient, memberClient]) {
-            expect(
-              selectAssignmentByMemberId(client.store.getState(), khatmaId!, personId!)
-                ?.doneByRound[1],
-            ).toEqual(expect.any(Number));
+            const assignment = selectAssignmentByMemberId(
+              client.store.getState(),
+              khatmaId!,
+              personId!,
+            );
+            expect(assignment?.doneByRound[1]).toEqual(expect.any(Number));
+            expect(assignment?.missedStreak).toBe(0);
             expect(
               selectPersonById(client.store.getState(), personId!)?.completedPages,
             ).toEqual([1, 2]);

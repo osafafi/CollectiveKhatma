@@ -37,7 +37,7 @@ const amina: Person = {
   enabled: true,
   createdAt: 1,
 };
-const maryam: Person = { ...amina, id: 'p2', name: 'Maryam' };
+const maryam: Person = { ...amina, id: 'p2', name: 'Maryam', emoji: '🌙' };
 
 function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
   return {
@@ -119,8 +119,8 @@ describe('admin Home dashboard', () => {
         khatmas: [khatma],
         assignments: {
           k1: [
-            makeAssignment(amina.id, [round(1, [1, 2])], { 1: 100 }),
-            makeAssignment(maryam.id, [round(2, [3, 4])], {}, 1),
+            makeAssignment(amina.id, [round(1, [1]), round(2, [2])], { 1: 100, 2: 200 }),
+            makeAssignment(maryam.id, [round(1, [3, 4])], {}, 1),
           ],
         },
       },
@@ -149,16 +149,37 @@ describe('admin Home dashboard', () => {
       screen.getByRole('button', { name: strings.admin.pageMapHeading }),
     ).toBeVisible();
 
-    // Pending readers: only Maryam holds a chunk, shown with exact page ranges.
-    const pending = screen.getByText(strings.admin.pendingHeading).closest('div')!;
-    expect(within(pending).getByText('Maryam')).toBeVisible();
-    expect(within(pending).getByText('٣–٤')).toBeVisible();
-    expect(within(pending).queryByText('Amina')).toBeNull();
+    // Round history is split into collapsed pending/completed sections.
+    const pending = screen.getByRole('button', {
+      name: `${strings.admin.pendingHeading} (${toArabicDigits(1)})`,
+    });
+    const completed = screen.getByRole('button', {
+      name: `${strings.admin.completedPagesHeading} (${toArabicDigits(1)})`,
+    });
+    expect(pending.querySelectorAll('svg')).toHaveLength(2);
+    expect(completed.querySelectorAll('svg')).toHaveLength(2);
+    expect(screen.queryByText('Maryam')).toBeNull();
+    expect(screen.queryByText('Amina')).toBeNull();
+
+    await user.click(pending);
+    const pendingRow = screen.getByText('Maryam').closest('li')!;
+    expect(pendingRow).toHaveTextContent(
+      `${strings.admin.roundWord} ${toArabicDigits(1)} · ٣–٤`,
+    );
+    expect(within(pendingRow).getByRole('img', { name: 'Maryam: 🌙' })).toBeVisible();
+    expect(within(pendingRow).queryByText(/Amina/)).toBeNull();
+
+    await user.click(completed);
+    const completedRow = screen.getByText('Amina').closest('li')!;
+    expect(within(completedRow).getByRole('img', { name: 'Amina: A' })).toBeVisible();
+    expect(completedRow).toHaveTextContent('٢');
+    expect(completedRow).not.toHaveTextContent(strings.admin.roundWord);
 
     // Warning chips stay collapsed until the count-labelled warning section opens.
     const warnings = screen.getByRole('button', {
       name: `${strings.admin.warningsHeading} (١)`,
     });
+    expect(warnings.querySelectorAll('svg')).toHaveLength(2);
     expect(
       screen.queryByText(`⚠ Maryam · ${strings.admin.warningYellowWord}`),
     ).toBeNull();

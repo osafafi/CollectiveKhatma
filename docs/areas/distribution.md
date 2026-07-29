@@ -36,6 +36,9 @@ Hard rules:
   loose-page chunk was fully recalled. Finished readers receive nothing new;
   preserved Surah and Juz pages stay held.
 - Chunk never crosses khatmas. Rollover can leave N and N+1 active.
+- Marking a round done atomically clears that member's warning streak across
+  every active khatma in the series, so a warning disappears as soon as the
+  member finally completes their held pages.
 - Member warning level is private from other members.
 
 Update this doc when planner, transaction, round state, or warning behavior changes.

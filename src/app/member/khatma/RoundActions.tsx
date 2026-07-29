@@ -11,6 +11,7 @@ interface RoundActionsProps {
   memberId: string;
   chunk: RoundChunk;
   storedDone: boolean;
+  activeSeriesKhatmaIds: readonly string[];
 }
 
 export function RoundActions({
@@ -18,6 +19,7 @@ export function RoundActions({
   memberId,
   chunk,
   storedDone,
+  activeSeriesKhatmaIds,
 }: RoundActionsProps) {
   const markDone = useWriteOperation('markRoundDone');
   const done = storedDone || markDone.state.status === 'success';
@@ -47,7 +49,7 @@ export function RoundActions({
         startIcon={<CheckRoundedIcon />}
         disabled={markDone.isPending}
         onClick={() => {
-          void markDone.execute(khatmaId, memberId, chunk.round);
+          void markDone.execute(khatmaId, memberId, chunk.round, activeSeriesKhatmaIds);
         }}
       >
         {strings.member.finishedToday}

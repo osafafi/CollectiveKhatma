@@ -298,6 +298,11 @@ describe('member khatma routes', () => {
       ),
     ).toBeVisible();
     expect(screen.getByRole('alert')).toHaveTextContent(strings.member.warningNote);
+    expect(
+      screen
+        .getByRole('heading', { name: strings.member.todayHeading })
+        .querySelector('svg'),
+    ).toBeInTheDocument();
     expect(screen.getByText('٢ صفحات')).toBeVisible();
     expect(screen.getByText('٣')).toBeVisible();
     expect(screen.getByText('٤')).toBeVisible();
@@ -308,10 +313,36 @@ describe('member khatma routes', () => {
       screen.getByRole('button', { name: strings.member.finishedToday }),
     ).toBeEnabled();
     expect(screen.getByText(/١ من ٢/)).toBeVisible();
-    expect(screen.getByText('⏳ Amina')).toBeVisible();
+    const pendingReaders = screen.getByRole('button', {
+      name: `${strings.member.pendingReadersHeading} (${toArabicDigits(1)})`,
+    });
+    expect(
+      screen.queryByRole('list', { name: strings.member.pendingReadersHeading }),
+    ).toBeNull();
+    await harness.user.click(pendingReaders);
+    const pendingReaderGrid = screen.getByRole('list', {
+      name: strings.member.pendingReadersHeading,
+    });
+    expect(within(pendingReaderGrid).getByText('Amina')).toBeVisible();
+    expect(
+      within(pendingReaderGrid).getByRole('img', { name: 'Amina: A' }),
+    ).toBeVisible();
+    expect(pendingReaderGrid).toHaveStyle({
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    });
     expect(
       screen.getByRole('heading', { name: strings.member.historyHeading }),
     ).toBeVisible();
+    expect(
+      screen
+        .getByRole('heading', { name: strings.member.groupProgress })
+        .querySelector('svg'),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('heading', { name: strings.member.historyHeading })
+        .querySelector('svg'),
+    ).toBeInTheDocument();
     // The redesigned history collapsible starts closed (mock 2a); open it to
     // reveal the split title/date row.
     await harness.user.click(
@@ -380,15 +411,20 @@ describe('member khatma routes', () => {
 
   it('disables completion while pending and shows success immediately', async () => {
     const active = makeKhatma('active');
+    const overlap = makeKhatma('overlap', {
+      seriesId: active.seriesId,
+      seriesNumber: 2,
+    });
     const pending = deferred<void>();
     const markRoundDone = vi.fn<WriteOperations['markRoundDone']>(() => pending.promise);
     const harness = renderMember({
       route: `/khatma/${active.id}`,
       data: {
         roster: [amina],
-        khatmas: [active],
+        khatmas: [active, overlap],
         assignments: {
           [active.id]: [makeAssignment(amina.id, [round(1, [1, 2])])],
+          [overlap.id]: [makeAssignment(amina.id)],
         },
       },
       operations: { ...writeOperations, markRoundDone },
@@ -399,7 +435,10 @@ describe('member khatma routes', () => {
 
     await harness.user.click(finish);
     expect(finish).toBeDisabled();
-    expect(markRoundDone).toHaveBeenCalledWith(active.id, amina.id, 1);
+    expect(markRoundDone).toHaveBeenCalledWith(active.id, amina.id, 1, [
+      active.id,
+      overlap.id,
+    ]);
 
     await act(async () => pending.resolve());
     expect(

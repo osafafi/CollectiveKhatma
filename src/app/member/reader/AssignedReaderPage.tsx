@@ -13,7 +13,7 @@ import { strings } from '@/content/strings.ar';
 import { toArabicDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
-import { seriesTitle } from '@/domain/series';
+import { activeKhatmaIdsInSeries, seriesTitle } from '@/domain/series';
 import type { RoundChunk } from '@/domain/types';
 import { useMemberIdentity } from '../memberIdentityContext';
 import {
@@ -67,6 +67,7 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
       imageName={khatma.imageName}
       chunk={chunk}
       storedDone={mine ? isRoundDone(mine, chunk.round) : false}
+      activeSeriesKhatmaIds={activeKhatmaIdsInSeries(khatmas, khatma.seriesId)}
     />
   );
 }
@@ -80,6 +81,7 @@ function AssignedReaderCore({
   imageName,
   chunk,
   storedDone,
+  activeSeriesKhatmaIds,
 }: {
   khatmaId: string;
   memberId: string;
@@ -89,6 +91,7 @@ function AssignedReaderCore({
   imageName: string | undefined;
   chunk: RoundChunk;
   storedDone: boolean;
+  activeSeriesKhatmaIds: readonly string[];
 }) {
   const pages = chunk.pages;
   const [index, setIndex] = useState(0);
@@ -135,6 +138,7 @@ function AssignedReaderCore({
         memberId={memberId}
         round={chunk.round}
         storedDone={storedDone}
+        activeSeriesKhatmaIds={activeSeriesKhatmaIds}
       />
     </Stack>
   );
@@ -293,11 +297,13 @@ function FinishFooter({
   memberId,
   round,
   storedDone,
+  activeSeriesKhatmaIds,
 }: {
   khatmaId: string;
   memberId: string;
   round: number;
   storedDone: boolean;
+  activeSeriesKhatmaIds: readonly string[];
 }) {
   const markDone = useWriteOperation('markRoundDone');
   const done = storedDone || markDone.state.status === 'success';
@@ -316,7 +322,7 @@ function FinishFooter({
         hero
         disabled={markDone.isPending}
         onClick={() => {
-          void markDone.execute(khatmaId, memberId, round);
+          void markDone.execute(khatmaId, memberId, round, activeSeriesKhatmaIds);
         }}
       >
         {strings.member.finishedToday}
