@@ -385,4 +385,42 @@ describe('member personal and settings routes', () => {
     ).toBeVisible();
     expect(document.querySelector('details')).toHaveAttribute('open');
   });
+
+  it('shows tailored home-screen instructions when no native install prompt exists', async () => {
+    const harness = renderMember({
+      route: '/settings',
+      data: { roster: [amina] },
+    });
+
+    await harness.user.click(
+      await screen.findByRole('button', {
+        name: strings.settings.installInstructionsButton,
+      }),
+    );
+
+    expect(
+      screen.getByRole('dialog', { name: strings.settings.installDialogTitle }),
+    ).toBeVisible();
+    expect(screen.getByText('هذا المتصفح')).toBeVisible();
+  });
+
+  it('invokes the browser install prompt from the Settings button', async () => {
+    const harness = renderMember({
+      route: '/settings',
+      data: { roster: [amina] },
+    });
+    const prompt = vi.fn().mockResolvedValue({ outcome: 'accepted' });
+    const installEvent = new Event('beforeinstallprompt');
+    Object.assign(installEvent, { prompt });
+
+    window.dispatchEvent(installEvent);
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.settings.installButton }),
+    );
+
+    expect(prompt).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole('heading', { name: strings.settings.installTitle }),
+    ).toBeNull();
+  });
 });

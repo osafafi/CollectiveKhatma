@@ -15,6 +15,7 @@ import type { ReadingScale } from '@/theme/reading';
 import { MemberHero } from './MemberHero';
 import { useMemberIdentity } from './memberIdentityContext';
 import { MemberFeedbackSection } from './MemberFeedbackSection';
+import { InstallAppCard } from './install/InstallAppCard';
 
 interface SettingsPageProps {
   readingScale: ReadingScale;
@@ -48,6 +49,7 @@ export function SettingsPage({
         onOpenChange={onOpenChange}
       />
       {member ? <AvatarEditor key={member.id} person={member} /> : null}
+      <InstallAppCard />
       <MemberFeedbackSection open={feedbackOpen} onOpenChange={onFeedbackOpenChange} />
     </Stack>
   );

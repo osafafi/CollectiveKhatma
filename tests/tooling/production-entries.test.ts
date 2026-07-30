@@ -55,4 +55,43 @@ describe('production entries', () => {
     expect(adminProduction).toContain('src="/src/app/entries/admin.tsx"');
     expect(adminProduction).not.toContain('src="/src/admin.ts"');
   });
+
+  it('ships member install metadata and complete home-screen icon sizes', async () => {
+    const [memberProduction, manifestSource, icon192, icon512, appleTouchIcon] =
+      await Promise.all([
+        readFile(resolve(root, entryFiles.production.member), 'utf8'),
+        readFile(resolve(root, 'public/manifest.webmanifest'), 'utf8'),
+        readFile(resolve(root, 'public/app-icons/app-icon-192.png')),
+        readFile(resolve(root, 'public/app-icons/app-icon-512.png')),
+        readFile(resolve(root, 'public/app-icons/apple-touch-icon.png')),
+      ]);
+    const manifest = JSON.parse(manifestSource) as {
+      display: string;
+      start_url: string;
+      icons: Array<{ sizes: string; purpose: string }>;
+    };
+
+    expect(memberProduction).toContain(
+      'rel="manifest" href="%BASE_URL%manifest.webmanifest"',
+    );
+    expect(memberProduction).toContain('rel="apple-touch-icon"');
+    expect(manifest).toMatchObject({
+      display: 'standalone',
+      start_url: './#/khatmas',
+      icons: [
+        { sizes: '192x192', purpose: 'any' },
+        { sizes: '512x512', purpose: 'any maskable' },
+      ],
+    });
+    for (const icon of [icon192, icon512, appleTouchIcon]) {
+      expect(icon.subarray(0, 8)).toEqual(
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      );
+    }
+    expect([icon192.readUInt32BE(16), icon192.readUInt32BE(20)]).toEqual([192, 192]);
+    expect([icon512.readUInt32BE(16), icon512.readUInt32BE(20)]).toEqual([512, 512]);
+    expect([appleTouchIcon.readUInt32BE(16), appleTouchIcon.readUInt32BE(20)]).toEqual([
+      180, 180,
+    ]);
+  });
 });

@@ -31,5 +31,8 @@ Hard rules:
 - App is static. No server or Cloud Functions.
 - Never touch live Firebase or deploy unless user gives explicit authority.
 - Production has two entries: `index.html` and the hidden admin HTML.
+- The member entry ships `manifest.webmanifest`, PNG icons for standard,
+  maskable, Apple touch, and favicon use. All install asset URLs remain valid
+  under Vite's configured base path.
 
 Update this doc when commands, schema, rules, CI, entries, emulator, or deploy flow changes.

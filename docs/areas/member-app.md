@@ -48,7 +48,11 @@ Hard rules:
   run of local calendar days with a completed round. Released/empty rounds do
   not count, and multiple completions on one date count as one streak day.
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
-  together with admin Settings) → reading size → avatar → feedback.
+  together with admin Settings) → reading size → avatar → app install →
+  feedback. The install card invokes Chromium's retained native install prompt
+  when available; otherwise it detects iOS/Android and Safari, Chrome, Samsung
+  Internet, Firefox, or Edge to show matching home-screen steps. It is hidden
+  while the app runs in standalone mode.
 - Reader chrome is the slim gradient hero; group progress opens and series
   history collapses by default on the khatma landing (local state). Inside
   group progress, pending readers have their own collapsed, count-labelled
