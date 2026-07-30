@@ -4,7 +4,7 @@ import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
 import type { QuranIndex, Surah } from '@/content/quran/types';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
 import { seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
@@ -131,14 +131,14 @@ describe('admin Home dashboard', () => {
     ).toBeVisible();
 
     // Metrics: donut percent, segment legend counts, facts line, and title link.
-    const title = seriesTitle(khatma, toArabicDigits);
-    expect(screen.getByRole('img', { name: '٣٣٪' })).toBeInTheDocument();
-    expect(screen.getByText(`${strings.admin.legendDone}: ٢`)).toBeVisible();
-    expect(screen.getByText(`${strings.admin.legendPending}: ٢`)).toBeVisible();
-    expect(screen.getByText(`${strings.admin.legendRemaining}: ٢`)).toBeVisible();
+    const title = seriesTitle(khatma, toWesternDigits);
+    expect(screen.getByRole('img', { name: '33٪' })).toBeInTheDocument();
+    expect(screen.getByText(`${strings.admin.legendDone}: 2`)).toBeVisible();
+    expect(screen.getByText(`${strings.admin.legendPending}: 2`)).toBeVisible();
+    expect(screen.getByText(`${strings.admin.legendRemaining}: 2`)).toBeVisible();
     expect(
       screen.getByText(
-        `٢ ${strings.admin.pagesRemaining} · ${strings.admin.roundWord} ٢ · ${strings.admin.lastDistribution}: 2026-07-10`,
+        `2 ${strings.admin.pagesRemaining} · ${strings.admin.roundWord} 2 · ${strings.admin.lastDistribution}: 2026-07-10`,
       ),
     ).toBeVisible();
     expect(screen.getByRole('link', { name: title })).toHaveAttribute(
@@ -151,10 +151,10 @@ describe('admin Home dashboard', () => {
 
     // Round history is split into collapsed pending/completed sections.
     const pending = screen.getByRole('button', {
-      name: `${strings.admin.pendingHeading} (${toArabicDigits(1)})`,
+      name: `${strings.admin.pendingHeading} (${toWesternDigits(1)})`,
     });
     const completed = screen.getByRole('button', {
-      name: `${strings.admin.completedPagesHeading} (${toArabicDigits(1)})`,
+      name: `${strings.admin.completedPagesHeading} (${toWesternDigits(1)})`,
     });
     expect(pending.querySelectorAll('svg')).toHaveLength(2);
     expect(completed.querySelectorAll('svg')).toHaveLength(2);
@@ -164,7 +164,7 @@ describe('admin Home dashboard', () => {
     await user.click(pending);
     const pendingRow = screen.getByText('Maryam').closest('li')!;
     expect(pendingRow).toHaveTextContent(
-      `${strings.admin.roundWord} ${toArabicDigits(1)} · ٣–٤`,
+      `${strings.admin.roundWord} ${toWesternDigits(1)} · 3–4`,
     );
     expect(within(pendingRow).getByRole('img', { name: 'Maryam: 🌙' })).toBeVisible();
     expect(within(pendingRow).queryByText(/Amina/)).toBeNull();
@@ -172,12 +172,12 @@ describe('admin Home dashboard', () => {
     await user.click(completed);
     const completedRow = screen.getByText('Amina').closest('li')!;
     expect(within(completedRow).getByRole('img', { name: 'Amina: A' })).toBeVisible();
-    expect(completedRow).toHaveTextContent('٢');
+    expect(completedRow).toHaveTextContent('2');
     expect(completedRow).not.toHaveTextContent(strings.admin.roundWord);
 
     // Warning chips stay collapsed until the count-labelled warning section opens.
     const warnings = screen.getByRole('button', {
-      name: `${strings.admin.warningsHeading} (١)`,
+      name: `${strings.admin.warningsHeading} (1)`,
     });
     expect(warnings.querySelectorAll('svg')).toHaveLength(2);
     expect(

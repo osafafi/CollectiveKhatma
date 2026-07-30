@@ -164,7 +164,7 @@ describe('admin application integration', () => {
     expect(detailLink).toHaveAttribute('href', '#/khatmas/new-k');
     await harness.user.click(detailLink);
 
-    expect(await screen.findByRole('heading', { name: 'أهل القرآن ١' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'أهل القرآن 1' })).toBeVisible();
 
     // Editing the series name on the detail route saves through renameSeries.
     const editName = screen.getByLabelText(strings.admin.seriesNamePlaceholder);
@@ -251,7 +251,7 @@ describe('admin application integration', () => {
 
     // On the completed detail route the admin set is active ∪ open (P9): both the
     // active khatma and the open (completed) detail khatma are subscribed.
-    expect(screen.getByRole('heading', { name: 'سلسلة مكتملة ١' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'سلسلة مكتملة 1' })).toBeVisible();
     expect(harness.subscriptions.assignment('active').counts()).toMatchObject({
       starts: 1,
       active: 1,

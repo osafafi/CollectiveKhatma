@@ -70,7 +70,7 @@ export function retainedGlobalStyles(theme: Theme) {
       textAlignLast: 'center',
     },
 
-    // Ayah-end medallion: the Quran font glyph `۝` + Arabic-Indic number in
+    // Ayah-end medallion: the Quran font glyph `۝` + Western-digit number in
     // the design's gold, kept on one line with its ayah.
     '.ayah-marker': {
       color: theme.custom.gold,

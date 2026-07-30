@@ -1,4 +1,4 @@
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import type { RoundChunk } from '@/domain/types';
 
@@ -10,9 +10,9 @@ export function chunkSpan(chunk: RoundChunk): string {
   const last = chunk.pages[count - 1];
   const span =
     first === undefined || last === undefined || first === last
-      ? toArabicDigits(first ?? 0)
-      : `${toArabicDigits(first)}–${toArabicDigits(last)}`;
-  return `${toArabicDigits(count)} ${word} (${span})`;
+      ? toWesternDigits(first ?? 0)
+      : `${toWesternDigits(first)}–${toWesternDigits(last)}`;
+  return `${toWesternDigits(count)} ${word} (${span})`;
 }
 
 /** Clamp a text numeric field to a non-negative integer. */

@@ -18,6 +18,8 @@ Hard rules:
 - App reads committed data. No runtime Quran API.
 - Generator rewrites the dataset and needs network. Do not run casually.
 - Keep text attribution and bundled Quran font license.
+- Reader page, juz, surah, progress, and ayah-marker numbers use Western digits
+  (`0–9`).
 - Both mushaf readers place previous on the right and next on the left, with
   matching primary styles while enabled and muted styling only at a boundary.
 - Assigned-reader navigation stacks chunk progress above the mushaf page number

@@ -9,7 +9,7 @@ import {
   SurfaceCard,
   type SelectOption,
 } from '@/components/primitives';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import type { Surah } from '@/content/quran/types';
 import { findSeriesByName, nextSeriesNumber } from '@/domain/series';
@@ -212,7 +212,7 @@ function SeriesContinuationNote({
   const next = nextSeriesNumber(khatmas, existing.seriesId);
   return (
     <Typography variant="body2" color="text.secondary">
-      {`${strings.admin.continuesSeries} ${toArabicDigits(next)}`}
+      {`${strings.admin.continuesSeries} ${toWesternDigits(next)}`}
     </Typography>
   );
 }

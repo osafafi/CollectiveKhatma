@@ -1,13 +1,8 @@
 /** Rendering helpers for Quranic symbols. Pure — no DOM. */
 
-const ARABIC_INDIC = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'] as const;
-
-/** Convert a number to Arabic-Indic digits (e.g. 255 -> "٢٥٥"). */
-export function toArabicDigits(n: number): string {
-  return String(n)
-    .split('')
-    .map((d) => ARABIC_INDIC[Number(d)] ?? d)
-    .join('');
+/** Format a number with the app-wide Western digits (e.g. 255 -> "255"). */
+export function toWesternDigits(n: number): string {
+  return String(n);
 }
 
 /**
@@ -16,5 +11,5 @@ export function toArabicDigits(n: number): string {
  * Centralized here so the exact glyph treatment is tunable in one place.
  */
 export function ayahEndMarker(ayah: number): string {
-  return `۝${toArabicDigits(ayah)}`;
+  return `۝${toWesternDigits(ayah)}`;
 }

@@ -39,7 +39,7 @@ describe('admin feedback inbox', () => {
   it('shows a live unread badge and a 70%-height top drawer', async () => {
     const harness = renderAdmin({ data: { feedback: [unread, read] } });
     const notification = screen.getByRole('button', {
-      name: `${strings.admin.feedbackNotifications}: ١ ${strings.admin.unreadFeedback}`,
+      name: `${strings.admin.feedbackNotifications}: 1 ${strings.admin.unreadFeedback}`,
     });
 
     expect(ADMIN_FEEDBACK_DRAWER_HEIGHT_PERCENT).toBe(70);
@@ -52,7 +52,7 @@ describe('admin feedback inbox', () => {
     harness.subscriptions.feedback.emit([unread, { ...read, isRead: false }]);
     expect(
       screen.getByRole('button', {
-        name: `${strings.admin.feedbackNotifications}: ٢ ${strings.admin.unreadFeedback}`,
+        name: `${strings.admin.feedbackNotifications}: 2 ${strings.admin.unreadFeedback}`,
       }),
     ).toBeVisible();
 
@@ -80,7 +80,7 @@ describe('admin feedback inbox', () => {
 
     await harness.user.click(
       screen.getByRole('button', {
-        name: `${strings.admin.feedbackNotifications}: ١ ${strings.admin.unreadFeedback}`,
+        name: `${strings.admin.feedbackNotifications}: 1 ${strings.admin.unreadFeedback}`,
       }),
     );
 

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { QuranIndex, Surah } from '@/content/quran/types';
 import type { Khatma, Person } from '@/domain/types';
 import {
@@ -167,8 +167,8 @@ describe('admin Khatmas list/create', () => {
     expect(within(links[0]!).getByText(strings.admin.statusActive)).toBeVisible();
     expect(within(links[1]!).getByText(strings.admin.statusCompleted)).toBeVisible();
     // Completed always reads 100%; the fresh active khatma reads 0%.
-    expect(within(links[1]!).getByText('١٠٠٪')).toBeVisible();
-    expect(within(links[0]!).getByText('٠٪')).toBeVisible();
+    expect(within(links[1]!).getByText('100٪')).toBeVisible();
+    expect(within(links[0]!).getByText('0٪')).toBeVisible();
   });
 
   it('shows the empty copy when there are no khatmas', () => {
@@ -230,7 +230,7 @@ describe('admin Khatmas list/create', () => {
     await user.click(screen.getByRole('combobox', { name: strings.admin.capacityJuz }));
     await user.click(
       within(screen.getByRole('listbox')).getByRole('option', {
-        name: toArabicDigits(30),
+        name: toWesternDigits(30),
       }),
     );
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));
@@ -301,7 +301,7 @@ describe('admin Khatmas list/create', () => {
     );
 
     // The continuation note announces the next number.
-    expect(screen.getByText(`${strings.admin.continuesSeries} ٢`)).toBeVisible();
+    expect(screen.getByText(`${strings.admin.continuesSeries} 2`)).toBeVisible();
 
     await user.click(screen.getByRole('checkbox', { name: amina.name }));
     await user.click(screen.getByRole('button', { name: strings.admin.createButton }));

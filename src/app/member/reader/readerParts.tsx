@@ -219,7 +219,7 @@ function composePageBlocks(page: QuranPage, surahs: Map<number, Surah>): ReactNo
       if (ayah.ayah === 1)
         blocks.push(<SurahHeader key={`head-${key++}`} surah={surahs.get(ayah.surah)} />);
     }
-    // The ayah-end medallion is the font glyph `۝`+number, colored gold via
+    // The ayah-end medallion is the font glyph `۝` + Western-digit number, colored gold via
     // the retained `.ayah-marker` rule — never an SVG (design decision).
     run.push(
       `${ayah.text} `,

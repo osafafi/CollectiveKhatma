@@ -3,7 +3,7 @@ import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import { Box, Typography } from '@mui/material';
 import { CollapsibleCard, StatusChip } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { seriesTitle } from '@/domain/series';
 import type { Khatma } from '@/domain/types';
 import { formatCompletedDate } from './formatting';
@@ -25,7 +25,7 @@ export function HistoryCard({ khatmas }: { khatmas: readonly Khatma[] }) {
       open={open}
       onOpenChange={setOpen}
       appear={2}
-      summaryEnd={<StatusChip tone="primary" label={toArabicDigits(khatmas.length)} />}
+      summaryEnd={<StatusChip tone="primary" label={toWesternDigits(khatmas.length)} />}
     >
       {khatmas.map((khatma) => (
         <Box
@@ -40,7 +40,7 @@ export function HistoryCard({ khatmas }: { khatmas: readonly Khatma[] }) {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            {seriesTitle(khatma, toArabicDigits)}
+            {seriesTitle(khatma, toWesternDigits)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {strings.member.completedOn} {formatCompletedDate(khatma.completedAt)}

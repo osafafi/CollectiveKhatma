@@ -22,20 +22,20 @@ const RING_RADIUS = 48 - 10 / 2 - 2;
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 describe('DonutChart', () => {
-  it('exposes the percentage in Arabic-Indic digits as the accessible name', () => {
+  it('exposes the percentage in Western digits as the accessible name', () => {
     renderThemed(<DonutChart percent={57} />);
-    const donut = screen.getByRole('img', { name: '٥٧٪' });
+    const donut = screen.getByRole('img', { name: '57٪' });
     expect(donut).toBeInTheDocument();
     // The visible hero number twins the accessible name and stays hidden from AT.
-    expect(screen.getByText('٥٧٪')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('57٪')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('clamps out-of-range percentages to the 0–100 determinate range', () => {
     renderThemed(<DonutChart percent={250} />);
-    expect(screen.getByRole('img', { name: '١٠٠٪' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '100٪' })).toBeInTheDocument();
 
     renderThemed(<DonutChart percent={-10} />);
-    expect(screen.getByRole('img', { name: '٠٪' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '0٪' })).toBeInTheDocument();
   });
 
   it('draws only the divider-colored track at zero percent', () => {
@@ -62,10 +62,10 @@ describe('DonutChart', () => {
 
   it('renders at the legacy 112px default and accepts the 88px metrics size', () => {
     renderThemed(<DonutChart percent={40} />);
-    expect(screen.getByRole('img', { name: '٤٠٪' })).toHaveAttribute('width', '112');
+    expect(screen.getByRole('img', { name: '40٪' })).toHaveAttribute('width', '112');
 
     renderThemed(<DonutChart percent={41} size={88} />);
-    expect(screen.getByRole('img', { name: '٤١٪' })).toHaveAttribute('width', '88');
+    expect(screen.getByRole('img', { name: '41٪' })).toHaveAttribute('width', '88');
   });
 });
 
@@ -83,11 +83,11 @@ function barOf(container: HTMLElement): HTMLElement {
 }
 
 describe('SegmentBar', () => {
-  it('writes every count in the legend with Arabic-Indic digits', () => {
+  it('writes every count in the legend with Western digits', () => {
     renderThemed(<SegmentBar segments={SEGMENTS} />);
-    expect(screen.getByText('قُرئت: ٣٤٢')).toBeInTheDocument();
-    expect(screen.getByText('قيد القراءة: ٤٨')).toBeInTheDocument();
-    expect(screen.getByText('متبقية: ٢١٤')).toBeInTheDocument();
+    expect(screen.getByText('قُرئت: 342')).toBeInTheDocument();
+    expect(screen.getByText('قيد القراءة: 48')).toBeInTheDocument();
+    expect(screen.getByText('متبقية: 214')).toBeInTheDocument();
   });
 
   it('sizes visible segments by value and resolves semantic palette colors', () => {
@@ -116,7 +116,7 @@ describe('SegmentBar', () => {
     ];
     const { container } = renderThemed(<SegmentBar segments={withEmpty} />);
     expect(barOf(container).children).toHaveLength(2);
-    expect(screen.getByText('قيد القراءة: ٠')).toBeInTheDocument();
+    expect(screen.getByText('قيد القراءة: 0')).toBeInTheDocument();
   });
 
   it('renders a full neutral track when every value is zero', () => {
@@ -128,7 +128,7 @@ describe('SegmentBar', () => {
     const fills = barOf(container).children;
     expect(fills).toHaveLength(1);
     expect(fills[0]).toHaveStyle({ backgroundColor: TOKENS.light.border });
-    expect(screen.getByText('قُرئت: ٠')).toBeInTheDocument();
+    expect(screen.getByText('قُرئت: 0')).toBeInTheDocument();
   });
 });
 
@@ -310,7 +310,7 @@ describe('QuranPageGrid', () => {
       expect(page(2)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(1)).not.toHaveAttribute('data-scale', '1.000');
       expect(page(6)).toHaveAttribute('data-scale', '1.000');
-      expect(activeCardText()).toEqual(['Maryam', '٣']);
+      expect(activeCardText()).toEqual(['Maryam', '3']);
 
       // Row 0, column 3 — page 4. The card's 12px pad insets the content box to
       // 12..288, so the 20 columns are 13.8px wide and are counted from the
@@ -322,7 +322,7 @@ describe('QuranPageGrid', () => {
         clientY: 16,
       });
       expect(page(4)).toHaveAttribute('data-active', 'true');
-      expect(activeCardText()).toEqual(['Maryam', '٤']);
+      expect(activeCardText()).toEqual(['Maryam', '4']);
 
       fireEvent.pointerUp(grid, { pointerId: 1, pointerType: 'touch' });
       expect(page(3)).not.toHaveAttribute('data-active');

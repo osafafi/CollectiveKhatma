@@ -144,19 +144,19 @@ describe('member browse reader', () => {
     expect(
       screen.getByRole('heading', { name: strings.reader.browseTitle }),
     ).toBeVisible();
-    expect(screen.getByText('صفحة ٥ من ٦٠٤')).toBeVisible();
+    expect(screen.getByText('صفحة 5 من 604')).toBeVisible();
     expect(await screen.findByText(/page-body-5/)).toBeVisible();
   });
 
   it('navigates pages, syncs the hash, and persists the last-read page', async () => {
     const harness = renderMember({ route: '/quran', data: { roster: [amina] } });
 
-    expect(screen.getByText('صفحة ١ من ٦٠٤')).toBeVisible();
+    expect(screen.getByText('صفحة 1 من 604')).toBeVisible();
     expect(screen.getByRole('button', { name: /السابقة/ })).toBeDisabled();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
 
-    expect(screen.getByText('صفحة ٢ من ٦٠٤')).toBeVisible();
+    expect(screen.getByText('صفحة 2 من 604')).toBeVisible();
     expect(window.location.hash).toBe('#/quran/2');
     expect(localStorage.getItem('khatma.lastReadPage')).toBe('2');
     expect(await screen.findByText(/page-body-2/)).toBeVisible();
@@ -179,7 +179,7 @@ describe('member browse reader', () => {
   it('disables the next control at the last page on a deep link', () => {
     renderMember({ route: '/quran/604', data: { roster: [amina] } });
 
-    expect(screen.getByText('صفحة ٦٠٤ من ٦٠٤')).toBeVisible();
+    expect(screen.getByText('صفحة 604 من 604')).toBeVisible();
     expect(screen.getByRole('button', { name: /التالية/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /السابقة/ })).toBeEnabled();
   });
@@ -201,7 +201,7 @@ describe('member browse reader', () => {
     await harness.user.tab();
 
     expect(window.location.hash).toBe('#/quran/3');
-    expect(screen.getByText('صفحة ٣ من ٦٠٤')).toBeVisible();
+    expect(screen.getByText('صفحة 3 من 604')).toBeVisible();
   });
 
   it('shows the load error when a page body fails', async () => {
@@ -235,8 +235,8 @@ describe('member assigned reader', () => {
     ).toBeVisible();
     expect(screen.getByText(`${amina.name} A`)).toBeVisible();
 
-    const pageCount = screen.getByText('٣ صفحات');
-    const khatmaTitle = screen.getByText('سلسلة k1 ١');
+    const pageCount = screen.getByText('3 صفحات');
+    const khatmaTitle = screen.getByText('سلسلة k1 1');
     const khatmaArtwork = screen.getByRole('img', {
       name: strings.admin.seriesImageAlt,
     });
@@ -244,14 +244,14 @@ describe('member assigned reader', () => {
     expect(khatmaArtwork).toHaveAttribute('src', '/khatma-images/1.jpeg');
     expect(pageCount).toHaveStyle({ height: '40px' });
     expect(khatmaArtwork).toHaveStyle({ height: '40px' });
-    const progressIndicator = await screen.findByText('١ من ٣');
+    const progressIndicator = await screen.findByText('1 من 3');
     expect(progressIndicator).toBeVisible();
-    expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة ١٠');
+    expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة 10');
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('٢ من ٣')).toBeVisible();
-    expect(screen.getByText('صفحة ١١')).toBeVisible();
+    expect(screen.getByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
 
     await harness.user.click(
       screen.getByRole('button', { name: strings.member.finishedToday }),
@@ -276,15 +276,15 @@ describe('member assigned reader', () => {
     });
 
     await harness.user.click(await screen.findByRole('button', { name: /التالية/ }));
-    expect(screen.getByText('٢ من ٣')).toBeVisible();
-    expect(screen.getByText('صفحة ١١')).toBeVisible();
+    expect(screen.getByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
 
     // An unrelated tick (same round, streak bumped) must not reset page or scroll.
     harness.subscriptions
       .assignment(khatma.id)
       .emit([makeAssignment(amina.id, [round(1, [10, 11, 12])], {}, 4)]);
-    expect(screen.getByText('٢ من ٣')).toBeVisible();
-    expect(screen.getByText('صفحة ١١')).toBeVisible();
+    expect(screen.getByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
 
     // A new round remounts the reader fresh at its first page.
     harness.subscriptions.assignment(khatma.id).emit([
@@ -292,8 +292,8 @@ describe('member assigned reader', () => {
         1: 100,
       }),
     ]);
-    expect(await screen.findByText('١ من ٢')).toBeVisible();
-    expect(screen.getByText('صفحة ٢٠')).toBeVisible();
+    expect(await screen.findByText('1 من 2')).toBeVisible();
+    expect(screen.getByText('صفحة 20')).toBeVisible();
   });
 
   it('shows loading, no-pages, and paused states', () => {

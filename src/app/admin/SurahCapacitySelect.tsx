@@ -1,6 +1,6 @@
 import { AppSelectField, type SelectOption } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { Surah } from '@/content/quran/types';
 
 export interface SurahCapacitySelectProps {
@@ -25,7 +25,7 @@ export function SurahCapacitySelect({
     { value: '', label: strings.admin.noSurah },
     ...(surahs ?? []).map((surah) => ({
       value: String(surah.id),
-      label: `${toArabicDigits(surah.id)}. ${surah.name}`,
+      label: `${toWesternDigits(surah.id)}. ${surah.name}`,
     })),
   ];
   return (

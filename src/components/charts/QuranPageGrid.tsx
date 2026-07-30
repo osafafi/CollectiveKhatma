@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
 import type { Assignment, Khatma, Person } from '@/domain/types';
 import {
@@ -373,7 +373,7 @@ export function QuranPageGrid({
                             transformOrigin: 'center',
                           }}
                         >
-                          {toArabicDigits(entry.page)}
+                          {toWesternDigits(entry.page)}
                         </Box>
                       </Box>
                     </>
@@ -475,7 +475,7 @@ function PageMapLegend({ counts }: { counts: Record<QuranPageState, number> }) {
             }}
           />
           <Typography variant="caption" color="text.secondary">
-            {`${label}: ${toArabicDigits(counts[state])}`}
+            {`${label}: ${toWesternDigits(counts[state])}`}
           </Typography>
         </Stack>
       ))}
@@ -556,7 +556,7 @@ function pageDescription(
   const memberName = entry.memberId
     ? (namesById.get(entry.memberId) ?? entry.memberId)
     : undefined;
-  return `${strings.admin.pageWord} ${toArabicDigits(entry.page)}، ${stateLabel}${
+  return `${strings.admin.pageWord} ${toWesternDigits(entry.page)}، ${stateLabel}${
     memberName ? `، ${memberName}` : ''
   }`;
 }

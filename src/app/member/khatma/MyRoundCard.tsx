@@ -3,7 +3,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import type { Assignment, Khatma } from '@/domain/types';
 import { pagesCount } from './formatting';
@@ -82,7 +82,7 @@ function PagesRow({ pages }: { pages: readonly number[] }) {
               py: 2,
             })}
           >
-            {toArabicDigits(page)}
+            {toWesternDigits(page)}
           </Box>
         ))}
       </Stack>

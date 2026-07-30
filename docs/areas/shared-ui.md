@@ -48,6 +48,8 @@ Hard rules:
 
 - Shared UI imports no `app` and no `data`.
 - User-facing Arabic text comes from the strings module.
+- All generated and fixed numeric UI copy uses Western digits (`0–9`), including
+  Quran reader page and ayah numbers.
 - A feature wording change updates that feature doc, not this doc.
 - Public asset URLs use `import.meta.env.BASE_URL`.
 - RTL theme and Emotion cache cover portals.

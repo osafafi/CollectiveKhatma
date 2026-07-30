@@ -136,7 +136,7 @@ describe('admin form-draft stability under live snapshots', () => {
       'أهل الذكر',
     );
     // …while the live header reflects the incoming snapshot.
-    expect(screen.getByRole('heading', { name: 'اسم من الخادم ١' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'اسم من الخادم 1' })).toBeVisible();
   });
 
   it('P2 — a roster snapshot does not clobber the add-person draft', async () => {

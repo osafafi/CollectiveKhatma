@@ -35,7 +35,7 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
 import { warningLevel, type DistributionMember } from '@/domain/distribution';
 import { personAvatar } from '@/domain/personAppearance';
@@ -99,7 +99,7 @@ function SeriesBlock({
   scopeMaps: QuranScopeMaps | null;
 }) {
   return (
-    <SurfaceCard title={seriesTitle(group.latest, toArabicDigits)}>
+    <SurfaceCard title={seriesTitle(group.latest, toWesternDigits)}>
       <Stack spacing={3}>
         {group.active.map((khatma) => (
           <KhatmaBlock
@@ -169,8 +169,8 @@ function KhatmaMetrics({
     0,
   );
   const facts =
-    `${toArabicDigits(khatma.remainingPages.length)} ${strings.admin.pagesRemaining}` +
-    ` · ${strings.admin.roundWord} ${toArabicDigits(khatma.roundCount)}` +
+    `${toWesternDigits(khatma.remainingPages.length)} ${strings.admin.pagesRemaining}` +
+    ` · ${strings.admin.roundWord} ${toWesternDigits(khatma.roundCount)}` +
     (khatma.lastDistributionDate
       ? ` · ${strings.admin.lastDistribution}: ${khatma.lastDistributionDate}`
       : '');
@@ -186,7 +186,7 @@ function KhatmaMetrics({
           color="primary.main"
           sx={{ alignSelf: 'start', fontWeight: 600 }}
         >
-          {seriesTitle(khatma, toArabicDigits)}
+          {seriesTitle(khatma, toWesternDigits)}
         </Link>
         <SegmentBar
           segments={[
@@ -280,7 +280,7 @@ function ReaderStatusAccordion({
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           {icon}
           <Typography sx={{ fontWeight: 600 }}>
-            {title} ({toArabicDigits(records.length)})
+            {title} ({toWesternDigits(records.length)})
           </Typography>
         </Stack>
       </AccordionSummary>
@@ -309,7 +309,7 @@ function ReaderStatusAccordion({
                 <MemberIdentity roster={roster} memberId={record.memberId} />
                 <Typography component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
                   {showRound
-                    ? `${strings.admin.roundWord} ${toArabicDigits(record.round)} · `
+                    ? `${strings.admin.roundWord} ${toWesternDigits(record.round)} · `
                     : ''}
                   {pageRanges(record.pages)}
                 </Typography>
@@ -359,7 +359,7 @@ function Warnings({
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           <WarningAmberRoundedIcon color="warning" fontSize="small" />
           <Typography sx={{ fontWeight: 600 }}>
-            {strings.admin.warningsHeading} ({toArabicDigits(flagged.length)})
+            {strings.admin.warningsHeading} ({toWesternDigits(flagged.length)})
           </Typography>
         </Stack>
       </AccordionSummary>
@@ -413,7 +413,7 @@ function memberName(roster: readonly Person[], memberId: string): string {
   return roster.find((person) => person.id === memberId)?.name ?? memberId;
 }
 
-/** Compress sorted page numbers into exact Arabic-digit runs: "١–٣، ٥". */
+/** Compress sorted page numbers into exact Western-digit runs: "1–3، 5". */
 function pageRanges(pages: readonly number[]): string {
   const sorted = [...new Set(pages)].sort((a, b) => a - b);
   const ranges: string[] = [];
@@ -425,8 +425,8 @@ function pageRanges(pages: readonly number[]): string {
     }
     ranges.push(
       start === end
-        ? toArabicDigits(start)
-        : `${toArabicDigits(start)}–${toArabicDigits(end)}`,
+        ? toWesternDigits(start)
+        : `${toWesternDigits(start)}–${toWesternDigits(end)}`,
     );
     i++;
   }

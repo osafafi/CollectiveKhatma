@@ -1,5 +1,5 @@
 import { Box, Stack, useTheme, type Theme } from '@mui/material';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 
 /**
  * Semantic segment colors resolved through the MUI palette. `accent` is the
@@ -102,7 +102,7 @@ export function SegmentBar({ segments }: SegmentBarProps) {
                 bgcolor: segmentColor(theme, segment.color),
               }}
             />
-            {`${segment.label}: ${toArabicDigits(segment.value)}`}
+            {`${segment.label}: ${toWesternDigits(segment.value)}`}
           </Box>
         ))}
       </Box>

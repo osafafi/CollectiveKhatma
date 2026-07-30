@@ -3,7 +3,7 @@ import { memberHash } from '@/app/routing/routes';
 import { HeroHeader } from '@/components/navigation';
 import { AppButton, KhatmaSeriesArtwork, NoticeBanner } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { warningLevel } from '@/domain/distribution';
 import { activeKhatmaIdsInSeries, completedInSeries, seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
@@ -35,7 +35,7 @@ export function KhatmaLandingContent({
   const warning = mine ? warningLevel(mine.missedStreak) : 'none';
   const history = completedInSeries(allKhatmas, khatma.seriesId);
   const activeSeriesKhatmaIds = activeKhatmaIdsInSeries(allKhatmas, khatma.seriesId);
-  const title = seriesTitle(khatma, toArabicDigits);
+  const title = seriesTitle(khatma, toWesternDigits);
 
   return (
     <Stack
@@ -104,7 +104,7 @@ export function KhatmaLandingContent({
 function RoundLine({ khatma }: { khatma: Khatma }) {
   return (
     <Typography variant="body2" sx={{ opacity: 0.85 }}>
-      {strings.member.roundWord} {toArabicDigits(Math.max(1, khatma.roundCount))} ·{' '}
+      {strings.member.roundWord} {toWesternDigits(Math.max(1, khatma.roundCount))} ·{' '}
       {strings.member.startedWord} {formatIsoDate(khatma.createdAt)}
     </Typography>
   );

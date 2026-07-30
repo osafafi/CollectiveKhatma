@@ -4,7 +4,7 @@ import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience as MemberRoutesExperience } from '@/app/member/MemberApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { ReleasedChunkError } from '@/data/assignments';
 import { seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
@@ -132,23 +132,23 @@ describe('member khatma routes', () => {
     expect(
       screen.getByRole('heading', { name: strings.member.khatmasHeading }),
     ).toBeVisible();
-    const firstTitle = seriesTitle(first, toArabicDigits);
+    const firstTitle = seriesTitle(first, toWesternDigits);
     const firstLink = await screen.findByRole('link', {
       name: `${strings.member.openKhatma}: ${firstTitle}`,
     });
     expect(firstLink).toHaveAttribute('href', '#/khatma/first');
     // The redesigned row card folds the percent into the group-progress caption.
     expect(
-      within(firstLink).getByText(`${strings.member.groupProgress} ٥٠٪`),
+      within(firstLink).getByText(`${strings.member.groupProgress} 50٪`),
     ).toBeVisible();
-    expect(within(firstLink).getByText(/٢ صفحات/)).toBeVisible();
+    expect(within(firstLink).getByText(/2 صفحات/)).toBeVisible();
     expect(
       within(firstLink).getByRole('img', {
         name: `${strings.admin.seriesImageAlt}: ${firstTitle}`,
       }),
     ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
 
-    const doneTitle = seriesTitle(done, toArabicDigits);
+    const doneTitle = seriesTitle(done, toWesternDigits);
     const doneLink = screen.getByRole('link', {
       name: `${strings.member.openKhatma}: ${doneTitle}`,
     });
@@ -157,7 +157,7 @@ describe('member khatma routes', () => {
       'src',
       expect.stringContaining('/khatma-images/placeholder.svg'),
     );
-    expect(screen.queryByText(seriesTitle(irrelevant, toArabicDigits))).toBeNull();
+    expect(screen.queryByText(seriesTitle(irrelevant, toWesternDigits))).toBeNull();
     // Two active series cards + the completed khatma in the redesign's
     // "previous" section (mock 4a).
     expect(screen.getAllByRole('link', { name: /فتح الختمة/ })).toHaveLength(3);
@@ -175,7 +175,7 @@ describe('member khatma routes', () => {
       expect(document.querySelector('[data-route="khatma"]')).toBeInTheDocument(),
     );
     expect(
-      screen.getByRole('heading', { name: seriesTitle(first, toArabicDigits) }),
+      screen.getByRole('heading', { name: seriesTitle(first, toWesternDigits) }),
     ).toBeVisible();
     expect(
       // The hero artwork is decorative (the title carries identity), so it is
@@ -210,7 +210,7 @@ describe('member khatma routes', () => {
 
     expect(
       await screen.findByRole('link', {
-        name: `${strings.member.openKhatma}: ${seriesTitle(latest, toArabicDigits)}`,
+        name: `${strings.member.openKhatma}: ${seriesTitle(latest, toWesternDigits)}`,
       }),
     ).toHaveAttribute('href', '#/khatma/latest');
 
@@ -219,7 +219,7 @@ describe('member khatma routes', () => {
       .emit([makeAssignment(amina.id, [round(1, [1, 2])])]);
     expect(
       screen.getByRole('link', {
-        name: `${strings.member.openKhatma}: ${seriesTitle(first, toArabicDigits)}`,
+        name: `${strings.member.openKhatma}: ${seriesTitle(first, toWesternDigits)}`,
       }),
     ).toHaveAttribute('href', '#/khatma/first');
 
@@ -286,7 +286,7 @@ describe('member khatma routes', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: seriesTitle(active, toArabicDigits),
+        name: seriesTitle(active, toWesternDigits),
       }),
     ).toBeVisible();
     // The hero folds round + start date into one line (mock 2a).
@@ -294,7 +294,7 @@ describe('member khatma routes', () => {
       screen.getByText(
         (content) =>
           content.includes(`${strings.member.startedWord} 2026-07-01`) &&
-          content.includes(`${strings.member.roundWord} ٢`),
+          content.includes(`${strings.member.roundWord} 2`),
       ),
     ).toBeVisible();
     expect(screen.getByRole('alert')).toHaveTextContent(strings.member.warningNote);
@@ -303,18 +303,18 @@ describe('member khatma routes', () => {
         .getByRole('heading', { name: strings.member.todayHeading })
         .querySelector('svg'),
     ).toBeInTheDocument();
-    expect(screen.getByText('٢ صفحات')).toBeVisible();
-    expect(screen.getByText('٣')).toBeVisible();
-    expect(screen.getByText('٤')).toBeVisible();
+    expect(screen.getByText('2 صفحات')).toBeVisible();
+    expect(screen.getByText('3')).toBeVisible();
+    expect(screen.getByText('4')).toBeVisible();
     expect(
       screen.getByRole('link', { name: strings.reader.readMyPages }),
     ).toHaveAttribute('href', '#/khatma/active/read');
     expect(
       screen.getByRole('button', { name: strings.member.finishedToday }),
     ).toBeEnabled();
-    expect(screen.getByText(/١ من ٢/)).toBeVisible();
+    expect(screen.getByText(/1 من 2/)).toBeVisible();
     const pendingReaders = screen.getByRole('button', {
-      name: `${strings.member.pendingReadersHeading} (${toArabicDigits(1)})`,
+      name: `${strings.member.pendingReadersHeading} (${toWesternDigits(1)})`,
     });
     expect(
       screen.queryByRole('list', { name: strings.member.pendingReadersHeading }),
@@ -348,7 +348,7 @@ describe('member khatma routes', () => {
     await harness.user.click(
       screen.getByRole('heading', { name: strings.member.historyHeading }),
     );
-    expect(screen.getByText('أهل القرآن ١')).toBeVisible();
+    expect(screen.getByText('أهل القرآن 1')).toBeVisible();
     expect(screen.getByText(`${strings.member.completedOn} 2026-06-30`)).toBeVisible();
 
     harness.subscriptions.assignment(active.id).emit([makeAssignment(amina.id), other]);

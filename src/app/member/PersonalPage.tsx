@@ -10,7 +10,7 @@ import {
 import { DonutChart } from '@/components/charts';
 import { SurfaceCard, formatPercent } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { memberReadingInsights, type MemberReadingInsights } from '@/domain/progress';
 import type { Assignment } from '@/domain/types';
 import { MemberHero } from './MemberHero';
@@ -106,7 +106,7 @@ function PersonalReadingInsights({ insights }: { insights: MemberReadingInsights
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {toArabicDigits(insights.completedPageCount)}
+              {toWesternDigits(insights.completedPageCount)}
             </Typography>
             <Typography component="span" variant="body2" color="text.secondary">
               {strings.personal.quranPageTotal}
@@ -181,7 +181,7 @@ function ReadingStat({
           fontVariantNumeric: 'tabular-nums',
         })}
       >
-        {toArabicDigits(value)}
+        {toWesternDigits(value)}
       </Typography>
       <Typography component="p" variant="body2" color="text.secondary">
         {label}

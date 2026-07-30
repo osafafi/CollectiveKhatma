@@ -192,9 +192,9 @@ describe('Shared numeric and display primitives', () => {
     const increment = screen.getByRole('button', { name: 'Increase: Pages per round' });
 
     expect(decrement).toBeDisabled();
-    expect(screen.getByText('١')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('1')).toHaveAttribute('aria-live', 'polite');
     await user.click(increment);
-    expect(screen.getByText('٢')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('2')).toHaveAttribute('aria-live', 'polite');
     expect(increment).toBeDisabled();
   });
 
@@ -214,8 +214,8 @@ describe('Shared numeric and display primitives', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Returned pages');
     const progress = screen.getByRole('progressbar', { name: 'Group progress' });
     expect(progress).toHaveAttribute('aria-valuenow', '100');
-    expect(progress).toHaveAttribute('aria-valuetext', '١٠٠٪');
-    expect(screen.getByText('١٠٠٪')).toBeInTheDocument();
+    expect(progress).toHaveAttribute('aria-valuetext', '100٪');
+    expect(screen.getByText('100٪')).toBeInTheDocument();
   });
 
   function CollapsibleHarness() {

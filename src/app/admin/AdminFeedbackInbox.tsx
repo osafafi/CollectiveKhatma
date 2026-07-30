@@ -12,7 +12,7 @@ import {
 import { useFeedbackSubscription } from '@/app/store/useFeedbackSubscription';
 import { NestedSurface } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { MemberFeedback } from '@/domain/types';
 
 /** Edit this value to change how much viewport height the top drawer occupies. */
@@ -27,7 +27,7 @@ export function AdminFeedbackInbox() {
   const unreadCount = useAppSelector(selectUnreadFeedbackCount);
   const feedback = useAppSelector(selectFeedback);
   const listener = useAppSelector(selectFeedbackListener);
-  const notificationLabel = `${strings.admin.feedbackNotifications}: ${toArabicDigits(
+  const notificationLabel = `${strings.admin.feedbackNotifications}: ${toWesternDigits(
     unreadCount,
   )} ${strings.admin.unreadFeedback}`;
 
@@ -87,7 +87,7 @@ export function AdminFeedbackInbox() {
                 lineHeight: 1,
               }}
             >
-              {toArabicDigits(unreadCount)}
+              {toWesternDigits(unreadCount)}
             </Box>
           ) : null}
         </Box>

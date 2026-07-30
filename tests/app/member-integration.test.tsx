@@ -4,7 +4,7 @@ import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience } from '@/app/member/MemberApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { QuranIndex, QuranPage, Surah } from '@/content/quran/types';
 import { seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
@@ -129,7 +129,7 @@ function renderMember(
 }
 
 function openKhatmaName(khatma: Khatma): string {
-  return `${strings.member.openKhatma}: ${seriesTitle(khatma, toArabicDigits)}`;
+  return `${strings.member.openKhatma}: ${seriesTitle(khatma, toWesternDigits)}`;
 }
 
 beforeEach(() => {
@@ -183,8 +183,8 @@ describe('member application integration', () => {
 
     // Landing -> assigned reader.
     await harness.user.click(readLink);
-    expect(await screen.findByText('١ من ٣')).toBeVisible();
-    expect(screen.getByText('صفحة ١٠')).toBeVisible();
+    expect(await screen.findByText('1 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 10')).toBeVisible();
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     // Reader -> finish the round.
@@ -227,7 +227,7 @@ describe('member application integration', () => {
     const openLink = await screen.findByRole('link', {
       name: openKhatmaName(khatma),
     });
-    expect(within(openLink).getByText(/٢ صفحات/)).toBeVisible();
+    expect(within(openLink).getByText(/2 صفحات/)).toBeVisible();
     expect(harness.subscriptions.assignment(khatma.id).counts()).toEqual({
       starts: 1,
       stops: 0,
@@ -307,8 +307,8 @@ describe('member application integration', () => {
 
     // Acknowledgement restores the underlying reader with its page and chrome.
     expect(localStorage.getItem(`khatma.du3aAck.${completed.id}`)).toBe('1');
-    expect(await screen.findByText('١ من ٣')).toBeVisible();
-    expect(screen.getByText('صفحة ١٠')).toBeVisible();
+    expect(await screen.findByText('1 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 10')).toBeVisible();
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
     expect(
       screen.getByRole('navigation', { name: strings.common.appName }),

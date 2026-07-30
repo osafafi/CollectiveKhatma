@@ -1,6 +1,6 @@
 import { Stack, Typography } from '@mui/material';
 import { SurfaceCard } from '@/components/primitives';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import { completedInSeries, seriesTitle } from '@/domain/series';
 import type { Khatma, Person } from '@/domain/types';
@@ -41,7 +41,7 @@ export function KhatmaHistoryCard({ khatma, khatmas, roster }: KhatmaHistoryCard
               variant="body2"
               sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}
             >
-              {`${seriesTitle(entry, toArabicDigits)} · ${strings.admin.completedOn} ${date} · ${strings.admin.reciterIs}: ${reciter}`}
+              {`${seriesTitle(entry, toWesternDigits)} · ${strings.admin.completedOn} ${date} · ${strings.admin.reciterIs}: ${reciter}`}
             </Typography>
           );
         })}

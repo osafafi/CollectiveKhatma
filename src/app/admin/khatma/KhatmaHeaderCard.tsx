@@ -6,7 +6,7 @@ import {
   StatusChip,
   SurfaceCard,
 } from '@/components/primitives';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import { khatmaProgress } from '@/domain/progress';
 import { seriesTitle } from '@/domain/series';
@@ -22,10 +22,10 @@ interface KhatmaHeaderCardProps {
 export function KhatmaHeaderCard({ khatma, assignments, roster }: KhatmaHeaderCardProps) {
   const percent =
     khatma.status === 'completed' ? 100 : khatmaProgress(khatma, assignments).percent;
-  const title = seriesTitle(khatma, toArabicDigits);
+  const title = seriesTitle(khatma, toWesternDigits);
   const facts =
-    `${toArabicDigits(khatma.remainingPages.length)} ${strings.admin.pagesRemaining}` +
-    ` · ${strings.admin.roundWord} ${toArabicDigits(khatma.roundCount)}` +
+    `${toWesternDigits(khatma.remainingPages.length)} ${strings.admin.pagesRemaining}` +
+    ` · ${strings.admin.roundWord} ${toWesternDigits(khatma.roundCount)}` +
     (khatma.lastDistributionDate
       ? ` · ${strings.admin.lastDistribution}: ${khatma.lastDistributionDate}`
       : '');

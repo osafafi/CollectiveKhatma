@@ -1,6 +1,6 @@
 import { AppSelectField, type SelectOption } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 
 export interface JuzCapacitySelectProps {
   /** Selected Juz number; `0` = none. */
@@ -14,7 +14,7 @@ export function JuzCapacitySelect({ value, onChange }: JuzCapacitySelectProps) {
     { value: '', label: strings.admin.noJuz },
     ...Array.from({ length: 30 }, (_, index) => {
       const juzNumber = index + 1;
-      return { value: String(juzNumber), label: toArabicDigits(juzNumber) };
+      return { value: String(juzNumber), label: toWesternDigits(juzNumber) };
     }),
   ];
   return (

@@ -13,7 +13,7 @@ import {
 import { QuranPageGrid, SegmentBar, buildQuranPageEntries } from '@/components/charts';
 import { CollapsibleCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, khatmaProgress, pendingReaders } from '@/domain/progress';
 import type { Assignment, Khatma, Person } from '@/domain/types';
@@ -46,7 +46,7 @@ export function GroupProgressCard({
   const pendingPeople = pendingReaders(assignments)
     .map((id) => roster.find((person) => person.id === id))
     .filter((person): person is Person => person !== undefined);
-  const percent = `${toArabicDigits(progress.percent)}٪`;
+  const percent = `${toWesternDigits(progress.percent)}٪`;
 
   // Page-state counts feed the design's read / being-read / remaining bar.
   const counts = useMemo(() => {
@@ -98,8 +98,8 @@ export function GroupProgressCard({
       />
       {inRound.length > 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
-          {strings.member.completedRoundCount}: {toArabicDigits(doneCount)}{' '}
-          {strings.member.ofWord} {toArabicDigits(inRound.length)}
+          {strings.member.completedRoundCount}: {toWesternDigits(doneCount)}{' '}
+          {strings.member.ofWord} {toWesternDigits(inRound.length)}
         </Typography>
       ) : null}
       {pendingPeople.length > 0 ? (
@@ -133,7 +133,7 @@ function PendingReadersDisclosure({ people }: { people: readonly Person[] }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <AccessTimeRoundedIcon color="action" fontSize="small" />
           <Typography sx={{ fontWeight: 600 }}>
-            {strings.member.pendingReadersHeading} ({toArabicDigits(people.length)})
+            {strings.member.pendingReadersHeading} ({toWesternDigits(people.length)})
           </Typography>
         </Box>
       </AccordionSummary>

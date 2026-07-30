@@ -6,7 +6,7 @@ import {
   AppTextField,
   type SelectOption,
 } from '@/components/primitives';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import type { Surah } from '@/content/quran/types';
 import type { PageScope } from '@/domain/types';
@@ -96,7 +96,7 @@ export function CreateKhatmaScopeControls({
                     return { ...current, surahIds };
                   })
                 }
-                label={`${toArabicDigits(surah.id)}. ${surah.name}`}
+                label={`${toWesternDigits(surah.id)}. ${surah.name}`}
               />
             ))}
           </Box>

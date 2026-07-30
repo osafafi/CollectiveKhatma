@@ -1,5 +1,5 @@
 import { IconButton, Stack, Typography } from '@mui/material';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 
 export interface NumberStepperProps {
@@ -15,7 +15,7 @@ export interface NumberStepperProps {
   decrementLabel?: string;
 }
 
-/** Accessible Arabic-digit increment/decrement control for small numeric drafts. */
+/** Accessible Western-digit increment/decrement control for small numeric drafts. */
 export function NumberStepper({
   label,
   value,
@@ -53,7 +53,7 @@ export function NumberStepper({
         aria-live="polite"
         sx={{ minWidth: 30, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
       >
-        {toArabicDigits(value)}
+        {toWesternDigits(value)}
       </Typography>
       <IconButton
         size="small"

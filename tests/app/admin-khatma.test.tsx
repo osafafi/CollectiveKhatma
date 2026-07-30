@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { QuranIndex, Surah } from '@/content/quran/types';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
@@ -156,7 +156,7 @@ describe('admin Khatma detail', () => {
       khatmas: [makeKhatma('k', { roundCount: 3, lastDistributionDate: '2026-07-10' })],
       assignments: { k: [makeAssignment(amina.id)] },
     });
-    expect(screen.getByRole('heading', { name: 'أهل القرآن ١' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'أهل القرآن 1' })).toBeVisible();
     expect(screen.getByText(strings.admin.statusActive)).toBeVisible();
     expect(
       screen.getByText(new RegExp(`${strings.admin.lastDistribution}: 2026-07-10`)),
@@ -257,7 +257,7 @@ describe('admin Khatma detail', () => {
     await user.click(screen.getByRole('combobox', { name: strings.admin.capacityJuz }));
     await user.click(
       within(screen.getByRole('listbox')).getByRole('option', {
-        name: toArabicDigits(30),
+        name: toWesternDigits(30),
       }),
     );
     await user.click(

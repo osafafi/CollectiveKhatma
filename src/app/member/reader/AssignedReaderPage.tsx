@@ -10,7 +10,7 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import { activeKhatmaIdsInSeries, seriesTitle } from '@/domain/series';
@@ -63,7 +63,7 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
       memberId={memberId}
       memberName={member?.name ?? ''}
       memberAvatar={member ? personAvatar(member) : ''}
-      khatmaTitle={seriesTitle(khatma, toArabicDigits)}
+      khatmaTitle={seriesTitle(khatma, toWesternDigits)}
       imageName={khatma.imageName}
       chunk={chunk}
       storedDone={mine ? isRoundDone(mine, chunk.round) : false}
@@ -108,8 +108,8 @@ function AssignedReaderCore({
     prefetchNeighbors(pages, index);
   }, [pages, index]);
 
-  const indicator = `${strings.reader.page} ${toArabicDigits(page)}`;
-  const progressIndicator = `${toArabicDigits(index + 1)} ${strings.reader.of} ${toArabicDigits(pages.length)}`;
+  const indicator = `${strings.reader.page} ${toWesternDigits(page)}`;
+  const progressIndicator = `${toWesternDigits(index + 1)} ${strings.reader.of} ${toWesternDigits(pages.length)}`;
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
@@ -289,7 +289,7 @@ function AssignedReaderHeader({
 
 function pageCountLabel(count: number): string {
   const word = count === 1 ? strings.member.pageWord : strings.member.pagesWord;
-  return `${toArabicDigits(count)} ${word}`;
+  return `${toWesternDigits(count)} ${word}`;
 }
 
 function FinishFooter({

@@ -15,7 +15,7 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import {
   currentChunk,
   isRoundDone,
@@ -74,7 +74,7 @@ export function KhatmasListPage() {
             color="primary.main"
             sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
           >
-            {toArabicDigits(groups.length)} {strings.member.activeCountWord}
+            {toWesternDigits(groups.length)} {strings.member.activeCountWord}
           </Typography>
         ) : null}
       </Stack>
@@ -139,8 +139,8 @@ function KhatmaSeriesCard({
   const targetAssignments = assignments[targetIndex] ?? [];
   const mine = targetAssignments.find((assignment) => assignment.memberId === memberId);
   const progress = khatmaProgress(khatma, targetAssignments);
-  const title = seriesTitle(khatma, toArabicDigits);
-  const percent = `${toArabicDigits(progress.percent)}٪`;
+  const title = seriesTitle(khatma, toWesternDigits);
+  const percent = `${toWesternDigits(progress.percent)}٪`;
 
   return (
     <SurfaceCard
@@ -184,7 +184,7 @@ function KhatmaSeriesCard({
 
 /** The design's "previous" row: completed khatmas the member took part in. */
 function CompletedKhatmaCard({ khatma, appear }: { khatma: Khatma; appear: number }) {
-  const title = seriesTitle(khatma, toArabicDigits);
+  const title = seriesTitle(khatma, toWesternDigits);
   return (
     <SurfaceCard
       href={memberHash.khatma(khatma.id)}
@@ -257,5 +257,5 @@ function MemberProgressLine({
 
 function pagesCount(count: number): string {
   const word = count === 1 ? strings.member.pageWord : strings.member.pagesWord;
-  return `${toArabicDigits(count)} ${word}`;
+  return `${toWesternDigits(count)} ${word}`;
 }

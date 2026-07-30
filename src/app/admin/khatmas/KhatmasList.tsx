@@ -2,7 +2,7 @@ import { Link, Stack, Typography } from '@mui/material';
 import { selectAssignmentsForKhatma, useAppSelector } from '@/app/store';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { KhatmaSeriesArtwork, StatusChip, SurfaceCard } from '@/components/primitives';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import { khatmaProgress } from '@/domain/progress';
 import { khatmasListEntries, seriesTitle } from '@/domain/series';
@@ -61,7 +61,7 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         size={48}
       />
       <Typography component="span" sx={{ flex: 1, fontWeight: 600 }} color="primary.main">
-        {seriesTitle(khatma, toArabicDigits)}
+        {seriesTitle(khatma, toWesternDigits)}
       </Typography>
       <StatusChip
         size="small"
@@ -78,7 +78,7 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         color="text.secondary"
         sx={{ fontVariantNumeric: 'tabular-nums' }}
       >
-        {`${toArabicDigits(percent)}٪`}
+        {`${toWesternDigits(percent)}٪`}
       </Typography>
     </Link>
   );

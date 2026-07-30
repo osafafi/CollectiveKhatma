@@ -4,7 +4,7 @@ import { selectAssignmentByMemberId, selectKhatmas, useAppSelector } from '@/app
 import { memberHash } from '@/app/routing/routes';
 import { KhatmaSeriesArtwork, StatusChip, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { currentChunk } from '@/domain/progress';
 import { seriesTitle } from '@/domain/series';
 import type { Khatma, RoundChunk } from '@/domain/types';
@@ -55,8 +55,8 @@ function PendingAssignmentEntry({
   khatma: Khatma;
   chunk: RoundChunk;
 }) {
-  const title = seriesTitle(khatma, toArabicDigits);
-  const pageNumbers = chunk.pages.map(toArabicDigits).join('، ');
+  const title = seriesTitle(khatma, toWesternDigits);
+  const pageNumbers = chunk.pages.map(toWesternDigits).join('، ');
 
   return (
     <SurfaceCard

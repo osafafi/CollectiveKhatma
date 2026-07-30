@@ -3,7 +3,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { useWriteOperation } from '@/app/operations';
 import { AppButton, AppTextField, CollapsibleCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import {
   FEEDBACK_MAX_CHARACTERS,
   isValidFeedbackMessage,
@@ -27,7 +27,7 @@ export function MemberFeedbackSection({
   const normalizedMessage = normalizeFeedbackMessage(message);
   const canSubmit =
     member !== undefined && isValidFeedbackMessage(message) && !submitFeedback.isPending;
-  const characterCount = `${toArabicDigits(message.length)} / ${toArabicDigits(
+  const characterCount = `${toWesternDigits(message.length)} / ${toWesternDigits(
     FEEDBACK_MAX_CHARACTERS,
   )}`;
 

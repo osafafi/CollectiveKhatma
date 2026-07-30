@@ -11,7 +11,7 @@ import type { Theme } from '@mui/material/styles';
 import { useMemberNavigate } from '@/app/routing/hooks';
 import { useLastReadPage } from '@/app/persistence';
 import { getQuranIndex, getSurahs } from '@/content/quran/loader';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import {
   QuranPageContent,
@@ -66,7 +66,7 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
     );
   }, [page]);
 
-  const indicator = `${strings.reader.page} ${toArabicDigits(page)} ${strings.reader.of} ${toArabicDigits(TOTAL_PAGES)}`;
+  const indicator = `${strings.reader.page} ${toWesternDigits(page)} ${strings.reader.of} ${toWesternDigits(TOTAL_PAGES)}`;
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="quran">
@@ -113,7 +113,7 @@ function JumpControls({
         setSurahOptions(
           surahs.map((surah) => ({
             page: surah.pageStart,
-            label: `${toArabicDigits(surah.id)}. ${surah.name}`,
+            label: `${toWesternDigits(surah.id)}. ${surah.name}`,
           })),
         );
         const juz: JumpOption[] = [];
@@ -122,7 +122,7 @@ function JumpControls({
           if (first)
             juz.push({
               page: first,
-              label: `${strings.reader.juz} ${toArabicDigits(j)}`,
+              label: `${strings.reader.juz} ${toWesternDigits(j)}`,
             });
         }
         setJuzOptions(juz);

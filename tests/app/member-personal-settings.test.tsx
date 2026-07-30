@@ -5,7 +5,7 @@ import { MemberExperience } from '@/app/member/MemberApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { formatPercent } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toArabicDigits } from '@/content/quran/symbols';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
   renderWithAppProviders,
@@ -91,7 +91,7 @@ describe('member personal and settings routes', () => {
       name: strings.personal.quranCompletionHeading,
     });
     expect(
-      within(completion).getByText(toArabicDigits(0), {
+      within(completion).getByText(toWesternDigits(0), {
         selector: 'span.MuiTypography-root',
       }),
     ).toBeVisible();
@@ -113,7 +113,7 @@ describe('member personal and settings routes', () => {
 
     expect(screen.getByText('Amina updated')).toBeVisible();
     expect(
-      within(completion).getByText(toArabicDigits(151), {
+      within(completion).getByText(toWesternDigits(151), {
         selector: 'span.MuiTypography-root',
       }),
     ).toBeVisible();
@@ -157,21 +157,21 @@ describe('member personal and settings routes', () => {
         within(completion).getByRole('region', {
           name: strings.personal.completedKhatmas,
         }),
-      ).getByText(toArabicDigits(2)),
+      ).getByText(toWesternDigits(2)),
     ).toBeVisible();
     expect(
       within(
         within(completion).getByRole('region', {
           name: strings.personal.pagesThisMonth,
         }),
-      ).getByText(toArabicDigits(6)),
+      ).getByText(toWesternDigits(6)),
     ).toBeVisible();
     expect(
       within(
         within(completion).getByRole('region', {
           name: strings.personal.longestDailyStreak,
         }),
-      ).getByText(toArabicDigits(2)),
+      ).getByText(toWesternDigits(2)),
     ).toBeVisible();
     expect(harness.subscriptions.assignment(firstCompleted.id).counts().active).toBe(1);
     expect(harness.subscriptions.assignment(secondCompleted.id).counts().active).toBe(1);
@@ -219,7 +219,7 @@ describe('member personal and settings routes', () => {
       }),
     ).toBeVisible();
 
-    const firstTitle = `أهل القرآن ${toArabicDigits(1)}`;
+    const firstTitle = `أهل القرآن ${toWesternDigits(1)}`;
     const firstLink = screen.getByRole('link', {
       name: `${strings.reader.readMyPages}: ${firstTitle}`,
     });
@@ -229,22 +229,22 @@ describe('member personal and settings routes', () => {
       '/khatma-images/green-arch.svg',
     );
     expect(
-      within(firstLink).getByText(`${toArabicDigits(2)} ${strings.member.pagesWord}`),
+      within(firstLink).getByText(`${toWesternDigits(2)} ${strings.member.pagesWord}`),
     ).toBeVisible();
     expect(
       within(firstLink).getByText(
-        `${strings.personal.assignedPages}: ${toArabicDigits(1)}، ${toArabicDigits(2)}`,
+        `${strings.personal.assignedPages}: ${toWesternDigits(1)}، ${toWesternDigits(2)}`,
       ),
     ).toBeVisible();
 
-    const secondTitle = `رفقة النور ${toArabicDigits(2)}`;
+    const secondTitle = `رفقة النور ${toWesternDigits(2)}`;
     expect(
       screen.getByRole('link', {
         name: `${strings.reader.readMyPages}: ${secondTitle}`,
       }),
     ).toHaveAttribute('href', '#/khatma/second/read');
-    expect(screen.queryByText(`ختمة done ${toArabicDigits(1)}`)).toBeNull();
-    expect(screen.queryByText(`ختمة completed ${toArabicDigits(1)}`)).toBeNull();
+    expect(screen.queryByText(`ختمة done ${toWesternDigits(1)}`)).toBeNull();
+    expect(screen.queryByText(`ختمة completed ${toWesternDigits(1)}`)).toBeNull();
 
     harness.subscriptions
       .assignment(first.id)
