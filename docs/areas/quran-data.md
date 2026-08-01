@@ -24,6 +24,9 @@ Hard rules:
   matching primary styles while enabled and muted styling only at a boundary.
 - Assigned-reader navigation stacks chunk progress above the mushaf page number
   and uses the sticky bar's high-contrast text color.
+- Assigned pages label the first entry in the page's ordered `surahIds` with a
+  name-and-number tab attached to the reader header; when a page contains two
+  surahs, the later one is still introduced by its normal in-page surah band.
 - Assigned Quran text is preceded by a compact header with centered member
   identity, a left artwork-and-series stack, and a height-matched page-total tile
   at the right; the free-browse reader keeps its jump header.

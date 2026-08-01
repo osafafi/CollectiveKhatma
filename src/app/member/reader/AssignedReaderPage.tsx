@@ -114,14 +114,16 @@ function AssignedReaderCore({
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
       <ReaderBackground />
-      <AssignedReaderHeader
-        memberName={memberName}
-        memberAvatar={memberAvatar}
-        khatmaTitle={khatmaTitle}
-        imageName={imageName}
-        pageCount={pages.length}
-      />
-      <QuranPageContent page={page} />
+      <Box>
+        <AssignedReaderHeader
+          memberName={memberName}
+          memberAvatar={memberAvatar}
+          khatmaTitle={khatmaTitle}
+          imageName={imageName}
+          pageCount={pages.length}
+        />
+        <QuranPageContent page={page} showSurahName />
+      </Box>
       <StickyChrome>
         <ReaderNav
           onPrev={() => go(index - 1)}

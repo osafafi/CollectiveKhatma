@@ -247,6 +247,15 @@ describe('member assigned reader', () => {
     const progressIndicator = await screen.findByText('1 من 3');
     expect(progressIndicator).toBeVisible();
     expect(progressIndicator.nextElementSibling).toHaveTextContent('صفحة 10');
+    const surahLabel = await screen.findByRole('heading', {
+      name: 'سورة البقرة 2',
+    });
+    expect(surahLabel).toBeVisible();
+    expect(surahLabel).toHaveStyle({
+      width: 'fit-content',
+      minHeight: '40px',
+      alignSelf: 'center',
+    });
     expect(await screen.findByText(/page-body-10/)).toBeVisible();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
@@ -260,6 +269,33 @@ describe('member assigned reader', () => {
     expect(
       screen.getByText((content) => content.includes(strings.member.doneToday)),
     ).toBeVisible();
+  });
+
+  it('labels a two-surah page with the earliest surah on that page', async () => {
+    const khatma = makeKhatma('k1');
+    loader.getPage.mockResolvedValue({
+      page: 49,
+      juz: 3,
+      surahIds: [2, 3],
+      ayat: [
+        { surah: 2, ayah: 286, text: 'end-of-baqarah' },
+        { surah: 3, ayah: 1, text: 'start-of-al-imran' },
+      ],
+    });
+
+    renderMember({
+      route: `/khatma/${khatma.id}/read`,
+      data: {
+        roster: [amina],
+        khatmas: [khatma],
+        assignments: {
+          [khatma.id]: [makeAssignment(amina.id, [round(1, [49])])],
+        },
+      },
+    });
+
+    expect(await screen.findByRole('heading', { name: 'سورة البقرة 2' })).toBeVisible();
+    expect(screen.getByText('سورة آل عمران')).toBeVisible();
   });
 
   it('keeps the current page across unrelated realtime ticks and resets on a new round', async () => {

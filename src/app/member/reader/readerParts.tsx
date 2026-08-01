@@ -3,7 +3,7 @@ import { Box, GlobalStyles, Stack, Typography } from '@mui/material';
 import { AppButton } from '@/components/primitives';
 import { getPage, getSurahs } from '@/content/quran/loader';
 import type { QuranPage, Surah } from '@/content/quran/types';
-import { ayahEndMarker } from '@/content/quran/symbols';
+import { ayahEndMarker, toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 
 /**
@@ -151,7 +151,7 @@ function ReaderMessage({ text, danger = false }: { text: string; danger?: boolea
 }
 
 type LoadedPage =
-  | { page: number; status: 'ready'; blocks: ReactNode[] }
+  | { page: number; status: 'ready'; blocks: ReactNode[]; firstSurah: Surah | undefined }
   | { page: number; status: 'error' };
 
 /**
@@ -160,19 +160,30 @@ type LoadedPage =
  * from its async callbacks. The `active` flag plus the page match are the
  * stale-navigation guard: a newer navigation always wins.
  */
-export function QuranPageContent({ page }: { page: number }) {
+export function QuranPageContent({
+  page,
+  showSurahName = false,
+}: {
+  page: number;
+  showSurahName?: boolean;
+}) {
   const [loaded, setLoaded] = useState<LoadedPage | null>(null);
 
   useEffect(() => {
     let active = true;
     Promise.all([getPage(page), getSurahs()])
       .then(([data, surahs]) => {
-        if (active)
+        if (active) {
+          const surahsById = byId(surahs);
+          const firstSurahId = data.surahIds[0];
           setLoaded({
             page,
             status: 'ready',
-            blocks: composePageBlocks(data, byId(surahs)),
+            blocks: composePageBlocks(data, surahsById),
+            firstSurah:
+              firstSurahId === undefined ? undefined : surahsById.get(firstSurahId),
           });
+        }
       })
       .catch(() => {
         if (active) setLoaded({ page, status: 'error' });
@@ -186,7 +197,45 @@ export function QuranPageContent({ page }: { page: number }) {
     return <ReaderMessage text={strings.common.loading} />;
   if (loaded.status === 'error')
     return <ReaderMessage text={strings.quran.loadError} danger />;
-  return <Stack spacing={2}>{loaded.blocks}</Stack>;
+  return (
+    <Stack spacing={2}>
+      {showSurahName && loaded.firstSurah ? (
+        <Typography
+          component="h2"
+          aria-label={`${strings.reader.surahHeading} ${loaded.firstSurah.name} ${toWesternDigits(loaded.firstSurah.id)}`}
+          sx={(theme) => ({
+            width: 'fit-content',
+            maxWidth: '100%',
+            minHeight: 40,
+            boxSizing: 'border-box',
+            display: 'inline-flex',
+            alignSelf: 'center',
+            alignItems: 'center',
+            gap: 1,
+            mx: 'auto',
+            px: 3,
+            py: 1,
+            borderRadius: `0 0 ${theme.custom.radii.button}px ${theme.custom.radii.button}px`,
+            background: theme.custom.heroGrad,
+            color: theme.custom.heroInk,
+            fontFamily: 'var(--font-quran)',
+            fontSize: '1.125rem',
+            fontWeight: 600,
+            lineHeight: 1.4,
+            whiteSpace: 'nowrap',
+          })}
+        >
+          <span>
+            {strings.reader.surahHeading} {loaded.firstSurah.name}
+          </span>
+          <Box component="span" dir="ltr">
+            {toWesternDigits(loaded.firstSurah.id)}
+          </Box>
+        </Typography>
+      ) : null}
+      {loaded.blocks}
+    </Stack>
+  );
 }
 
 // -----------------------------------------------------------------------------
