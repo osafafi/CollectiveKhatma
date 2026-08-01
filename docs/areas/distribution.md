@@ -31,6 +31,9 @@ Hard rules:
 - `capacities.surahs` is a Surah id and `capacities.juz` is a Juz number; each
   selected whole unit is pulled from wherever it remains in the pool, so an
   explicit whole-unit addition may make the final combined chunk non-consecutive.
+- The khatma detail page derives selectable Surah capacities from the same
+  page-to-Surah map: every page in the Surah unit must still be in
+  `remainingPages`, so partially read or currently held Surahs are excluded.
 - Same local date blocks a second normal distribution.
 - Redistribution recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;

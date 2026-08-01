@@ -4,7 +4,7 @@ import { toWesternDigits } from '@/content/quran/symbols';
 import type { Surah } from '@/content/quran/types';
 
 export interface SurahCapacitySelectProps {
-  /** All surahs (names) for the options, or `null` while they load. */
+  /** Surahs (names) to offer, or `null` while they load. */
   surahs: readonly Surah[] | null;
   /** Selected surah id; `0` = none. */
   value: number;
@@ -28,10 +28,13 @@ export function SurahCapacitySelect({
       label: `${toWesternDigits(surah.id)}. ${surah.name}`,
     })),
   ];
+  const selectedValue = options.some((option) => option.value === String(value))
+    ? String(value)
+    : '';
   return (
     <AppSelectField
       label={strings.admin.capacitySurahs}
-      value={value > 0 ? String(value) : ''}
+      value={selectedValue}
       options={options}
       fieldWidth={200}
       onChange={(next) => onChange(next ? parseInt(next, 10) : 0)}

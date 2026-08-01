@@ -30,9 +30,11 @@ export function KhatmaCapacityEditor({
   const updateKhatma = useWriteOperation('updateKhatma');
 
   const onSave = () => {
+    const selectedSurah =
+      surahs === null || surahs.some((candidate) => candidate.id === surah) ? surah : 0;
     const capacity: MemberCapacity = {
       pages: toCount(pages),
-      surahs: surah,
+      surahs: selectedSurah,
       juz,
     };
     void updateKhatma.execute(khatma.id, {

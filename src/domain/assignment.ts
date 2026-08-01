@@ -106,6 +106,34 @@ export function buildPageUnitMaps(
   return { surah, juz };
 }
 
+/**
+ * Surahs whose complete page unit is still present in a khatma's unread pool.
+ *
+ * Uses the same page -> Surah attribution as distribution, including shared
+ * boundary pages, so a Surah disappears as soon as any of its pages has been
+ * assigned or completed. A released, wholly unread Surah becomes available
+ * again once all of its pages return to the pool.
+ */
+export function fullyUnreadSurahIds(
+  remainingPages: readonly number[],
+  surahOfPage: Readonly<Record<number, number>>,
+): Set<number> {
+  const remaining = new Set(remainingPages);
+  const pagesBySurah = new Map<number, number[]>();
+
+  for (const [pageText, surahId] of Object.entries(surahOfPage)) {
+    const pages = pagesBySurah.get(surahId) ?? [];
+    pages.push(Number(pageText));
+    pagesBySurah.set(surahId, pages);
+  }
+
+  return new Set(
+    [...pagesBySurah.entries()]
+      .filter(([, pages]) => pages.every((page) => remaining.has(page)))
+      .map(([surahId]) => surahId),
+  );
+}
+
 /** Read a required per-khatma capacity and fail loudly on invalid stored data. */
 export function requiredCapacity(
   khatma: Pick<Khatma, 'id' | 'capacities'>,

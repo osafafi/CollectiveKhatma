@@ -25,18 +25,36 @@ vi.mock('@/content/quran/loader', () => loader);
 
 const INDEX: QuranIndex = {
   totalPages: 604,
-  surahToPages: { 1: [1, 1] },
-  juzToPages: { 1: [1, 21] },
+  surahToPages: { 1: [1, 2], 2: [3, 4], 3: [5, 6] },
+  juzToPages: { 1: [1, 6] },
 };
 const SURAHS: Surah[] = [
   {
     id: 1,
     name: 'الفاتحة',
     pageStart: 1,
-    pageEnd: 1,
+    pageEnd: 2,
     versesCount: 7,
     bismillahPre: false,
     revelation: 'meccan',
+  },
+  {
+    id: 2,
+    name: 'Al-Baqarah',
+    pageStart: 3,
+    pageEnd: 4,
+    versesCount: 286,
+    bismillahPre: true,
+    revelation: 'medinan',
+  },
+  {
+    id: 3,
+    name: 'Ali Imran',
+    pageStart: 5,
+    pageEnd: 6,
+    versesCount: 200,
+    bismillahPre: true,
+    revelation: 'medinan',
   },
 ];
 
@@ -269,6 +287,36 @@ describe('admin Khatma detail', () => {
     expect(operations.updateKhatma).toHaveBeenCalledWith('k', {
       capacities: { p1: { pages: 2, surahs: 0, juz: 30 } },
     });
+  });
+
+  it('offers only Surahs that are still fully unread in this khatma', async () => {
+    const finishedAt = Date.UTC(2026, 6, 14);
+    const { user } = renderDetail('k', {
+      roster: [amina],
+      khatmas: [makeKhatma('k', { remainingPages: [4, 5, 6] })],
+      assignments: {
+        k: [makeAssignment(amina.id, [round(1, [1, 2, 3])], { 1: finishedAt })],
+      },
+    });
+
+    await user.click(
+      screen.getByRole('combobox', { name: strings.admin.capacitySurahs }),
+    );
+    const options = within(screen.getByRole('listbox'));
+
+    expect(
+      options.queryByRole('option', {
+        name: `${toWesternDigits(1)}. ${SURAHS[0]!.name}`,
+      }),
+    ).toBeNull();
+    expect(
+      options.queryByRole('option', {
+        name: `${toWesternDigits(2)}. ${SURAHS[1]!.name}`,
+      }),
+    ).toBeNull();
+    expect(
+      options.getByRole('option', { name: `${toWesternDigits(3)}. ${SURAHS[2]!.name}` }),
+    ).toBeVisible();
   });
 
   it('adds a candidate member through addMemberToKhatma', async () => {

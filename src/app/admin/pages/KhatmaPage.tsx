@@ -7,6 +7,7 @@ import {
   useAppSelector,
 } from '@/app/store';
 import { adminHash } from '@/app/routing/routes';
+import { useQuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { useSurahs } from '@/app/admin/useSurahs';
 import {
   ActiveKhatmaControls,
@@ -18,6 +19,7 @@ import { KhatmaMembersCard } from '@/app/admin/khatma/KhatmaMembersCard';
 import { KhatmaMetadataEditor } from '@/app/admin/khatma/KhatmaMetadataEditor';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
+import { fullyUnreadSurahIds } from '@/domain/assignment';
 
 /** Route container for one admin khatma detail page. */
 export function AdminKhatmaPage({ id }: { id: string }) {
@@ -26,6 +28,7 @@ export function AdminKhatmaPage({ id }: { id: string }) {
   const assignments = useAppSelector((state) => selectAssignmentsForKhatma(state, id));
   const roster = useAppSelector(selectRoster);
   const surahs = useSurahs();
+  const scopeMaps = useQuranScopeMaps();
 
   if (!khatma) {
     return (
@@ -45,6 +48,14 @@ export function AdminKhatmaPage({ id }: { id: string }) {
     );
   }
 
+  const unreadSurahIds = scopeMaps
+    ? fullyUnreadSurahIds(khatma.remainingPages, scopeMaps.pageUnitMaps.surah)
+    : null;
+  const selectableSurahs =
+    surahs && unreadSurahIds
+      ? surahs.filter((surah) => unreadSurahIds.has(surah.id))
+      : null;
+
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
       <BackLink />
@@ -57,7 +68,7 @@ export function AdminKhatmaPage({ id }: { id: string }) {
             khatmas={khatmas}
             assignments={assignments}
             roster={roster}
-            surahs={surahs}
+            surahs={selectableSurahs}
           />
           <ActiveKhatmaControls khatma={khatma} roster={roster} />
         </>

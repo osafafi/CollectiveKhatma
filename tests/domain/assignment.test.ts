@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePageScope } from '@/domain/assignment';
+import {
+  buildPageUnitMaps,
+  fullyUnreadSurahIds,
+  resolvePageScope,
+} from '@/domain/assignment';
 
 describe('resolvePageScope', () => {
   it('full defaults to the whole 604-page mushaf', () => {
@@ -40,5 +44,19 @@ describe('resolvePageScope', () => {
     expect(() =>
       resolvePageScope({ kind: 'surahs', surahIds: [999] }, { 1: [1, 1] }),
     ).toThrow();
+  });
+});
+
+describe('fullyUnreadSurahIds', () => {
+  it('keeps only Surahs whose entire distribution unit remains unread', () => {
+    const maps = buildPageUnitMaps({ 1: [1, 2], 2: [3, 4], 3: [5, 6] }, { 1: [1, 6] });
+
+    expect([...fullyUnreadSurahIds([1, 2, 4, 5, 6], maps.surah)]).toEqual([1, 3]);
+  });
+
+  it('uses the later Surah for a shared boundary page like distribution does', () => {
+    const maps = buildPageUnitMaps({ 4: [77, 106], 5: [106, 107] }, { 1: [77, 107] });
+
+    expect([...fullyUnreadSurahIds([77, 106, 107], maps.surah)]).toEqual([5]);
   });
 });
