@@ -27,6 +27,8 @@ Hard rules:
 - Both mushaf readers label the first entry in the page's ordered `surahIds` with
   a name-and-number tab attached to the reader header; when a page contains two
   surahs, the later one is still introduced by its normal in-page surah band.
+- The free-browse reader's surah and juz selects reflect the displayed page and
+  update automatically during previous/next navigation.
 - Assigned Quran text is preceded by a compact header with centered member
   identity, a left artwork-and-series stack, and a height-matched page-total tile
   at the right; the free-browse reader keeps its jump header.

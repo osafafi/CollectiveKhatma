@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience } from '@/app/member/MemberApp';
@@ -157,6 +157,9 @@ describe('member browse reader', () => {
     const harness = renderMember({ route: '/quran', data: { roster: [amina] } });
 
     expect(screen.getByText('صفحة 1 من 604')).toBeVisible();
+    expect(
+      await screen.findByRole('combobox', { name: strings.reader.surah }),
+    ).toHaveTextContent(`1. ${SURAHS[0]!.name}`);
     expect(screen.getByRole('button', { name: /السابقة/ })).toBeDisabled();
 
     await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
@@ -165,6 +168,30 @@ describe('member browse reader', () => {
     expect(window.location.hash).toBe('#/quran/2');
     expect(localStorage.getItem('khatma.lastReadPage')).toBe('2');
     expect(await screen.findByText(/page-body-2/)).toBeVisible();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: strings.reader.surah }),
+      ).toHaveTextContent(`2. ${SURAHS[1]!.name}`),
+    );
+  });
+
+  it('updates the selected juz when navigation crosses a juz boundary', async () => {
+    loader.getPage.mockImplementation((page: number) =>
+      Promise.resolve({ ...makePage(page), juz: page >= 22 ? 2 : 1 }),
+    );
+    const harness = renderMember({ route: '/quran/21', data: { roster: [amina] } });
+
+    expect(
+      await screen.findByRole('combobox', { name: strings.reader.juz }),
+    ).toHaveTextContent(`${strings.reader.juz} 1`);
+
+    await harness.user.click(screen.getByRole('button', { name: /التالية/ }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: strings.reader.juz }),
+      ).toHaveTextContent(`${strings.reader.juz} 2`),
+    );
   });
 
   it('places matched navigation actions in RTL book order', () => {

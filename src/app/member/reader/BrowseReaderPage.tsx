@@ -11,7 +11,7 @@ import {
 import type { Theme } from '@mui/material/styles';
 import { useMemberNavigate } from '@/app/routing/hooks';
 import { useLastReadPage } from '@/app/persistence';
-import { getQuranIndex, getSurahs } from '@/content/quran/loader';
+import { getPage, getQuranIndex, getSurahs } from '@/content/quran/loader';
 import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import {
@@ -28,6 +28,7 @@ import {
 } from './readerPaging';
 
 interface JumpOption {
+  value: number;
   page: number;
   label: string;
 }
@@ -96,7 +97,7 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
   );
 }
 
-/** Surah, juz, and page jump controls. Options populate async and are silently omitted on failure. */
+/** Surah, juz, and page jump controls. Selects track the loaded page metadata. */
 function JumpControls({
   page,
   onJump,
@@ -106,14 +107,17 @@ function JumpControls({
 }) {
   const [surahOptions, setSurahOptions] = useState<JumpOption[]>([]);
   const [juzOptions, setJuzOptions] = useState<JumpOption[]>([]);
+  const [currentSurah, setCurrentSurah] = useState<number>();
+  const [currentJuz, setCurrentJuz] = useState<number>();
 
   useEffect(() => {
     let active = true;
-    Promise.all([getSurahs(), getQuranIndex()])
-      .then(([surahs, quranIndex]) => {
+    Promise.all([getSurahs(), getQuranIndex(), getPage(page)])
+      .then(([surahs, quranIndex, quranPage]) => {
         if (!active) return;
         setSurahOptions(
           surahs.map((surah) => ({
+            value: surah.id,
             page: surah.pageStart,
             label: `${toWesternDigits(surah.id)}. ${surah.name}`,
           })),
@@ -123,19 +127,26 @@ function JumpControls({
           const first = quranIndex.juzToPages[j]?.[0];
           if (first)
             juz.push({
+              value: j,
               page: first,
               label: `${strings.reader.juz} ${toWesternDigits(j)}`,
             });
         }
         setJuzOptions(juz);
+        setCurrentSurah(quranPage.surahIds[0]);
+        setCurrentJuz(quranPage.juz);
       })
       .catch(() => {
         // Jump controls are a convenience; reading still works without them.
+        if (active) {
+          setCurrentSurah(undefined);
+          setCurrentJuz(undefined);
+        }
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [page]);
 
   return (
     <Stack
@@ -151,8 +162,18 @@ function JumpControls({
       }}
     >
       <PageJumpInput key={page} page={page} onJump={onJump} />
-      <JumpSelect label={strings.reader.surah} options={surahOptions} onJump={onJump} />
-      <JumpSelect label={strings.reader.juz} options={juzOptions} onJump={onJump} />
+      <JumpSelect
+        label={strings.reader.surah}
+        value={currentSurah}
+        options={surahOptions}
+        onJump={onJump}
+      />
+      <JumpSelect
+        label={strings.reader.juz}
+        value={currentJuz}
+        options={juzOptions}
+        onJump={onJump}
+      />
       {/* Remount on committed-page change so the draft resyncs without an effect. */}
     </Stack>
   );
@@ -171,30 +192,38 @@ const heroFieldSx = (theme: Theme) => ({
   '& .MuiInputLabel-root': { color: theme.custom.heroInk },
 });
 
-/** A reset-on-select jump menu: it triggers navigation without tracking a value. */
+/** A page-synchronized select whose options retain their own jump targets. */
 function JumpSelect({
   label,
+  value,
   options,
   onJump,
 }: {
   label: string;
+  value: number | undefined;
   options: readonly JumpOption[];
   onJump: (page: number) => void;
 }) {
   return (
     <FormControl size="small" sx={[{ minWidth: 128 }, heroFieldSx]}>
-      <Select
-        value=""
+      <Select<number | ''>
+        value={value ?? ''}
         displayEmpty
-        renderValue={() => label}
+        renderValue={(selected) =>
+          selected === ''
+            ? label
+            : (options.find((option) => option.value === selected)?.label ?? label)
+        }
         onChange={(event) => {
-          const next = Number(event.target.value);
-          if (Number.isInteger(next)) onJump(next);
+          const option = options.find(
+            ({ value: optionValue }) => optionValue === Number(event.target.value),
+          );
+          if (option) onJump(option.page);
         }}
         SelectDisplayProps={{ 'aria-label': label }}
       >
-        {options.map((option, index) => (
-          <MenuItem key={`${option.page}-${index}`} value={option.page}>
+        {options.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
           </MenuItem>
         ))}
