@@ -61,9 +61,9 @@ Hard rules:
   semantic icons.
 - Assigned-reader navigation follows RTL book direction: previous is on the
   right, next is on the left, and both enabled actions share the primary style.
-- Every assigned Quran page attaches a centered, content-width green tab to the
-  reader header with its earliest surah's name and Western-digit number. On a
-  shared boundary page, the later surah keeps its in-page heading.
+- Every Quran page in both readers attaches a centered, content-width green tab
+  to the reader header with its earliest surah's name and Western-digit number.
+  On a shared boundary page, the later surah keeps its in-page heading.
 - The assigned reader opens with a compact grid header: the daily-pages title
   sits above the member avatar and name in the center, khatma artwork sits above
   the numbered series title at the left, and the right page-total tile matches

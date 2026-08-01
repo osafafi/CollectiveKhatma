@@ -145,6 +145,11 @@ describe('member browse reader', () => {
       screen.getByRole('heading', { name: strings.reader.browseTitle }),
     ).toBeVisible();
     expect(screen.getByText('صفحة 5 من 604')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        name: `${strings.reader.surahHeading} ${SURAHS[1]!.name} 2`,
+      }),
+    ).toBeVisible();
     expect(await screen.findByText(/page-body-5/)).toBeVisible();
   });
 
@@ -193,7 +198,11 @@ describe('member browse reader', () => {
     await harness.user.click(await screen.findByRole('option', { name: /البقرة/ }));
 
     expect(window.location.hash).toBe('#/quran/2');
-    expect(await screen.findByText(/سورة البقرة/)).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        name: `${strings.reader.surahHeading} ${SURAHS[1]!.name} 2`,
+      }),
+    ).toBeVisible();
 
     const input = screen.getByRole('spinbutton', { name: strings.reader.goToPage });
     await harness.user.clear(input);

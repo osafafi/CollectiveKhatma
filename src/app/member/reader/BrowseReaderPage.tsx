@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Box,
   FormControl,
   MenuItem,
   Select,
@@ -71,18 +72,19 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
   return (
     <Stack spacing={4} data-react-surface="member" data-route="quran">
       <ReaderBackground />
-      <StickyChrome>
-        <Typography
-          component="h1"
-          color="inherit"
-          sx={{ textAlign: 'center', fontSize: '1.125rem', fontWeight: 800 }}
-        >
-          {strings.reader.browseTitle}
-        </Typography>
-        <JumpControls page={page} onJump={goToPage} />
-      </StickyChrome>
-
-      <QuranPageContent page={page} />
+      <Box>
+        <StickyChrome>
+          <Typography
+            component="h1"
+            color="inherit"
+            sx={{ textAlign: 'center', fontSize: '1.125rem', fontWeight: 800 }}
+          >
+            {strings.reader.browseTitle}
+          </Typography>
+          <JumpControls page={page} onJump={goToPage} />
+        </StickyChrome>
+        <QuranPageContent page={page} showSurahName />
+      </Box>
       <ReaderNav
         onPrev={() => goToPage(page - 1)}
         onNext={() => goToPage(page + 1)}
