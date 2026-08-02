@@ -67,6 +67,7 @@ const amina: Person = {
   createdAt: 1,
 };
 const maryam: Person = { ...amina, id: 'p2', name: 'Maryam' };
+const zaynab: Person = { ...amina, id: 'p3', name: 'Zaynab' };
 
 function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
   return {
@@ -121,9 +122,6 @@ function mockOperations() {
     deleteKhatma: vi.fn<WriteOperations['deleteKhatma']>().mockResolvedValue(undefined),
     addMemberToKhatma: vi
       .fn<WriteOperations['addMemberToKhatma']>()
-      .mockResolvedValue(undefined),
-    activatePersonInKhatma: vi
-      .fn<WriteOperations['activatePersonInKhatma']>()
       .mockResolvedValue(undefined),
     updatePerson: vi.fn<WriteOperations['updatePerson']>().mockResolvedValue(undefined),
     releaseMemberChunk: vi
@@ -338,38 +336,23 @@ describe('admin Khatma detail', () => {
     });
   });
 
-  it('shows disabled khatma candidates last with strike-through and activates them', async () => {
+  it('does not show disabled roster people who are outside this khatma', () => {
     const pausedMaryam = { ...maryam, enabled: false };
-    const { user, operations } = renderDetail('k', {
+    renderDetail('k', {
       roster: [pausedMaryam, amina],
       khatmas: [makeKhatma('k')],
       assignments: { k: [makeAssignment(amina.id)] },
     });
 
-    const pausedName = screen.getByText(
-      (content, element) =>
-        element?.tagName === 'SPAN' && content.includes(pausedMaryam.name),
-    );
-    const activeName = screen.getByText(
-      (content, element) => element?.tagName === 'SPAN' && content.includes(amina.name),
-    );
     expect(
-      activeName.compareDocumentPosition(pausedName) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(pausedName).toHaveStyle({ textDecoration: 'line-through' });
-    const pausedRow = pausedName.parentElement!;
-    await user.click(
-      within(pausedRow).getByRole('button', { name: strings.admin.enable }),
-    );
-
-    expect(operations.activatePersonInKhatma).toHaveBeenCalledWith('k', pausedMaryam.id, {
-      pages: 2,
-      surahs: 0,
-      juz: 0,
-    });
+      screen.queryByText(
+        (content, element) =>
+          element?.tagName === 'SPAN' && content.includes(pausedMaryam.name),
+      ),
+    ).toBeNull();
   });
 
-  it('places a disabled participant after active members and re-enables them inline', async () => {
+  it('places a disabled participant after active members and before the separated add form', async () => {
     const pausedMaryam = { ...maryam, enabled: false };
     const khatma = makeKhatma('k', {
       memberIds: [pausedMaryam.id, amina.id],
@@ -379,7 +362,7 @@ describe('admin Khatma detail', () => {
       },
     });
     const { user, operations } = renderDetail('k', {
-      roster: [pausedMaryam, amina],
+      roster: [pausedMaryam, amina, zaynab],
       khatmas: [khatma],
       assignments: { k: [makeAssignment(amina.id)] },
     });
@@ -391,8 +374,16 @@ describe('admin Khatma detail', () => {
       (content, element) =>
         element?.tagName === 'SPAN' && content.includes(pausedMaryam.name),
     );
+    const separator = screen.getByRole('separator');
+    const addMember = screen.getByRole('combobox', { name: strings.admin.addMember });
     expect(
       activeName.compareDocumentPosition(pausedName) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      pausedName.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      separator.compareDocumentPosition(addMember) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(pausedName).toHaveStyle({ textDecoration: 'line-through' });
 

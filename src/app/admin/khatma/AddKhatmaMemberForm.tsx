@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, Divider } from '@mui/material';
 import { JuzCapacitySelect } from '@/app/admin/JuzCapacitySelect';
 import { useWriteOperation } from '@/app/operations';
 import { SurahCapacitySelect } from '@/app/admin/SurahCapacitySelect';
@@ -63,27 +63,30 @@ export function AddKhatmaMemberForm({
   }));
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, pt: 2 }}>
-      <AppSelectField
-        label={strings.admin.addMember}
-        value={resolvedId}
-        options={memberOptions}
-        fieldWidth={180}
-        onChange={setSelectedId}
-      />
-      <AppTextField
-        type="number"
-        label={strings.admin.capacityPages}
-        value={pagesValue}
-        fieldWidth={96}
-        onChange={(event) => setPages(event.target.value)}
-        slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
-      />
-      <SurahCapacitySelect surahs={surahs} value={surah} onChange={setSurah} />
-      <JuzCapacitySelect value={juz} onChange={setJuz} />
-      <AppButton variant="outlined" onClick={onAdd}>
-        {strings.admin.addMember}
-      </AppButton>
+    <Box sx={{ pt: 2 }}>
+      <Divider sx={{ mb: 2 }} />
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+        <AppSelectField
+          label={strings.admin.addMember}
+          value={resolvedId}
+          options={memberOptions}
+          fieldWidth={180}
+          onChange={setSelectedId}
+        />
+        <AppTextField
+          type="number"
+          label={strings.admin.capacityPages}
+          value={pagesValue}
+          fieldWidth={96}
+          onChange={(event) => setPages(event.target.value)}
+          slotProps={{ htmlInput: { min: 0, inputMode: 'numeric' } }}
+        />
+        <SurahCapacitySelect surahs={surahs} value={surah} onChange={setSurah} />
+        <JuzCapacitySelect value={juz} onChange={setJuz} />
+        <AppButton variant="outlined" onClick={onAdd}>
+          {strings.admin.addMember}
+        </AppButton>
+      </Box>
     </Box>
   );
 }

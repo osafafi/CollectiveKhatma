@@ -43,10 +43,6 @@ export function KhatmaMembersCard({
       (left, right) =>
         Number(left.person?.enabled === false) - Number(right.person?.enabled === false),
     );
-  const disabledCandidates = roster.filter(
-    (person) => !person.enabled && !khatma.memberIds.includes(person.id),
-  );
-
   return (
     <SurfaceCard title={strings.admin.membersProgress}>
       <Stack spacing={0}>
@@ -67,9 +63,6 @@ export function KhatmaMembersCard({
           </Typography>
         )}
         <AddKhatmaMemberForm khatma={khatma} roster={roster} surahs={surahs} />
-        {disabledCandidates.map((person) => (
-          <DisabledKhatmaCandidateRow key={person.id} khatma={khatma} person={person} />
-        ))}
       </Stack>
     </SurfaceCard>
   );
@@ -207,48 +200,6 @@ function KhatmaMemberRow({
           <KhatmaCapacityEditor khatma={khatma} person={person} surahs={surahs} />
         ) : null}
       </Stack>
-    </Box>
-  );
-}
-
-function DisabledKhatmaCandidateRow({
-  khatma,
-  person,
-}: {
-  khatma: Khatma;
-  person: Person;
-}) {
-  const activatePersonInKhatma = useWriteOperation('activatePersonInKhatma');
-
-  return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-        <Typography
-          component="span"
-          sx={{
-            width: 112,
-            flexShrink: 0,
-            fontWeight: 600,
-            color: 'text.secondary',
-            textDecoration: 'line-through',
-          }}
-        >
-          {person.emoji || ''} {person.name}
-        </Typography>
-        <AppButton
-          variant="outlined"
-          disabled={activatePersonInKhatma.isPending}
-          onClick={() =>
-            void activatePersonInKhatma.execute(khatma.id, person.id, {
-              pages: person.pagesPerDay,
-              surahs: 0,
-              juz: 0,
-            })
-          }
-        >
-          {strings.admin.enable}
-        </AppButton>
-      </Box>
     </Box>
   );
 }

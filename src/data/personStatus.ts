@@ -1,15 +1,7 @@
-import {
-  arrayUnion,
-  doc,
-  getDocs,
-  query,
-  runTransaction,
-  where,
-  writeBatch,
-} from 'firebase/firestore';
+import { doc, getDocs, query, runTransaction, where } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
-import type { Assignment, Khatma, MemberCapacity } from '@/domain/types';
-import { assignmentDoc, emptyAssignment } from './assignments';
+import type { Assignment, Khatma } from '@/domain/types';
+import { assignmentDoc } from './assignments';
 import { db } from './firebase';
 import { khatmasCol } from './khatmas';
 import { rosterCol } from './roster';
@@ -56,22 +48,4 @@ export async function disableSelfAndReleasePages(memberId: string): Promise<void
       });
     }
   });
-}
-
-/** Enable a paused roster member and add them to one khatma in a single batch. */
-export async function activatePersonInKhatma(
-  khatmaId: string,
-  memberId: string,
-  capacity: MemberCapacity,
-): Promise<void> {
-  const batch = writeBatch(db);
-  batch.update(doc(rosterCol, memberId), { enabled: true });
-  batch.update(doc(khatmasCol, khatmaId), {
-    memberIds: arrayUnion(memberId),
-    [`capacities.${memberId}`]: capacity,
-  });
-  batch.set(assignmentDoc(khatmaId, memberId), emptyAssignment(memberId), {
-    merge: true,
-  });
-  await batch.commit();
 }

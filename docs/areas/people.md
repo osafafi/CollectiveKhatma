@@ -24,9 +24,9 @@ Hard rules:
   chunk they hold in an active khatma is released back to its pool in the same
   transaction as the roster flag. An admin pause only changes eligibility and
   leaves existing pages in place.
-- Active khatma details keep disabled people at the bottom with struck-through
-  names. The admin can re-enable an existing participant without changing their
-  capacity, or activate and add a disabled roster candidate in one write.
+- Active khatma details keep disabled participants at the bottom with
+  struck-through names. The admin can re-enable an existing participant without
+  changing their capacity. Disabled people outside that khatma are not listed.
 - Browser remembers person as `khatma.memberId`. No login. Trust model.
 
 Update this doc when person fields, identity, pause, or avatar flow changes.
