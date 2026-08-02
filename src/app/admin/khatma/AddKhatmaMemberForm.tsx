@@ -26,7 +26,9 @@ export function AddKhatmaMemberForm({
   roster,
   surahs,
 }: AddKhatmaMemberFormProps) {
-  const candidates = roster.filter((person) => !khatma.memberIds.includes(person.id));
+  const candidates = roster.filter(
+    (person) => person.enabled && !khatma.memberIds.includes(person.id),
+  );
   const addMemberToKhatma = useWriteOperation('addMemberToKhatma');
   const [selectedId, setSelectedId] = useState('');
   const [pages, setPages] = useState('');

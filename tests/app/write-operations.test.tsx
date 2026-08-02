@@ -28,6 +28,7 @@ import {
   updateKhatma,
 } from '@/data/khatmas';
 import { addPerson, removePerson, renamePerson, updatePerson } from '@/data/roster';
+import { activatePersonInKhatma, disableSelfAndReleasePages } from '@/data/personStatus';
 
 function deferred<Value>() {
   let resolve!: (value: Value | PromiseLike<Value>) => void;
@@ -45,6 +46,7 @@ describe('write operations', () => {
       addPerson,
       renamePerson,
       updatePerson,
+      disableSelfAndReleasePages,
       removePerson,
       setDu3aText,
       submitFeedback,
@@ -56,6 +58,7 @@ describe('write operations', () => {
       renameSeries,
       completeKhatma,
       addMemberToKhatma,
+      activatePersonInKhatma,
       releaseMemberChunk,
       removeMemberFromKhatma,
       deleteKhatma,

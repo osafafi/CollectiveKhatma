@@ -20,6 +20,7 @@ import { markRoundDone } from '@/data/assignments';
 import { runDistribution } from '@/data/distribution';
 import { deleteFeedback, setFeedbackRead, submitFeedback } from '@/data/feedback';
 import { createKhatma } from '@/data/khatmas';
+import { disableSelfAndReleasePages } from '@/data/personStatus';
 import { addPerson, updatePerson } from '@/data/roster';
 
 const runEmulatorSmoke = process.env.RUN_FIRESTORE_EMULATOR_SMOKE === 'true';
@@ -228,13 +229,70 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      await disableSelfAndReleasePages(personId);
+      await vi.waitFor(
+        () => {
+          for (const client of [adminClient, memberClient]) {
+            expect(selectPersonById(client.store.getState(), personId!)?.enabled).toBe(
+              false,
+            );
+            expect(
+              selectKhatmaById(client.store.getState(), khatmaId!)?.remainingPages,
+            ).toEqual([1, 2]);
+            expect(
+              selectAssignmentByMemberId(client.store.getState(), khatmaId!, personId!)
+                ?.rounds[0],
+            ).toMatchObject({ round: 1, pages: [1, 2], released: true });
+          }
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
+      await updatePerson(personId, { enabled: true });
+      const reassignment = await runDistribution({
+        khatmaIds: [khatmaId],
+        members: [
+          {
+            id: personId,
+            capacity: { pages: 2, surahs: 0, juz: 0 },
+            completedPages: [],
+            enabled: true,
+          },
+        ],
+        today: '2099-06-15',
+        rolloverSeed: {
+          seriesId: `emulator-series-${suffix}`,
+          seriesName: 'Emulator series',
+          seriesNumber: 2,
+          totalPages: 2,
+          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          memberIds: [personId],
+          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          duaReciterId: personId,
+          pool: [1, 2],
+        },
+      });
+      expect(reassignment).toEqual({ completedKhatmaIds: [], chunkCount: 1 });
+      await vi.waitFor(
+        () => {
+          expect(
+            selectAssignmentByMemberId(adminClient.store.getState(), khatmaId!, personId!)
+              ?.rounds,
+          ).toEqual([
+            expect.objectContaining({ round: 1, released: true }),
+            expect.objectContaining({ round: 2, pages: [1, 2] }),
+          ]);
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
       await adminDb
         .collection('khatmas')
         .doc(khatmaId)
         .collection('assignments')
         .doc(personId)
         .update({ missedStreak: 2 });
-      await markRoundDone(khatmaId, personId, 1);
+      await markRoundDone(khatmaId, personId, 2);
       await vi.waitFor(
         () => {
           for (const client of [adminClient, memberClient]) {
@@ -243,7 +301,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
               khatmaId!,
               personId!,
             );
-            expect(assignment?.doneByRound[1]).toEqual(expect.any(Number));
+            expect(assignment?.doneByRound[2]).toEqual(expect.any(Number));
             expect(assignment?.missedStreak).toBe(0);
             expect(
               selectPersonById(client.store.getState(), personId!)?.completedPages,
@@ -270,8 +328,8 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             khatmaId!,
             personId!,
           );
-          expect(restored?.rounds).toHaveLength(1);
-          expect(restored?.doneByRound[1]).toEqual(expect.any(Number));
+          expect(restored?.rounds).toHaveLength(2);
+          expect(restored?.doneByRound[2]).toEqual(expect.any(Number));
         },
         { timeout: 10_000, interval: 50 },
       );
@@ -286,7 +344,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             enabled: false,
           },
         ],
-        today: '2099-06-15',
+        today: '2099-06-16',
         rolloverSeed: {
           seriesId: `emulator-series-${suffix}`,
           seriesName: 'Emulator series',

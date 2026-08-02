@@ -33,6 +33,7 @@ import {
   renamePerson,
   updatePerson,
 } from '@/data/roster';
+import { activatePersonInKhatma, disableSelfAndReleasePages } from '@/data/personStatus';
 
 /** Feature-facing errors and results exposed without leaking the data layer. */
 export { AlreadyDistributedError, DuplicatePersonNameError, ReleasedChunkError };
@@ -43,6 +44,7 @@ export interface WriteOperations {
   addPerson: typeof addPerson;
   renamePerson: typeof renamePerson;
   updatePerson: typeof updatePerson;
+  disableSelfAndReleasePages: typeof disableSelfAndReleasePages;
   removePerson: typeof removePerson;
   setDu3aText: typeof setDu3aText;
   submitFeedback: typeof submitFeedback;
@@ -54,6 +56,7 @@ export interface WriteOperations {
   renameSeries: typeof renameSeries;
   completeKhatma: typeof completeKhatma;
   addMemberToKhatma: typeof addMemberToKhatma;
+  activatePersonInKhatma: typeof activatePersonInKhatma;
   releaseMemberChunk: typeof releaseMemberChunk;
   removeMemberFromKhatma: typeof removeMemberFromKhatma;
   deleteKhatma: typeof deleteKhatma;
@@ -68,6 +71,7 @@ export const writeOperations: WriteOperations = Object.freeze({
   addPerson,
   renamePerson,
   updatePerson,
+  disableSelfAndReleasePages,
   removePerson,
   setDu3aText,
   submitFeedback,
@@ -79,6 +83,7 @@ export const writeOperations: WriteOperations = Object.freeze({
   renameSeries,
   completeKhatma,
   addMemberToKhatma,
+  activatePersonInKhatma,
   releaseMemberChunk,
   removeMemberFromKhatma,
   deleteKhatma,

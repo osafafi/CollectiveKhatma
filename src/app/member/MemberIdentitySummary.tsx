@@ -8,6 +8,7 @@ import { useWriteOperation } from '@/app/operations';
 export function MemberIdentitySummary() {
   const { member, switchMember } = useMemberIdentity();
   const updatePerson = useWriteOperation('updatePerson');
+  const disableSelfAndReleasePages = useWriteOperation('disableSelfAndReleasePages');
 
   return (
     <Stack component="section" spacing={2}>
@@ -32,7 +33,8 @@ export function MemberIdentitySummary() {
           variant="outlined"
           onClick={() => {
             if (!member?.id) return;
-            void updatePerson.execute(member.id, { enabled: !member.enabled });
+            if (member.enabled) void disableSelfAndReleasePages.execute(member.id);
+            else void updatePerson.execute(member.id, { enabled: true });
           }}
         >
           {member?.enabled ? strings.admin.disable : strings.admin.enable}

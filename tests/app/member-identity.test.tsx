@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { writeOperations, type WriteOperations } from '@/app/operations';
 import { MemberHero } from '@/app/member/MemberHero';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberIdentitySummary } from '@/app/member/MemberIdentitySummary';
@@ -107,5 +108,27 @@ describe('member identity gate', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(strings.member.connectionError);
     expect(screen.queryByRole('button', { name: amina.name })).not.toBeInTheDocument();
+  });
+
+  it('uses the releasing self-disable operation and the normal update to re-enable', async () => {
+    localStorage.setItem('khatma.memberId', amina.id);
+    const disableSelfAndReleasePages = vi
+      .fn<WriteOperations['disableSelfAndReleasePages']>()
+      .mockResolvedValue(undefined);
+    const updatePerson = vi
+      .fn<WriteOperations['updatePerson']>()
+      .mockResolvedValue(undefined);
+    const harness = renderWithAppProviders(<MemberExperience />, {
+      data: { roster: [amina] },
+      operations: { ...writeOperations, disableSelfAndReleasePages, updatePerson },
+    });
+
+    await harness.user.click(screen.getByRole('button', { name: strings.admin.disable }));
+    expect(disableSelfAndReleasePages).toHaveBeenCalledWith(amina.id);
+    expect(updatePerson).not.toHaveBeenCalled();
+
+    harness.subscriptions.roster.emit([{ ...amina, enabled: false }]);
+    await harness.user.click(screen.getByRole('button', { name: strings.admin.enable }));
+    expect(updatePerson).toHaveBeenCalledWith(amina.id, { enabled: true });
   });
 });

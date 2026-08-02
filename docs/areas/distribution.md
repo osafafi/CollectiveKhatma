@@ -18,8 +18,12 @@ Tests: domain `distribution`, `assignment`, `rotation`, `progress`; `admin-home`
 
 Hard rules:
 
-- Pending pages stay with reader and block a new chunk.
-- Only admin release returns held pages.
+- Pending pages stay with the reader and block a new chunk until the admin
+  releases them or the member pauses themselves. An admin-only pause does not
+  release held pages.
+- A member self-pause atomically marks them disabled, releases every pending
+  chunk they hold across active khatmas, resets those warning streaks, and merges
+  the pages into each sorted pool.
 - Remaining pages stay sorted.
 - Loose-page distribution advances from the oldest remaining pages as a front
   block. It does not skip a page inside the block just because the selected

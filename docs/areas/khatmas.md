@@ -24,6 +24,11 @@ Hard rules:
   selects one Surah id and `juz` selects one Juz number (`1..30`; `0` means none).
 - On an active khatma's detail page, Surah capacity menus offer only Surahs whose
   complete page unit is still in that khatma's unread, unassigned pool.
+- Active khatma member lists show enabled participants first. Disabled
+  participants and disabled roster candidates stay visible at the bottom with
+  struck-through names and an activation action. Activating a candidate also
+  adds their empty assignment and default page capacity; the normal page, Surah,
+  and Juz editor is then available.
 - Completed khatmas stay for series history.
 - The admin Khatmas list shows all active rounds. For a series with no active
   round, it shows only the latest completed round as the history entry point.

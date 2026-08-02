@@ -30,20 +30,34 @@ export function KhatmaMembersCard({
   surahs,
 }: KhatmaMembersCardProps) {
   const rows = khatma.memberIds
-    .map((memberId) => assignments.find((assignment) => assignment.memberId === memberId))
-    .filter((assignment): assignment is Assignment => assignment !== undefined);
+    .map((memberId) => ({
+      person: roster.find((candidate) => candidate.id === memberId),
+      assignment: assignments.find((assignment) => assignment.memberId === memberId) ?? {
+        memberId,
+        rounds: [],
+        doneByRound: {},
+        missedStreak: 0,
+      },
+    }))
+    .sort(
+      (left, right) =>
+        Number(left.person?.enabled === false) - Number(right.person?.enabled === false),
+    );
+  const disabledCandidates = roster.filter(
+    (person) => !person.enabled && !khatma.memberIds.includes(person.id),
+  );
 
   return (
     <SurfaceCard title={strings.admin.membersProgress}>
       <Stack spacing={0}>
         {rows.length > 0 ? (
-          rows.map((assignment) => (
+          rows.map(({ person, assignment }) => (
             <KhatmaMemberRow
               key={assignment.memberId}
               khatma={khatma}
               khatmas={khatmas}
               assignment={assignment}
-              roster={roster}
+              person={person}
               surahs={surahs}
             />
           ))
@@ -53,6 +67,9 @@ export function KhatmaMembersCard({
           </Typography>
         )}
         <AddKhatmaMemberForm khatma={khatma} roster={roster} surahs={surahs} />
+        {disabledCandidates.map((person) => (
+          <DisabledKhatmaCandidateRow key={person.id} khatma={khatma} person={person} />
+        ))}
       </Stack>
     </SurfaceCard>
   );
@@ -62,7 +79,7 @@ interface KhatmaMemberRowProps {
   khatma: Khatma;
   khatmas: readonly Khatma[];
   assignment: Assignment;
-  roster: readonly Person[];
+  person: Person | undefined;
   surahs: readonly Surah[] | null;
 }
 
@@ -70,10 +87,9 @@ function KhatmaMemberRow({
   khatma,
   khatmas,
   assignment,
-  roster,
+  person,
   surahs,
 }: KhatmaMemberRowProps) {
-  const person = roster.find((candidate) => candidate.id === assignment.memberId);
   const name = person ? `${person.emoji || ''} ${person.name}` : assignment.memberId;
   const level = warningLevel(assignment.missedStreak);
   const chunk = latestReadableChunk(assignment);
@@ -85,6 +101,7 @@ function KhatmaMemberRow({
   const clearRoundDone = useWriteOperation('clearRoundDone');
   const releaseMemberChunk = useWriteOperation('releaseMemberChunk');
   const removeMemberFromKhatma = useWriteOperation('removeMemberFromKhatma');
+  const updatePerson = useWriteOperation('updatePerson');
   const { confirm } = useConfirmation();
 
   const onClearWarning = () => {
@@ -149,10 +166,26 @@ function KhatmaMemberRow({
           </IconButton>
           <Typography
             component="span"
-            sx={{ width: 112, flexShrink: 0, fontWeight: 600 }}
+            sx={{
+              width: 112,
+              flexShrink: 0,
+              fontWeight: 600,
+              ...(person?.enabled === false
+                ? { color: 'text.secondary', textDecoration: 'line-through' }
+                : {}),
+            }}
           >
             {name}
           </Typography>
+          {person?.enabled === false ? (
+            <AppButton
+              variant="outlined"
+              disabled={updatePerson.isPending}
+              onClick={() => void updatePerson.execute(person.id, { enabled: true })}
+            >
+              {strings.admin.enable}
+            </AppButton>
+          ) : null}
           <ChunkChip
             assignment={assignment}
             chunk={chunk}
@@ -170,10 +203,52 @@ function KhatmaMemberRow({
             </AppButton>
           ) : null}
         </Box>
-        {person ? (
+        {person?.enabled ? (
           <KhatmaCapacityEditor khatma={khatma} person={person} surahs={surahs} />
         ) : null}
       </Stack>
+    </Box>
+  );
+}
+
+function DisabledKhatmaCandidateRow({
+  khatma,
+  person,
+}: {
+  khatma: Khatma;
+  person: Person;
+}) {
+  const activatePersonInKhatma = useWriteOperation('activatePersonInKhatma');
+
+  return (
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', py: 2 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+        <Typography
+          component="span"
+          sx={{
+            width: 112,
+            flexShrink: 0,
+            fontWeight: 600,
+            color: 'text.secondary',
+            textDecoration: 'line-through',
+          }}
+        >
+          {person.emoji || ''} {person.name}
+        </Typography>
+        <AppButton
+          variant="outlined"
+          disabled={activatePersonInKhatma.isPending}
+          onClick={() =>
+            void activatePersonInKhatma.execute(khatma.id, person.id, {
+              pages: person.pagesPerDay,
+              surahs: 0,
+              juz: 0,
+            })
+          }
+        >
+          {strings.admin.enable}
+        </AppButton>
+      </Box>
     </Box>
   );
 }

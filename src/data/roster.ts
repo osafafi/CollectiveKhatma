@@ -15,7 +15,7 @@ import { DEFAULT_PAGES_PER_DAY, type Person } from '@/domain/types';
 import { isNameUnique, normalizeName } from '@/domain/validation';
 import { db } from './firebase';
 
-const rosterCol = collection(db, 'roster');
+export const rosterCol = collection(db, 'roster');
 
 /** A latest-roster duplicate guard so UI validation failures stay friendly. */
 export class DuplicatePersonNameError extends Error {
