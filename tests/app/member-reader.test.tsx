@@ -334,7 +334,7 @@ describe('member assigned reader', () => {
     expect(screen.getByText('سورة آل عمران')).toBeVisible();
   });
 
-  it('keeps the current page across unrelated realtime ticks and resets on a new round', async () => {
+  it('keeps the page across unrelated ticks and resets when assigned pages change', async () => {
     const khatma = makeKhatma('k1');
     const harness = renderMember({
       route: `/khatma/${khatma.id}/read`,
@@ -358,14 +358,34 @@ describe('member assigned reader', () => {
     expect(screen.getByText('2 من 3')).toBeVisible();
     expect(screen.getByText('صفحة 11')).toBeVisible();
 
-    // A new round remounts the reader fresh at its first page.
-    harness.subscriptions.assignment(khatma.id).emit([
-      makeAssignment(amina.id, [round(1, [10, 11, 12]), round(2, [20, 21])], {
-        1: 100,
-      }),
-    ]);
+    // A same-round redistribution replaces the page set and remounts at page one.
+    harness.subscriptions
+      .assignment(khatma.id)
+      .emit([
+        makeAssignment(amina.id, [
+          { ...round(1, [10, 11, 12]), released: true },
+          round(1, [20, 21]),
+        ]),
+      ]);
     expect(await screen.findByText('1 من 2')).toBeVisible();
     expect(screen.getByText('صفحة 20')).toBeVisible();
+
+    // A new round remounts the reader fresh at its first page.
+    harness.subscriptions
+      .assignment(khatma.id)
+      .emit([
+        makeAssignment(
+          amina.id,
+          [
+            { ...round(1, [10, 11, 12]), released: true },
+            round(1, [20, 21]),
+            round(2, [30, 31]),
+          ],
+          { 1: 100 },
+        ),
+      ]);
+    expect(await screen.findByText('1 من 2')).toBeVisible();
+    expect(screen.getByText('صفحة 30')).toBeVisible();
   });
 
   it('shows loading, no-pages, and paused states', () => {

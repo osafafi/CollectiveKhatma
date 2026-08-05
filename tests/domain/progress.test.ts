@@ -5,6 +5,7 @@ import {
   hasPendingChunk,
   isRoundDone,
   khatmaProgress,
+  latestChunkForRound,
   memberReadingInsights,
   pendingReaders,
   roundReaderRecords,
@@ -81,6 +82,19 @@ describe('per-assignment progress', () => {
     expect(donePageCount(flagged)).toBe(0);
     expect(donePageCount(fresh)).toBe(0);
   });
+
+  it('finds the replacement chunk appended by a same-round redistribution', () => {
+    const redistributed: Assignment = {
+      ...partly,
+      rounds: [
+        { ...chunk(2, '2026-07-09', [], true), redistributedPages: [5, 6] },
+        chunk(2, '2026-07-09', [7, 8]),
+      ],
+    };
+
+    expect(latestChunkForRound(redistributed, 2)?.pages).toEqual([7, 8]);
+    expect(latestChunkForRound(redistributed, 3)).toBeUndefined();
+  });
 });
 
 describe('khatmaProgress', () => {
@@ -126,17 +140,18 @@ describe('pending readers', () => {
 });
 
 describe('round reader records', () => {
-  it('keeps only current-round completions while retaining older pending chunks', () => {
+  it("classifies each member's latest readable chunk regardless of its round", () => {
     const currentDone: Assignment = {
       memberId: 'e',
       rounds: [chunk(3, '2026-07-10', [30, 31])],
       doneByRound: { 3: 4_000 },
       missedStreak: 0,
     };
-    expect(
-      roundReaderRecords([partly, finished, flagged, fresh, currentDone], 3),
-    ).toEqual({
-      completed: [{ memberId: 'e', round: 3, pages: [30, 31] }],
+    expect(roundReaderRecords([partly, finished, flagged, fresh, currentDone])).toEqual({
+      completed: [
+        { memberId: 'e', round: 3, pages: [30, 31] },
+        { memberId: 'b', round: 1, pages: [10, 11] },
+      ],
       pending: [{ memberId: 'a', round: 2, pages: [5, 6] }],
     });
   });

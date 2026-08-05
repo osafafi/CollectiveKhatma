@@ -137,11 +137,7 @@ function KhatmaBlock({
       <Stack spacing={3}>
         <KhatmaMetrics khatma={khatma} assignments={assignments} />
         <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
-        <RoundReadingStatus
-          currentRound={khatma.roundCount}
-          assignments={assignments}
-          roster={roster}
-        />
+        <RoundReadingStatus assignments={assignments} roster={roster} />
         <Warnings assignments={assignments} roster={roster} />
         <DistributeAction
           group={group}
@@ -215,17 +211,15 @@ function KhatmaMetrics({
   );
 }
 
-/** Completed and still-pending assignment history, collapsed by status. */
+/** Each member's latest completed or pending assignment, collapsed by status. */
 function RoundReadingStatus({
-  currentRound,
   assignments,
   roster,
 }: {
-  currentRound: number;
   assignments: readonly Assignment[];
   roster: readonly Person[];
 }) {
-  const records = roundReaderRecords(assignments, currentRound);
+  const records = roundReaderRecords(assignments);
 
   return (
     <Stack spacing={2}>
@@ -241,6 +235,7 @@ function RoundReadingStatus({
         icon={<CheckCircleRoundedIcon color="success" fontSize="small" />}
         records={records.completed}
         roster={roster}
+        showRound
       />
     </Stack>
   );

@@ -55,10 +55,11 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
   if (!chunk || chunk.pages.length === 0) return <NoPagesView khatmaId={khatmaId} />;
 
   return (
-    // Key on the round so a new distribution remounts fresh, while unrelated
-    // realtime ticks keep this instance — and its page/scroll — alive.
+    // Key on the round and page set so a new distribution or same-round
+    // redistribution remounts fresh, while unrelated realtime ticks keep this
+    // instance — and its page/scroll — alive.
     <AssignedReaderCore
-      key={`${khatmaId}:${chunk.round}`}
+      key={`${khatmaId}:${chunk.round}:${chunk.pages.join(',')}`}
       khatmaId={khatmaId}
       memberId={memberId}
       memberName={member?.name ?? ''}

@@ -95,7 +95,8 @@ function nextAssignment(
  * (`releaseMemberChunk`). Retried automatically by Firestore on contention; a
  * concurrent same-day run loses and surfaces {@link AlreadyDistributedError}.
  * In redistribution mode, pending loose pages are recalled inside the same
- * transaction and the same-day guard is intentionally bypassed.
+ * transaction and reshuffled within the current round; the same-day guard is
+ * intentionally bypassed and rollover is disabled.
  */
 export function runDistribution(
   params: RunDistributionParams,
@@ -170,6 +171,7 @@ export function runDistribution(
       newKhatmaPool: rolloverSeed.pool,
       newKhatmaSeriesNumber: rolloverSeed.seriesNumber,
       unitOfPage,
+      mode: redistributePages ? 'redistribution' : 'new-round',
     });
 
     const finalStreak = (memberId: string): number => {

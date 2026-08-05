@@ -119,7 +119,7 @@ describe('admin Home dashboard', () => {
         khatmas: [khatma],
         assignments: {
           k1: [
-            makeAssignment(amina.id, [round(1, [1]), round(2, [2])], { 1: 100, 2: 200 }),
+            makeAssignment(amina.id, [round(1, [1, 2])], { 1: 100 }),
             makeAssignment(maryam.id, [round(1, [3, 4])], {}, 1),
           ],
         },
@@ -172,8 +172,10 @@ describe('admin Home dashboard', () => {
     await user.click(completed);
     const completedRow = screen.getByText('Amina').closest('li')!;
     expect(within(completedRow).getByRole('img', { name: 'Amina: A' })).toBeVisible();
-    expect(completedRow).toHaveTextContent('2');
-    expect(completedRow).not.toHaveTextContent(strings.admin.roundWord);
+    expect(completedRow).toHaveTextContent(
+      `${strings.admin.roundWord} ${toWesternDigits(1)}`,
+    );
+    expect(completedRow).toHaveTextContent('1–2');
 
     // Warning chips stay collapsed until the count-labelled warning section opens.
     const warnings = screen.getByRole('button', {

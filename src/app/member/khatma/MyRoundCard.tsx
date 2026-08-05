@@ -37,7 +37,7 @@ export function MyRoundCard({
     <SurfaceCard title={<RoundCardTitle />} appear={0}>
       <PagesRow pages={chunk.pages} />
       <RoundActions
-        key={`${khatma.id}:${chunk.round}`}
+        key={`${khatma.id}:${chunk.round}:${chunk.pages.join(',')}`}
         khatmaId={khatma.id}
         memberId={memberId}
         chunk={chunk}

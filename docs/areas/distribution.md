@@ -41,7 +41,8 @@ Hard rules:
 - Same local date blocks a second normal distribution.
 - Redistribution recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;
-  preserved Surah and Juz pages stay held.
+  preserved Surah and Juz pages stay held. The reshuffle stays in the current
+  round, does not increment `roundCount`, and cannot roll over into a new khatma.
 - Chunk never crosses khatmas. Rollover can leave N and N+1 active.
 - Marking a round done atomically clears that member's warning streak across
   every active khatma in the series, so a warning disappears as soon as the

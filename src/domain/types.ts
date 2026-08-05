@@ -85,7 +85,8 @@ export type PageScope =
  * 2. `remainingPages` is always ascending; distribution shifts from the front;
  *    released pages merge back in sorted position (so they re-serve first).
  * 3. `lastDistributionDate === today` blocks a new round, except an explicit
- *    page redistribution that first recalls the prior round's loose pages.
+ *    page redistribution that recalls and reshuffles the current round's loose
+ *    pages without advancing `roundCount`.
  */
 export interface Khatma {
   id: string;
@@ -140,7 +141,7 @@ export interface RoundChunk {
   pages: number[];
   /** The subset of `pages` assigned by loose-page capacity. */
   loosePages: number[];
-  /** Loose pages recalled by a later redistribution, retained as audit history. */
+  /** Loose pages recalled by a redistribution, retained as audit history. */
   redistributedPages: number[];
   /**
    * Set when the member missed the round: the pages were returned to the pool
@@ -158,7 +159,10 @@ export interface RoundChunk {
  */
 export interface Assignment {
   memberId: string;
-  /** Distribution history, append-only, one entry per round the member was served. */
+  /**
+   * Append-only distribution history. A redistribution may append a replacement
+   * chunk in the same round after marking the recalled chunk released.
+   */
   rounds: RoundChunk[];
   /** `round` -> completedAt epoch ms. A present key means that round is done. */
   doneByRound: Record<number, number>;

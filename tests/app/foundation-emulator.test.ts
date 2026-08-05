@@ -229,6 +229,46 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      const redistribution = await runDistribution({
+        khatmaIds: [khatmaId],
+        members: [
+          {
+            id: personId,
+            capacity: { pages: 2, surahs: 0, juz: 0 },
+            completedPages: [],
+            enabled: true,
+          },
+        ],
+        today: '2099-06-14',
+        redistributePages: true,
+        rolloverSeed: {
+          seriesId: `emulator-series-${suffix}`,
+          seriesName: 'Emulator series',
+          seriesNumber: 2,
+          totalPages: 2,
+          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          memberIds: [personId],
+          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          duaReciterId: personId,
+          pool: [1, 2],
+        },
+      });
+      expect(redistribution).toEqual({ completedKhatmaIds: [], chunkCount: 1 });
+
+      await vi.waitFor(
+        () => {
+          const state = adminClient.store.getState();
+          expect(selectKhatmaById(state, khatmaId!)?.roundCount).toBe(1);
+          expect(selectAssignmentByMemberId(state, khatmaId!, personId!)?.rounds).toEqual(
+            [
+              expect.objectContaining({ round: 1, pages: [], released: true }),
+              expect.objectContaining({ round: 1, pages: [1, 2] }),
+            ],
+          );
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
       await disableSelfAndReleasePages(personId);
       await vi.waitFor(
         () => {
@@ -241,7 +281,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             ).toEqual([1, 2]);
             expect(
               selectAssignmentByMemberId(client.store.getState(), khatmaId!, personId!)
-                ?.rounds[0],
+                ?.rounds[1],
             ).toMatchObject({ round: 1, pages: [1, 2], released: true });
           }
         },
@@ -279,6 +319,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             selectAssignmentByMemberId(adminClient.store.getState(), khatmaId!, personId!)
               ?.rounds,
           ).toEqual([
+            expect.objectContaining({ round: 1, released: true }),
             expect.objectContaining({ round: 1, released: true }),
             expect.objectContaining({ round: 2, pages: [1, 2] }),
           ]);

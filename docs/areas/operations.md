@@ -17,6 +17,14 @@ Bundle-sensitive change: `npm run check:bundle-budgets`.
 Firestore transaction/rule change: run domain tests, data callers, then the opt-in
 emulator smoke with Firestore emulator running. Record if not run.
 
+`npm run seed` writes only to the local Firestore emulator and skips roster or
+khatma collections that already contain data. Its default dataset contains two
+active full-Quran series generated through the real distribution planner: one
+around halfway with current/older completions plus an older warned pending
+assignment, and one settled at the point where its next distribution rolls over.
+Use `npm run seed -- --dry-run` to build and summarize both scenarios without
+reading or writing emulator data.
+
 Feedback schema: `content/feedback/messages/{feedbackId}` is append-only at
 submission time. Each document stores `memberId`, `memberName`, `message`,
 `isRead`, and numeric `createdAt`. Create rules require unread 10–500-character

@@ -12,6 +12,7 @@ import {
   type DocumentReference,
   type Unsubscribe,
 } from 'firebase/firestore';
+import { latestChunkForRound } from '@/domain/progress';
 import type { Assignment } from '@/domain/types';
 import { db } from './firebase';
 
@@ -97,7 +98,7 @@ export function markRoundDone(
     const data = snap.data() as Assignment;
     if (data.doneByRound[round] !== undefined) return; // already done — idempotent
 
-    const chunk = data.rounds.find((c) => c.round === round);
+    const chunk = latestChunkForRound(data, round);
     if (!chunk) throw new Error(`markRoundDone: no round ${round} for ${memberId}`);
     if (chunk.released === true) throw new ReleasedChunkError();
 
@@ -144,7 +145,7 @@ export function clearRoundDone(
     const data = snap.data() as Assignment;
     if (data.doneByRound[round] === undefined) return; // not done — nothing to clear
 
-    const pages = data.rounds.find((c) => c.round === round)?.pages ?? [];
+    const pages = latestChunkForRound(data, round)?.pages ?? [];
     tx.update(assignmentRef, { [`doneByRound.${round}`]: deleteField() });
     if (pages.length > 0) {
       tx.update(personRef, { completedPages: arrayRemove(...pages) });

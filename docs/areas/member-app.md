@@ -24,7 +24,8 @@ Hard rules:
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then
   releases those historical listeners when the route unmounts.
-- Reader position survives unrelated live snapshots.
+- Reader position survives unrelated live snapshots, but resets to the first
+  page when a new round or same-round redistribution changes the assigned pages.
 - Released chunk cannot be marked done.
 - Completion interrupt hides normal nav until acknowledged.
 - Other members' warning levels are never shown.

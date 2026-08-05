@@ -52,6 +52,11 @@ export interface DistributionInput {
   newKhatmaSeriesNumber: number;
   /** page -> surah/juz lookups; required only when a member uses surah/juz units. */
   unitOfPage?: PageUnitMaps;
+  /**
+   * A redistribution reshuffles recalled loose pages inside the current round;
+   * it neither advances the round counter nor rolls over to a new khatma.
+   */
+  mode?: 'new-round' | 'redistribution';
 }
 
 /** A chunk to append to `khatmas/{khatmaId}/assignments/{memberId}`. */
@@ -293,7 +298,15 @@ function currentStreak(
  *    chunk therefore blocks completion until it is done or the admin releases it.
  */
 export function planDistribution(input: DistributionInput): DistributionPlan {
-  const { khatmas, members, newKhatmaPool, newKhatmaSeriesNumber, unitOfPage } = input;
+  const {
+    khatmas,
+    members,
+    newKhatmaPool,
+    newKhatmaSeriesNumber,
+    unitOfPage,
+    mode = 'new-round',
+  } = input;
+  const advancesRound = mode === 'new-round';
 
   // Working pool state per khatma, in series order.
   const pools = khatmas.map((k) => ({
@@ -339,7 +352,7 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
     const waiting = [...tier];
     while (waiting.length > 0) {
       const source = pools.find((p) => p.pages.length > 0);
-      if (!source) rolloverPool ??= [...newKhatmaPool];
+      if (!source) rolloverPool ??= advancesRound ? [...newKhatmaPool] : [];
       const member = pickFrontBlockMatch(waiting, source?.pages ?? rolloverPool ?? []);
       waiting.splice(waiting.indexOf(member), 1);
 
@@ -351,7 +364,7 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
         parts = takeChunkParts(source.pages, member.capacity, unitOfPage);
         if (parts.pages.length > 0) source.served = true;
         khatmaId = source.id;
-        round = (khatma?.roundCount ?? 0) + 1;
+        round = Math.max(1, (khatma?.roundCount ?? 0) + (advancesRound ? 1 : 0));
       } else {
         // Rollover: every existing pool is empty — mint khatma N+1.
         parts = takeChunkParts(rolloverPool!, member.capacity, unitOfPage);
@@ -395,7 +408,9 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
       return {
         khatmaId: p.id,
         remainingPages: p.pages,
-        roundCount: (k?.roundCount ?? 0) + (p.served ? 1 : 0),
+        roundCount: p.served
+          ? Math.max(1, (k?.roundCount ?? 0) + (advancesRound ? 1 : 0))
+          : (k?.roundCount ?? 0),
       };
     }),
     ...(rolloverServed && rolloverPool

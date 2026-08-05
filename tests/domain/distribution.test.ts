@@ -194,6 +194,36 @@ describe('planDistribution — serving', () => {
     expect(plan.rollover).toBeUndefined();
   });
 
+  it('redistributes inside the current round without rollover', () => {
+    const plan = planDistribution(
+      input({
+        khatmas: [
+          khatma('k1', [1, 2], 4, [
+            assignment('a', [chunk(4, [3, 4], true)]),
+            assignment('b', [chunk(4, [5, 6], true)]),
+          ]),
+        ],
+        members: [member('a', 2), member('b', 2)],
+        newKhatmaPool: [1, 2, 3, 4],
+        mode: 'redistribution',
+      }),
+    );
+
+    expect(plan.chunks).toEqual([
+      {
+        khatmaId: 'k1',
+        memberId: 'a',
+        round: 4,
+        pages: [1, 2],
+        loosePages: [1, 2],
+      },
+    ]);
+    expect(plan.khatmaUpdates).toEqual([
+      { khatmaId: 'k1', remainingPages: [], roundCount: 4 },
+    ]);
+    expect(plan.rollover).toBeUndefined();
+  });
+
   it('gives a reader their selected Juz number', () => {
     const plan = planDistribution(
       input({

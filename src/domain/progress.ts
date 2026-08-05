@@ -142,6 +142,18 @@ export function isRoundDone(a: Assignment, round: number): boolean {
   return a.doneByRound?.[round] !== undefined;
 }
 
+/** Latest chunk recorded for a round (redistribution can replace it in-place). */
+export function latestChunkForRound(
+  assignment: Assignment,
+  round: number,
+): RoundChunk | undefined {
+  for (let i = assignment.rounds.length - 1; i >= 0; i--) {
+    const chunk = assignment.rounds[i];
+    if (chunk?.round === round) return chunk;
+  }
+  return undefined;
+}
+
 /**
  * The member's pending chunk — their current pages to read. By invariant only
  * the last non-empty chunk can be pending; released or done means nothing is
@@ -231,30 +243,25 @@ export interface RoundReaderRecords {
 }
 
 /**
- * Admin round status: completed records belong only to the current khatma
- * round, while pending records retain older held chunks so lagging readers stay
- * visible with their actual round. Released chunks returned to the pool and
- * are excluded from both lists.
+ * Admin reading status: classify every member by their latest readable chunk,
+ * regardless of its round. This keeps a lagging reader visible after they
+ * finish an older assignment without also listing their earlier completed
+ * history. Released chunks returned to the pool are excluded from both lists.
  */
 export function roundReaderRecords(
   assignments: readonly Assignment[],
-  currentRound: number,
 ): RoundReaderRecords {
   const records: RoundReaderRecords = { completed: [], pending: [] };
   for (const assignment of assignments) {
-    for (const chunk of assignment.rounds) {
-      if (chunk.pages.length === 0 || chunk.released === true) continue;
-      const record: RoundReaderRecord = {
-        memberId: assignment.memberId,
-        round: chunk.round,
-        pages: chunk.pages,
-      };
-      if (isRoundDone(assignment, chunk.round)) {
-        if (chunk.round === currentRound) records.completed.push(record);
-      } else {
-        records.pending.push(record);
-      }
-    }
+    const chunk = latestReadableChunk(assignment);
+    if (!chunk) continue;
+    const record: RoundReaderRecord = {
+      memberId: assignment.memberId,
+      round: chunk.round,
+      pages: chunk.pages,
+    };
+    if (isRoundDone(assignment, chunk.round)) records.completed.push(record);
+    else records.pending.push(record);
   }
   const newestRoundFirst = (a: RoundReaderRecord, b: RoundReaderRecord): number =>
     b.round - a.round;
