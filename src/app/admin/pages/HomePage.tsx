@@ -552,6 +552,7 @@ function distributionMembers(
       capacity: requiredCapacity(khatma, person.id),
       completedPages: person.completedPages,
       enabled: person.enabled,
+      holdPages: person.holdPages === true,
     }));
 }
 

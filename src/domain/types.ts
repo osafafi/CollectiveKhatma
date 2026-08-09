@@ -36,6 +36,12 @@ export interface Person {
    * being removed from the roster. Defaults to `true`.
    */
   enabled: boolean;
+  /**
+   * When true, unread assignments may accumulate across distribution rounds.
+   * The warning streak still advances normally. Completing the accumulated
+   * pages switches this back off automatically.
+   */
+  holdPages?: boolean;
   createdAt: number;
 }
 
@@ -154,8 +160,9 @@ export interface RoundChunk {
  * One member's assignment history within a khatma.
  * Firestore: `khatmas/{khatmaId}/assignments/{memberId}`
  *
- * Invariant: only the LAST chunk with `pages.length > 0` may be pending
- * (neither done nor released) — distribution settles every earlier chunk.
+ * Usually only the last non-empty chunk is pending. A member with
+ * `Person.holdPages === true` may keep several pending chunks until they mark
+ * the accumulated pages done together.
  */
 export interface Assignment {
   memberId: string;

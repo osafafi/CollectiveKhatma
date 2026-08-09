@@ -123,6 +123,29 @@ describe('member personal and settings routes', () => {
     expect(within(completion).getByText(topReaderInsight(50))).toBeVisible();
   });
 
+  it('lets the member enable page holding and clearly explains accumulation', async () => {
+    const updatePerson = vi
+      .fn<WriteOperations['updatePerson']>()
+      .mockResolvedValue(undefined);
+    const harness = renderMember({
+      route: '/personal',
+      data: { roster: [amina] },
+      operations: { ...writeOperations, updatePerson },
+    });
+    const holdSwitch = screen.getByRole('switch', {
+      name: strings.personal.holdPages,
+    });
+
+    expect(holdSwitch).not.toBeChecked();
+    expect(screen.queryByText(strings.personal.holdPagesHint)).toBeNull();
+    await harness.user.click(holdSwitch);
+    expect(updatePerson).toHaveBeenCalledWith(amina.id, { holdPages: true });
+
+    harness.subscriptions.roster.emit([{ ...amina, holdPages: true }]);
+    expect(holdSwitch).toBeChecked();
+    expect(screen.getByText(strings.personal.holdPagesHint)).toBeVisible();
+  });
+
   it('derives history metadata and subscribes to completed khatmas only on the personal route', async () => {
     const active = makeKhatma('active');
     const firstCompleted = makeKhatma('completed-first', {
@@ -254,6 +277,28 @@ describe('member personal and settings routes', () => {
         name: `${strings.reader.readMyPages}: ${firstTitle}`,
       }),
     ).toBeNull();
+  });
+
+  it('shows held rounds as one accumulated pending assignment', () => {
+    const held = makeKhatma('held');
+    renderMember({
+      route: '/personal',
+      data: {
+        roster: [{ ...amina, holdPages: true }],
+        khatmas: [held],
+        assignments: {
+          [held.id]: [assignment([round(1, [1, 2]), round(2, [3, 4])])],
+        },
+      },
+    });
+
+    const link = screen.getByRole('link', {
+      name: `${strings.reader.readMyPages}: ختمة held ${toWesternDigits(1)}`,
+    });
+    expect(
+      within(link).getByText(`${toWesternDigits(4)} ${strings.member.pagesWord}`),
+    ).toBeVisible();
+    expect(within(link).getByText(/1، 2، 3، 4/)).toBeVisible();
   });
 
   it('restores, live-applies, and persists the five-level reading scale', async () => {

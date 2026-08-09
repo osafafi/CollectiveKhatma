@@ -1,4 +1,11 @@
-import { Box, IconButton, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  FormControlLabel,
+  IconButton,
+  Stack,
+  Switch,
+  Typography,
+} from '@mui/material';
 import PersonRemoveAlt1Icon from '@mui/icons-material/PersonRemoveAlt1';
 import { useWriteOperation } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
@@ -170,6 +177,28 @@ function KhatmaMemberRow({
           >
             {name}
           </Typography>
+          {person ? (
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  color="warning"
+                  checked={person.holdPages === true}
+                  disabled={updatePerson.isPending}
+                  onChange={(_, checked) => {
+                    void updatePerson.execute(person.id, { holdPages: checked });
+                  }}
+                  slotProps={{
+                    input: {
+                      'aria-label': `${strings.personal.holdPages}: ${person.name}`,
+                    },
+                  }}
+                />
+              }
+              label={strings.personal.holdPages}
+              sx={{ m: 0 }}
+            />
+          ) : null}
           {person?.enabled === false ? (
             <AppButton
               variant="outlined"

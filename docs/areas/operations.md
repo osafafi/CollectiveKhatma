@@ -32,6 +32,10 @@ messages; updates may change only `isRead`; deletes remove one message document.
 The admin retains its listener on demand, so member clients do not subscribe to
 the inbox.
 
+Roster schema: `roster/{memberId}.holdPages` is an optional boolean for backward
+compatibility with existing documents. New members start with `false`; member
+and admin controls may update it, and completing assigned pages resets it.
+
 Hard rules:
 
 - Only `src/data` imports Firebase.

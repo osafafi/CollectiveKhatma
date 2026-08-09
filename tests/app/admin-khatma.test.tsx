@@ -244,6 +244,23 @@ describe('admin Khatma detail', () => {
     expect(operations.markRoundDone).toHaveBeenCalledWith('k', 'p1', 1, ['k']);
   });
 
+  it('lets the admin toggle page holding for a khatma member', async () => {
+    const { user, operations } = renderDetail('k', {
+      roster: [amina],
+      khatmas: [makeKhatma('k')],
+      assignments: { k: [makeAssignment(amina.id)] },
+    });
+    const holdSwitch = screen.getByRole('switch', {
+      name: `${strings.personal.holdPages}: ${amina.name}`,
+    });
+
+    expect(holdSwitch).not.toBeChecked();
+    await user.click(holdSwitch);
+    expect(operations.updatePerson).toHaveBeenCalledWith(amina.id, {
+      holdPages: true,
+    });
+  });
+
   it('clears a member warning across the series active khatmas', async () => {
     const { user, operations } = renderDetail('k', {
       roster: [amina],

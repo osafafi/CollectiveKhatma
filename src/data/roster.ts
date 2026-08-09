@@ -68,6 +68,7 @@ export async function addPerson(
     completedPages: [],
     pagesPerDay: input.pagesPerDay ?? DEFAULT_PAGES_PER_DAY,
     enabled: true,
+    holdPages: false,
     createdAt: Date.now(),
   });
   return ref.id;
@@ -80,7 +81,9 @@ export async function addPerson(
  */
 export async function updatePerson(
   id: string,
-  changes: Partial<Pick<Person, 'name' | 'note' | 'emoji' | 'pagesPerDay' | 'enabled'>>,
+  changes: Partial<
+    Pick<Person, 'name' | 'note' | 'emoji' | 'pagesPerDay' | 'enabled' | 'holdPages'>
+  >,
 ): Promise<void> {
   const name = changes.name === undefined ? undefined : normalizeName(changes.name);
   if (name !== undefined) await assertNameAvailable(name, id);

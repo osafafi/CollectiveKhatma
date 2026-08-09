@@ -29,6 +29,9 @@ Hard rules:
   struck-through names and an activation action. Disabled roster people outside
   the khatma are not listed. The add-member form follows all participant rows and
   is visually separated from them.
+- Every active-khatma participant row exposes the member's global
+  `احتفظ بصفحاتي` switch, using the same roster preference as the member's
+  personal page.
 - Completed khatmas stay for series history.
 - The admin Khatmas list shows all active rounds. For a series with no active
   round, it shows only the latest completed round as the history entry point.

@@ -26,6 +26,8 @@ export interface DistributionMember {
   completedPages: readonly number[];
   /** Disabled members are skipped entirely (no chunk, streak frozen). */
   enabled: boolean;
+  /** Pending chunks keep warning normally but do not block the next assignment. */
+  holdPages?: boolean;
 }
 
 /** One active khatma of the series, as read inside the transaction. */
@@ -144,7 +146,24 @@ function takeChunkParts(
  * instead of scanning past previously completed pages and creating holes.
  */
 function takeFrontPages(pool: number[], taken: number[], count: number): void {
-  taken.push(...pool.splice(0, Math.min(count, pool.length)));
+  let weightedPages = 0;
+  while (pool.length > 0 && weightedPages < count) {
+    const page = pool.shift()!;
+    taken.push(page);
+    if (page > 2) weightedPages++;
+  }
+}
+
+/** The front loose block, counting Quran pages 1–2 as free pages. */
+function frontLooseBlock(pool: readonly number[], capacity: number): number[] {
+  const block: number[] = [];
+  let weightedPages = 0;
+  for (const page of pool) {
+    if (weightedPages >= capacity) break;
+    block.push(page);
+    if (page > 2) weightedPages++;
+  }
+  return block;
 }
 
 /** Pull every in-pool page of the selected unit id (`0` = none) into `taken`. */
@@ -179,16 +198,17 @@ function frontBlockScore(
   member: DistributionMember,
   pool: readonly number[],
 ): FrontBlockScore | undefined {
-  const count = Math.min(Math.max(0, Math.floor(member.capacity.pages)), pool.length);
-  if (count === 0) return undefined;
+  const count = Math.max(0, Math.floor(member.capacity.pages));
+  const block = frontLooseBlock(pool, count);
+  if (block.length === 0) return undefined;
   const completed = new Set(member.completedPages);
   let gaps = 0;
   let overlap = 0;
-  for (let i = 0; i < count; i++) {
-    if (completed.has(pool[i]!)) overlap++;
-    if (i > 0 && pool[i]! !== pool[i - 1]! + 1) gaps++;
+  for (let i = 0; i < block.length; i++) {
+    if (completed.has(block[i]!)) overlap++;
+    if (i > 0 && block[i]! !== block[i - 1]! + 1) gaps++;
   }
-  return { gaps, completed: overlap, total: count };
+  return { gaps, completed: overlap, total: block.length };
 }
 
 /**
@@ -328,7 +348,7 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
       continue;
     }
     // Pending → keep the pages with the member (no release); escalate the flag.
-    blocked.add(member.id);
+    if (member.holdPages !== true) blocked.add(member.id);
     if (member.enabled) streaks[member.id] = currentStreak(khatmas, member.id) + 1;
   }
 
@@ -422,8 +442,8 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
 
 /** The effect of manually returning a member's pending chunk to the pool. */
 export interface ChunkRelease {
-  /** The khatma-local round of the released chunk (to mark `released: true`). */
-  round: number;
+  /** Khatma-local rounds released together (to mark `released: true`). */
+  rounds: number[];
   /** `remainingPages` after merging the released pages back in, ascending. */
   remainingPages: number[];
   /** The member's reset streak — 0, since they no longer hold the chunk. */
@@ -432,9 +452,8 @@ export interface ChunkRelease {
 
 /**
  * Compute the admin-triggered return of a member's unread pages to the pool
- * (REQUIREMENTS §5). Finds the member's pending chunk (the last non-empty,
- * non-released, not-done one — the invariant guarantees at most one), merges its
- * pages back into `remainingPages` (sorted), and resets the streak to 0. Returns
+ * (REQUIREMENTS §5). Finds every pending chunk, merges its pages back into
+ * `remainingPages` (sorted), and resets the streak to 0. Returns
  * `undefined` when there is nothing to release. Pure — the data layer applies
  * the result (mark the chunk `released`, write the pool + streak) in one write.
  */
@@ -442,17 +461,21 @@ export function releaseChunk(
   assignment: Assignment,
   remainingPages: number[],
 ): ChunkRelease | undefined {
-  for (let i = assignment.rounds.length - 1; i >= 0; i--) {
-    const chunk = assignment.rounds[i]!;
-    if (chunk.pages.length === 0 || chunk.released === true) continue;
-    if (assignment.doneByRound[chunk.round] !== undefined) continue;
-    return {
-      round: chunk.round,
-      remainingPages: mergeSorted(remainingPages, chunk.pages),
-      missedStreak: 0,
-    };
-  }
-  return undefined;
+  const pending = assignment.rounds.filter(
+    (chunk) =>
+      chunk.pages.length > 0 &&
+      chunk.released !== true &&
+      assignment.doneByRound[chunk.round] === undefined,
+  );
+  if (pending.length === 0) return undefined;
+  return {
+    rounds: [...new Set(pending.map((chunk) => chunk.round))],
+    remainingPages: mergeSorted(
+      remainingPages,
+      pending.flatMap((chunk) => chunk.pages),
+    ),
+    missedStreak: 0,
+  };
 }
 
 /** Result of recalling only the loose-page portion of one pending chunk. */
@@ -527,18 +550,21 @@ export function recallLoosePagesFromAssignment(
   assignment: Assignment,
   remainingPages: number[],
 ): LoosePageRecall | undefined {
-  for (let i = assignment.rounds.length - 1; i >= 0; i--) {
-    const chunk = assignment.rounds[i]!;
+  const rounds = [...assignment.rounds];
+  let nextRemainingPages = [...remainingPages];
+  let changed = false;
+
+  for (let i = 0; i < rounds.length; i++) {
+    const chunk = rounds[i]!;
     if (chunk.pages.length === 0 || chunk.released === true) continue;
     if (assignment.doneByRound[chunk.round] !== undefined) continue;
 
     const recalled = new Set(
       chunk.loosePages.filter((page) => chunk.pages.includes(page)),
     );
-    if (recalled.size === 0) return undefined;
+    if (recalled.size === 0) continue;
 
     const pages = chunk.pages.filter((page) => !recalled.has(page));
-    const rounds = [...assignment.rounds];
     rounds[i] = {
       ...chunk,
       pages,
@@ -548,14 +574,17 @@ export function recallLoosePagesFromAssignment(
       ),
       ...(pages.length === 0 ? { released: true as const } : {}),
     };
-    return {
-      assignment: {
-        ...assignment,
-        rounds,
-        missedStreak: pages.length === 0 ? 0 : assignment.missedStreak,
-      },
-      remainingPages: mergeSorted(remainingPages, [...recalled]),
-    };
+    nextRemainingPages = mergeSorted(nextRemainingPages, [...recalled]);
+    changed = true;
   }
-  return undefined;
+
+  if (!changed) return undefined;
+  const nextAssignment = { ...assignment, rounds };
+  return {
+    assignment: {
+      ...nextAssignment,
+      missedStreak: hasPendingChunk(nextAssignment) ? assignment.missedStreak : 0,
+    },
+    remainingPages: nextRemainingPages,
+  };
 }

@@ -41,6 +41,10 @@ Hard rules:
   artwork, the numbered series title, assigned page count/numbers, and opens
   that khatma's assigned reader directly; an empty message replaces the list
   when every current chunk is done.
+- The personal page has a standalone gradient `احتفظ بصفحاتي` switch card.
+  While enabled it shows an orange accumulation warning, and unread rounds are
+  combined into one pending card and one assigned-reader page set. Finishing
+  that accumulated set switches the preference off automatically.
 - The personal page's Quran summary mirrors the reference donut layout and
   keeps its three gradient statistic tiles inside the same completion card. It
   derives every value from existing snapshots: unique lifetime Quran pages and

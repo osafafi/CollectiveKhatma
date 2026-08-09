@@ -76,6 +76,21 @@ describe('per-assignment progress', () => {
     expect(hasPendingChunk(flagged)).toBe(false);
   });
 
+  it('combines accumulated pending rounds into one readable page set', () => {
+    const holding: Assignment = {
+      memberId: 'holding',
+      rounds: [chunk(1, '2026-07-08', [3, 4]), chunk(2, '2026-07-09', [5, 6])],
+      doneByRound: {},
+      missedStreak: 1,
+    };
+
+    expect(currentChunk(holding)).toMatchObject({
+      round: 2,
+      pages: [3, 4, 5, 6],
+      loosePages: [3, 4, 5, 6],
+    });
+  });
+
   it('counts completed pages, never crediting released chunks', () => {
     expect(donePageCount(partly)).toBe(2); // round 1 only
     expect(donePageCount(finished)).toBe(2);

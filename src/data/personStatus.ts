@@ -38,7 +38,9 @@ export async function disableSelfAndReleasePages(memberId: string): Promise<void
       const release = releaseChunk(assignment, khatma.remainingPages);
       if (!release) continue;
       const rounds = assignment.rounds.map((chunk) =>
-        chunk.round === release.round ? { ...chunk, released: true as const } : chunk,
+        release.rounds.includes(chunk.round)
+          ? { ...chunk, released: true as const }
+          : chunk,
       );
       tx.update(target.khatmaRef, { remainingPages: release.remainingPages });
       tx.set(target.assignmentRef, {

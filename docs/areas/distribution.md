@@ -18,9 +18,14 @@ Tests: domain `distribution`, `assignment`, `rotation`, `progress`; `admin-home`
 
 Hard rules:
 
-- Pending pages stay with the reader and block a new chunk until the admin
-  releases them or the member pauses themselves. An admin-only pause does not
-  release held pages.
+- Pending pages stay with the reader and normally block a new chunk until the
+  admin releases them or the member pauses themselves. A reader with
+  `Person.holdPages` enabled keeps receiving one new chunk per distribution;
+  every unread round remains assigned and their warning streak still advances.
+  An admin-only pause does not release held pages.
+- Quran pages 1 and 2 are free loose pages: they remain assigned from the front
+  of the pool but do not consume loose-page capacity. A capacity of two at the
+  beginning of the Quran therefore receives pages 1–4.
 - A member self-pause atomically marks them disabled, releases every pending
   chunk they hold across active khatmas, resets those warning streaks, and merges
   the pages into each sorted pool.
@@ -44,9 +49,11 @@ Hard rules:
   preserved Surah and Juz pages stay held. The reshuffle stays in the current
   round, does not increment `roundCount`, and cannot roll over into a new khatma.
 - Chunk never crosses khatmas. Rollover can leave N and N+1 active.
-- Marking a round done atomically clears that member's warning streak across
-  every active khatma in the series, so a warning disappears as soon as the
-  member finally completes their held pages.
+- Marking accumulated pages done stamps every pending round in that assignment,
+  clears the member's warning streak across every active khatma in the series,
+  and switches `Person.holdPages` off. Manual release, redistribution, and a
+  member self-pause recall every accumulated pending loose chunk rather than
+  leaving older held pages behind.
 - Member warning level is private from other members.
 
 Update this doc when planner, transaction, round state, or warning behavior changes.

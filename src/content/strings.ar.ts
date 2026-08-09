@@ -90,6 +90,10 @@ export const strings = {
   personal: {
     heading: 'صفحتي الشخصية',
     myKhatmas: 'ختماتي',
+    holdPages: 'احتفظ بصفحاتي',
+    holdPagesHint:
+      'ستُضاف صفحات كل جولة إلى صفحاتك السابقة. لا تؤخّر إتمامها طويلًا حتى لا تتراكم عليك كمية كبيرة.',
+    holdPagesSaveError: 'تعذّر تحديث خيار الاحتفاظ بالصفحات، حاول مرة أخرى.',
     pendingAssignmentsHeading: 'صفحات بانتظار القراءة',
     assignedPages: 'الصفحات المعيّنة',
     noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',

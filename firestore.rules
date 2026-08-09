@@ -55,7 +55,7 @@ service cloud.firestore {
     function isValidPerson(d) {
       return d.keys().hasOnly([
           'name', 'note', 'emoji', 'completedPages', 'pagesPerDay',
-          'enabled', 'createdAt'
+          'enabled', 'holdPages', 'createdAt'
         ])
         && d.name is string
         && d.name.size() > 0
@@ -64,6 +64,7 @@ service cloud.firestore {
         && d.createdAt is number
         && d.pagesPerDay is number
         && d.enabled is bool
+        && (!('holdPages' in d) || d.holdPages is bool)
         && (!('emoji' in d) || (d.emoji is string && d.emoji.size() > 0 && d.emoji.size() <= 16));
     }
 

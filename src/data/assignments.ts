@@ -12,7 +12,7 @@ import {
   type DocumentReference,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { latestChunkForRound } from '@/domain/progress';
+import { latestChunkForRound, pendingChunks } from '@/domain/progress';
 import type { Assignment } from '@/domain/types';
 import { db } from './firebase';
 
@@ -69,9 +69,10 @@ export class ReleasedChunkError extends Error {
 /**
  * One-tap "I finished my pages" (REQUIREMENTS §6). Atomically, in one
  * transaction:
- *  - stamps round `round` done on the member's assignment, and
+ *  - stamps every pending round done together (one round in the normal case),
  *  - resets the member's warning on every supplied active khatma in the series,
- *  - unions that round's pages into the person's lifetime `completedPages`
+ *  - unions those pages into the person's lifetime `completedPages`,
+ *  - switches off the person's hold-pages preference,
  *    (`roster/{memberId}`), which drives the personal insight.
  *
  * Idempotent: re-tapping an already-done round is a no-op. Throws
@@ -102,10 +103,13 @@ export function markRoundDone(
     if (!chunk) throw new Error(`markRoundDone: no round ${round} for ${memberId}`);
     if (chunk.released === true) throw new ReleasedChunkError();
 
-    tx.update(assignmentRef, {
-      [`doneByRound.${round}`]: Date.now(),
-      missedStreak: 0,
-    });
+    const pending = pendingChunks(data);
+    const completedAt = Date.now();
+    const assignmentUpdates: Record<string, unknown> = { missedStreak: 0 };
+    for (const pendingChunk of pending) {
+      assignmentUpdates[`doneByRound.${pendingChunk.round}`] = completedAt;
+    }
+    tx.update(assignmentRef, assignmentUpdates);
     assignmentSnaps.forEach((warningSnap, index) => {
       if (
         warningKhatmaIds[index] !== khatmaId &&
@@ -115,9 +119,15 @@ export function markRoundDone(
         tx.update(assignmentRefs[index]!, { missedStreak: 0 });
       }
     });
-    if (chunk.pages.length > 0) {
-      tx.update(personRef, { completedPages: arrayUnion(...chunk.pages) });
-    }
+    const completedPages = [
+      ...new Set(pending.flatMap((pendingChunk) => pendingChunk.pages)),
+    ];
+    tx.update(personRef, {
+      holdPages: false,
+      ...(completedPages.length > 0
+        ? { completedPages: arrayUnion(...completedPages) }
+        : {}),
+    });
   });
 }
 

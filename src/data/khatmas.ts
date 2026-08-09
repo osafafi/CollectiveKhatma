@@ -193,7 +193,7 @@ export async function releaseMemberChunk(
     const release = releaseChunk(assignment, khatma.remainingPages);
     if (!release) return;
     const rounds = assignment.rounds.map((c) =>
-      c.round === release.round ? { ...c, released: true as const } : c,
+      release.rounds.includes(c.round) ? { ...c, released: true as const } : c,
     );
     tx.update(kRef, { remainingPages: release.remainingPages });
     tx.set(aRef, { ...assignment, rounds, missedStreak: release.missedStreak });

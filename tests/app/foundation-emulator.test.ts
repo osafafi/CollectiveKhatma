@@ -333,6 +333,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         .collection('assignments')
         .doc(personId)
         .update({ missedStreak: 2 });
+      await updatePerson(personId, { holdPages: true });
       await markRoundDone(khatmaId, personId, 2);
       await vi.waitFor(
         () => {
@@ -347,6 +348,9 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             expect(
               selectPersonById(client.store.getState(), personId!)?.completedPages,
             ).toEqual([1, 2]);
+            expect(selectPersonById(client.store.getState(), personId!)?.holdPages).toBe(
+              false,
+            );
           }
         },
         { timeout: 10_000, interval: 50 },

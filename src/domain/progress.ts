@@ -154,18 +154,33 @@ export function latestChunkForRound(
   return undefined;
 }
 
+/** Every unread, unreleased chunk, oldest first. Holding members may have several. */
+export function pendingChunks(a: Assignment): RoundChunk[] {
+  return a.rounds.filter(
+    (chunk) =>
+      chunk.pages.length > 0 && chunk.released !== true && !isRoundDone(a, chunk.round),
+  );
+}
+
 /**
- * The member's pending chunk — their current pages to read. By invariant only
- * the last non-empty chunk can be pending; released or done means nothing is
- * pending until the next distribution.
+ * The member's current pages to read. Several held rounds are represented as
+ * one synthetic chunk whose round/date come from the newest pending round.
  */
 export function currentChunk(a: Assignment): RoundChunk | undefined {
-  for (let i = a.rounds.length - 1; i >= 0; i--) {
-    const chunk = a.rounds[i];
-    if (!chunk || chunk.pages.length === 0) continue;
-    return chunk.released !== true && !isRoundDone(a, chunk.round) ? chunk : undefined;
-  }
-  return undefined;
+  const pending = pendingChunks(a);
+  const latest = pending[pending.length - 1];
+  if (!latest || pending.length === 1) return latest;
+
+  const sortedUnique = (pages: readonly number[]): number[] =>
+    [...new Set(pages)].sort((left, right) => left - right);
+  return {
+    ...latest,
+    pages: sortedUnique(pending.flatMap((chunk) => chunk.pages)),
+    loosePages: sortedUnique(pending.flatMap((chunk) => chunk.loosePages)),
+    redistributedPages: sortedUnique(
+      pending.flatMap((chunk) => chunk.redistributedPages),
+    ),
+  };
 }
 
 /** True while the member has a chunk they haven't read yet. */
@@ -179,6 +194,8 @@ export function hasPendingChunk(a: Assignment): boolean {
  * they just finished.
  */
 export function latestReadableChunk(a: Assignment): RoundChunk | undefined {
+  const pending = currentChunk(a);
+  if (pending) return pending;
   for (let i = a.rounds.length - 1; i >= 0; i--) {
     const chunk = a.rounds[i];
     if (chunk && chunk.pages.length > 0 && chunk.released !== true) return chunk;
