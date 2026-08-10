@@ -349,7 +349,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
               selectPersonById(client.store.getState(), personId!)?.completedPages,
             ).toEqual([1, 2]);
             expect(selectPersonById(client.store.getState(), personId!)?.holdPages).toBe(
-              false,
+              true,
             );
           }
         },
@@ -373,7 +373,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             khatmaId!,
             personId!,
           );
-          expect(restored?.rounds).toHaveLength(2);
+          expect(restored?.rounds).toHaveLength(3);
           expect(restored?.doneByRound[2]).toEqual(expect.any(Number));
         },
         { timeout: 10_000, interval: 50 },

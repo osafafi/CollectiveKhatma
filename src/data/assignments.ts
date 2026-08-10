@@ -71,9 +71,8 @@ export class ReleasedChunkError extends Error {
  * transaction:
  *  - stamps every pending round done together (one round in the normal case),
  *  - resets the member's warning on every supplied active khatma in the series,
- *  - unions those pages into the person's lifetime `completedPages`,
- *  - switches off the person's hold-pages preference,
- *    (`roster/{memberId}`), which drives the personal insight.
+ *  - unions those pages into the person's lifetime `completedPages` on
+ *    `roster/{memberId}`, which drives the personal insight.
  *
  * Idempotent: re-tapping an already-done round is a no-op. Throws
  * {@link ReleasedChunkError} if the chunk was released by a later distribution.
@@ -122,12 +121,9 @@ export function markRoundDone(
     const completedPages = [
       ...new Set(pending.flatMap((pendingChunk) => pendingChunk.pages)),
     ];
-    tx.update(personRef, {
-      holdPages: false,
-      ...(completedPages.length > 0
-        ? { completedPages: arrayUnion(...completedPages) }
-        : {}),
-    });
+    if (completedPages.length > 0) {
+      tx.update(personRef, { completedPages: arrayUnion(...completedPages) });
+    }
   });
 }
 

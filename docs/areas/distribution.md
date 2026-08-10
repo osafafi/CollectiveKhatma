@@ -51,9 +51,10 @@ Hard rules:
 - Chunk never crosses khatmas. Rollover can leave N and N+1 active.
 - Marking accumulated pages done stamps every pending round in that assignment,
   clears the member's warning streak across every active khatma in the series,
-  and switches `Person.holdPages` off. Manual release, redistribution, and a
-  member self-pause recall every accumulated pending loose chunk rather than
-  leaving older held pages behind.
+  and leaves `Person.holdPages` unchanged. That preference is persistent and is
+  changed only when the member or an admin toggles it manually. Manual release,
+  redistribution, and a member self-pause recall every accumulated pending loose
+  chunk rather than leaving older held pages behind.
 - Member warning level is private from other members.
 
 Update this doc when planner, transaction, round state, or warning behavior changes.
