@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { useReadingScale } from '@/app/persistence';
 import { AdminAssignmentsSubscriptions } from '@/app/admin/AdminAssignmentsSubscriptions';
+import { AdminGhostMemberCleanup } from '@/app/admin/AdminGhostMemberCleanup';
 import { AdminShell } from '@/app/admin/AdminShell';
 import { CreateKhatmaPrefillProvider } from '@/app/admin/CreateKhatmaPrefill';
 import { AdminHomePage } from '@/app/admin/pages/HomePage';
@@ -29,6 +30,7 @@ export function AdminExperience() {
   return (
     <CreateKhatmaPrefillProvider>
       <AdminAssignmentsSubscriptions />
+      <AdminGhostMemberCleanup />
       <AdminShell>
         <AdminRouteContent />
       </AdminShell>

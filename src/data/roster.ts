@@ -9,11 +9,13 @@ import {
   query,
   setDoc,
   updateDoc,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { DEFAULT_PAGES_PER_DAY, type Person } from '@/domain/types';
 import { isNameUnique, normalizeName } from '@/domain/validation';
 import { db } from './firebase';
+import { khatmasCol, removeMemberFromKhatma } from './khatmas';
 
 export const rosterCol = collection(db, 'roster');
 
@@ -102,7 +104,17 @@ export function renamePerson(id: string, name: string): Promise<void> {
   return updatePerson(id, { name });
 }
 
-/** Remove a person from the roster. */
-export function removePerson(id: string): Promise<void> {
-  return deleteDoc(doc(rosterCol, id));
+/**
+ * Remove a person from every khatma before deleting their roster identity.
+ * Keeping the roster document until every khatma cleanup succeeds means a
+ * partial failure can never leave a raw member id behind in the UI.
+ */
+export async function removePerson(id: string): Promise<void> {
+  const memberships = await getDocs(
+    query(khatmasCol, where('memberIds', 'array-contains', id)),
+  );
+  for (const membership of memberships.docs) {
+    await removeMemberFromKhatma(membership.id, id);
+  }
+  await deleteDoc(doc(rosterCol, id));
 }

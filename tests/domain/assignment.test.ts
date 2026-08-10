@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPageUnitMaps,
   fullyUnreadSurahIds,
+  removeKhatmaMember,
   resolvePageScope,
 } from '@/domain/assignment';
+import type { Assignment, Khatma } from '@/domain/types';
 
 describe('resolvePageScope', () => {
   it('full defaults to the whole 604-page mushaf', () => {
@@ -58,5 +60,64 @@ describe('fullyUnreadSurahIds', () => {
     const maps = buildPageUnitMaps({ 4: [77, 106], 5: [106, 107] }, { 1: [77, 107] });
 
     expect([...fullyUnreadSurahIds([77, 106, 107], maps.surah)]).toEqual([5]);
+  });
+});
+
+describe('removeKhatmaMember', () => {
+  const khatma: Pick<
+    Khatma,
+    'remainingPages' | 'memberIds' | 'capacities' | 'duaReciterId'
+  > = {
+    remainingPages: [5, 6],
+    memberIds: ['removed', 'remaining'],
+    capacities: {
+      removed: { pages: 2, surahs: 0, juz: 0 },
+      remaining: { pages: 3, surahs: 0, juz: 0 },
+    },
+    duaReciterId: 'removed',
+  };
+
+  it('returns held pages and clears membership, capacity, and reciter references', () => {
+    const assignment: Pick<Assignment, 'rounds'> = {
+      rounds: [
+        {
+          round: 1,
+          date: '2026-08-09',
+          pages: [1, 2],
+          loosePages: [1, 2],
+          redistributedPages: [],
+        },
+        {
+          round: 2,
+          date: '2026-08-10',
+          pages: [3, 4],
+          loosePages: [3, 4],
+          redistributedPages: [],
+          released: true,
+        },
+      ],
+    };
+
+    expect(removeKhatmaMember(khatma, assignment, 'removed')).toEqual({
+      remainingPages: [1, 2, 5, 6],
+      memberIds: ['remaining'],
+      capacities: { remaining: { pages: 3, surahs: 0, juz: 0 } },
+      duaReciterId: 'remaining',
+    });
+  });
+
+  it('leaves no reciter when the removed member was the final participant', () => {
+    expect(
+      removeKhatmaMember(
+        {
+          remainingPages: [1],
+          memberIds: ['removed'],
+          capacities: { removed: { pages: 1, surahs: 0, juz: 0 } },
+          duaReciterId: 'removed',
+        },
+        undefined,
+        'removed',
+      ),
+    ).toMatchObject({ memberIds: [], capacities: {}, duaReciterId: '' });
   });
 });

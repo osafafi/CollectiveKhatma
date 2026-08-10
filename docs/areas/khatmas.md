@@ -32,6 +32,11 @@ Hard rules:
 - Every active-khatma participant row exposes the member's global
   `احتفظ بصفحاتي` switch, using the same roster preference as the member's
   personal page.
+- Khatmas never keep roster ids that no longer resolve. After complete roster and
+  khatma snapshots load, the admin app automatically removes legacy ghost members
+  from every khatma, returning their non-released pages and deleting their
+  capacity and assignment. Removing the designated reciter selects the first
+  remaining member or clears the reciter when the khatma becomes empty.
 - Completed khatmas stay for series history.
 - The admin Khatmas list shows all active rounds. For a series with no active
   round, it shows only the latest completed round as the history entry point.

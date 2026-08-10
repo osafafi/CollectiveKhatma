@@ -16,6 +16,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
+import { removeKhatmaMember } from '@/domain/assignment';
 import type { Assignment, Khatma, MemberCapacity } from '@/domain/types';
 import { assignmentDoc, assignmentsCol, emptyAssignment } from './assignments';
 import { db } from './firebase';
@@ -218,18 +219,8 @@ export async function removeMemberFromKhatma(
     const aSnap = await tx.get(aRef);
     if (!kSnap.exists()) return;
     const khatma = kSnap.data() as Omit<Khatma, 'id'>;
-    let held: number[] = [];
-    if (aSnap.exists()) {
-      const assignment = aSnap.data() as Assignment;
-      for (const c of assignment.rounds) {
-        if (c.released !== true) held = held.concat(c.pages);
-      }
-    }
-    const remainingPages = [...khatma.remainingPages, ...held].sort((a, b) => a - b);
-    const memberIds = khatma.memberIds.filter((id) => id !== memberId);
-    const capacities = { ...khatma.capacities };
-    delete capacities[memberId];
-    tx.update(kRef, { remainingPages, memberIds, capacities });
+    const assignment = aSnap.exists() ? (aSnap.data() as Assignment) : undefined;
+    tx.update(kRef, removeKhatmaMember(khatma, assignment, memberId));
     if (aSnap.exists()) tx.delete(aRef);
   });
 }

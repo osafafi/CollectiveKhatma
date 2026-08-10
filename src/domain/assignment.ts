@@ -1,4 +1,4 @@
-import type { Khatma, MemberCapacity, PageScope } from './types';
+import type { Assignment, Khatma, MemberCapacity, PageScope } from './types';
 
 export type { PageScope };
 
@@ -144,4 +144,38 @@ export function requiredCapacity(
     throw new Error(`Khatma ${khatma.id} is missing capacity for member ${memberId}`);
   }
   return capacity;
+}
+
+export type KhatmaMemberRemoval = Pick<
+  Khatma,
+  'remainingPages' | 'memberIds' | 'capacities' | 'duaReciterId'
+>;
+
+/**
+ * Remove one participant from a khatma without orphaning pages or references.
+ * Every non-released assignment page returns to the pool, the member capacity
+ * disappears, and a removed du3a reciter falls back to the first remaining
+ * participant (or no reciter when the khatma becomes empty).
+ */
+export function removeKhatmaMember(
+  khatma: Pick<Khatma, 'remainingPages' | 'memberIds' | 'capacities' | 'duaReciterId'>,
+  assignment: Pick<Assignment, 'rounds'> | undefined,
+  memberId: string,
+): KhatmaMemberRemoval {
+  const heldPages =
+    assignment?.rounds.flatMap((chunk) => (chunk.released === true ? [] : chunk.pages)) ??
+    [];
+  const memberIds = khatma.memberIds.filter((id) => id !== memberId);
+  const capacities = { ...khatma.capacities };
+  delete capacities[memberId];
+
+  return {
+    remainingPages: [...new Set([...khatma.remainingPages, ...heldPages])].sort(
+      (left, right) => left - right,
+    ),
+    memberIds,
+    capacities,
+    duaReciterId:
+      khatma.duaReciterId === memberId ? (memberIds[0] ?? '') : khatma.duaReciterId,
+  };
 }

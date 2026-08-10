@@ -37,18 +37,26 @@ export function KhatmaMembersCard({
   surahs,
 }: KhatmaMembersCardProps) {
   const rows = khatma.memberIds
-    .map((memberId) => ({
-      person: roster.find((candidate) => candidate.id === memberId),
-      assignment: assignments.find((assignment) => assignment.memberId === memberId) ?? {
-        memberId,
-        rounds: [],
-        doneByRound: {},
-        missedStreak: 0,
-      },
-    }))
+    .flatMap((memberId) => {
+      const person = roster.find((candidate) => candidate.id === memberId);
+      if (!person) return [];
+      return [
+        {
+          person,
+          assignment: assignments.find(
+            (assignment) => assignment.memberId === memberId,
+          ) ?? {
+            memberId,
+            rounds: [],
+            doneByRound: {},
+            missedStreak: 0,
+          },
+        },
+      ];
+    })
     .sort(
       (left, right) =>
-        Number(left.person?.enabled === false) - Number(right.person?.enabled === false),
+        Number(left.person.enabled === false) - Number(right.person.enabled === false),
     );
   return (
     <SurfaceCard title={strings.admin.membersProgress}>
@@ -79,7 +87,7 @@ interface KhatmaMemberRowProps {
   khatma: Khatma;
   khatmas: readonly Khatma[];
   assignment: Assignment;
-  person: Person | undefined;
+  person: Person;
   surahs: readonly Surah[] | null;
 }
 
@@ -90,7 +98,7 @@ function KhatmaMemberRow({
   person,
   surahs,
 }: KhatmaMemberRowProps) {
-  const name = person ? `${person.emoji || ''} ${person.name}` : assignment.memberId;
+  const name = `${person.emoji || ''} ${person.name}`;
   const level = warningLevel(assignment.missedStreak);
   const chunk = latestReadableChunk(assignment);
   const done = chunk ? isRoundDone(assignment, chunk.round) : false;
@@ -170,36 +178,34 @@ function KhatmaMemberRow({
               width: 112,
               flexShrink: 0,
               fontWeight: 600,
-              ...(person?.enabled === false
+              ...(person.enabled === false
                 ? { color: 'text.secondary', textDecoration: 'line-through' }
                 : {}),
             }}
           >
             {name}
           </Typography>
-          {person ? (
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  color="warning"
-                  checked={person.holdPages === true}
-                  disabled={updatePerson.isPending}
-                  onChange={(_, checked) => {
-                    void updatePerson.execute(person.id, { holdPages: checked });
-                  }}
-                  slotProps={{
-                    input: {
-                      'aria-label': `${strings.personal.holdPages}: ${person.name}`,
-                    },
-                  }}
-                />
-              }
-              label={strings.personal.holdPages}
-              sx={{ m: 0 }}
-            />
-          ) : null}
-          {person?.enabled === false ? (
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                color="warning"
+                checked={person.holdPages === true}
+                disabled={updatePerson.isPending}
+                onChange={(_, checked) => {
+                  void updatePerson.execute(person.id, { holdPages: checked });
+                }}
+                slotProps={{
+                  input: {
+                    'aria-label': `${strings.personal.holdPages}: ${person.name}`,
+                  },
+                }}
+              />
+            }
+            label={strings.personal.holdPages}
+            sx={{ m: 0 }}
+          />
+          {person.enabled === false ? (
             <AppButton
               variant="outlined"
               disabled={updatePerson.isPending}
@@ -225,7 +231,7 @@ function KhatmaMemberRow({
             </AppButton>
           ) : null}
         </Box>
-        {person?.enabled ? (
+        {person.enabled ? (
           <KhatmaCapacityEditor khatma={khatma} person={person} surahs={surahs} />
         ) : null}
       </Stack>

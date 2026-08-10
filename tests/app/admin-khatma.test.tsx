@@ -369,6 +369,38 @@ describe('admin Khatma detail', () => {
     ).toBeNull();
   });
 
+  it('waits for the complete roster snapshot, then removes legacy ghosts everywhere', async () => {
+    const activeGhost = makeKhatma('k', {
+      memberIds: ['ghost-active'],
+      capacities: { 'ghost-active': { pages: 2, surahs: 0, juz: 0 } },
+      duaReciterId: 'ghost-active',
+    });
+    const completedGhost = makeKhatma('old', {
+      status: 'completed',
+      memberIds: ['ghost-completed'],
+      capacities: { 'ghost-completed': { pages: 2, surahs: 0, juz: 0 } },
+      duaReciterId: 'ghost-completed',
+    });
+    const harness = renderDetail('k', { khatmas: [activeGhost, completedGhost] });
+
+    expect(harness.operations.removeMemberFromKhatma).not.toHaveBeenCalled();
+    expect(screen.queryByText('ghost-active')).toBeNull();
+
+    harness.subscriptions.roster.emit([]);
+
+    await waitFor(() => {
+      expect(harness.operations.removeMemberFromKhatma).toHaveBeenCalledTimes(2);
+    });
+    expect(harness.operations.removeMemberFromKhatma).toHaveBeenCalledWith(
+      'k',
+      'ghost-active',
+    );
+    expect(harness.operations.removeMemberFromKhatma).toHaveBeenCalledWith(
+      'old',
+      'ghost-completed',
+    );
+  });
+
   it('places a disabled participant after active members and before the separated add form', async () => {
     const pausedMaryam = { ...maryam, enabled: false };
     const khatma = makeKhatma('k', {

@@ -24,6 +24,10 @@ Hard rules:
   chunk they hold in an active khatma is released back to its pool in the same
   transaction as the roster flag. An admin pause only changes eligibility and
   leaves existing pages in place.
+- Deleting a roster person first removes them from every active or completed
+  khatma, returning their non-released assignment pages and clearing their
+  capacity, assignment, and reciter references. The roster document is deleted
+  only after every khatma cleanup succeeds.
 - Active khatma details keep disabled participants at the bottom with
   struck-through names. The admin can re-enable an existing participant without
   changing their capacity. Disabled people outside that khatma are not listed.
