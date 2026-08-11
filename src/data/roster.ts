@@ -19,6 +19,19 @@ import { khatmasCol, removeMemberFromKhatma } from './khatmas';
 
 export const rosterCol = collection(db, 'roster');
 
+type StoredPerson = Omit<Person, 'id' | 'completedPages'> & {
+  /** Legacy roster documents predate lifetime page tracking. */
+  completedPages?: number[];
+};
+
+function personFromSnapshot(id: string, stored: StoredPerson): Person {
+  return {
+    id,
+    ...stored,
+    completedPages: stored.completedPages ?? [],
+  };
+}
+
 /** A latest-roster duplicate guard so UI validation failures stay friendly. */
 export class DuplicatePersonNameError extends Error {
   constructor() {
@@ -48,7 +61,11 @@ export function subscribeRoster(
   return onSnapshot(
     q,
     (snap) =>
-      onChange(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Person, 'id'>) }))),
+      onChange(
+        snap.docs.map((entry) =>
+          personFromSnapshot(entry.id, entry.data() as StoredPerson),
+        ),
+      ),
     (error) => onError?.(error),
   );
 }

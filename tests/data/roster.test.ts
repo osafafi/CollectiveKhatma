@@ -25,7 +25,7 @@ vi.mock('@/data/khatmas', () => ({
   removeMemberFromKhatma: khatmas.removeMember,
 }));
 
-import { removePerson } from '@/data/roster';
+import { removePerson, subscribeRoster } from '@/data/roster';
 
 describe('removePerson', () => {
   beforeEach(() => {
@@ -58,5 +58,39 @@ describe('removePerson', () => {
 
     await expect(removePerson('person-1')).rejects.toThrow('cleanup failed');
     expect(firestore.deleteDoc).not.toHaveBeenCalled();
+  });
+});
+
+describe('subscribeRoster', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('normalizes legacy people without completedPages at the read boundary', () => {
+    const unsubscribe = vi.fn();
+    firestore.onSnapshot.mockImplementation((_query, onChange) => {
+      onChange({
+        docs: [
+          {
+            id: 'legacy-person',
+            data: () => ({
+              name: 'Legacy reader',
+              pagesPerDay: 2,
+              enabled: true,
+              createdAt: 1,
+            }),
+          },
+        ],
+      });
+      return unsubscribe;
+    });
+    const onChange = vi.fn();
+
+    const result = subscribeRoster(onChange);
+
+    expect(result).toBe(unsubscribe);
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'legacy-person', completedPages: [] }),
+    ]);
   });
 });

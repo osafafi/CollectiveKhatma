@@ -67,6 +67,7 @@ interface DistributionPlannerDialogProps {
   allKhatmas: readonly Khatma[];
   roster: readonly Person[];
   assignmentsByKhatma: Readonly<Record<string, readonly Assignment[]>>;
+  assignmentsReady: boolean;
   scopeMaps: QuranScopeMaps | null;
 }
 
@@ -102,7 +103,9 @@ function membersForPlanner(khatmas: readonly Khatma[], roster: readonly Person[]
               surahs: 0,
               juz: 0,
             },
-            completedPages: person.completedPages,
+            // Production roster documents created before lifetime tracking do not
+            // contain this field. Match the transaction's legacy default.
+            completedPages: person.completedPages ?? [],
             enabled: person.enabled,
             holdPages: person.holdPages === true,
           },
@@ -156,6 +159,7 @@ export function DistributionPlannerDialog({
   allKhatmas,
   roster,
   assignmentsByKhatma,
+  assignmentsReady,
   scopeMaps,
 }: DistributionPlannerDialogProps) {
   const commit = useWriteOperation('commitDistributionRun');
@@ -306,13 +310,26 @@ export function DistributionPlannerDialog({
           {strings.admin.roundControlDescription}
         </Typography>
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          <AppButton hero onClick={() => openPlanner('new-round')}>
+          <AppButton
+            hero
+            disabled={!assignmentsReady}
+            onClick={() => openPlanner('new-round')}
+          >
             {strings.admin.prepareNextRound}
           </AppButton>
-          <AppButton variant="outlined" onClick={() => openPlanner('adjust-current')}>
+          <AppButton
+            variant="outlined"
+            disabled={!assignmentsReady}
+            onClick={() => openPlanner('adjust-current')}
+          >
             {strings.admin.adjustCurrentRound}
           </AppButton>
         </Stack>
+        {!assignmentsReady ? (
+          <Typography color="text.secondary" role="status">
+            {strings.admin.roundDataLoading}
+          </Typography>
+        ) : null}
         {scopeError ? (
           <Alert severity="error">{strings.admin.distributeError}</Alert>
         ) : null}

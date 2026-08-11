@@ -390,27 +390,6 @@ export function commitDistributionRun(
       });
     }
 
-    const expectedRolloverMemberIds = members.map((member) => member.id);
-    const expectedRolloverCapacities = Object.fromEntries(
-      members.map((member) => [member.id, member.capacity]),
-    );
-    if (
-      latest.seriesId !== rolloverSeed.seriesId ||
-      latest.seriesName !== rolloverSeed.seriesName ||
-      (latest.imageName ?? '') !== (rolloverSeed.imageName ?? '') ||
-      rolloverSeed.scope.kind !== 'full' ||
-      rolloverSeed.totalPages !== 604 ||
-      rolloverSeed.pool.length !== 604 ||
-      rolloverSeed.seriesNumber !==
-        Math.max(...khatmas.map((khatma) => khatma.seriesNumber)) + 1 ||
-      JSON.stringify(rolloverSeed.memberIds) !==
-        JSON.stringify(expectedRolloverMemberIds) ||
-      JSON.stringify(rolloverSeed.capacities) !==
-        JSON.stringify(expectedRolloverCapacities)
-    ) {
-      throw new StaleDistributionDraftError();
-    }
-
     const currentRunIds = [
       ...new Set(
         khatmas.flatMap((khatma) =>
@@ -439,6 +418,40 @@ export function commitDistributionRun(
     });
     if (draft.sourceRevision !== expectedSourceRevision) {
       throw new StaleDistributionDraftError();
+    }
+
+    // Rollover metadata cannot invalidate an ordinary round: it is only an
+    // unused template until the rebuilt plan actually crosses into N+1.
+    if (draft.plan.rollover) {
+      const nextNumber = Math.max(0, ...khatmas.map((khatma) => khatma.seriesNumber)) + 1;
+      const expectedMemberIds = members.map((member) => member.id);
+      const capacitiesMatch = members.every((member) => {
+        const supplied = rolloverSeed.capacities[member.id];
+        return (
+          supplied?.pages === member.capacity.pages &&
+          supplied.surahs === member.capacity.surahs &&
+          supplied.juz === member.capacity.juz
+        );
+      });
+      const fullPool = rolloverSeed.pool.every((page, index) => page === index + 1);
+      if (
+        latest.seriesId !== rolloverSeed.seriesId ||
+        latest.seriesName !== rolloverSeed.seriesName ||
+        (latest.imageName ?? '') !== (rolloverSeed.imageName ?? '') ||
+        rolloverSeed.scope.kind !== 'full' ||
+        rolloverSeed.totalPages !== 604 ||
+        rolloverSeed.pool.length !== 604 ||
+        !fullPool ||
+        rolloverSeed.seriesNumber !== nextNumber ||
+        rolloverSeed.memberIds.length !== expectedMemberIds.length ||
+        rolloverSeed.memberIds.some(
+          (memberId, index) => memberId !== expectedMemberIds[index],
+        ) ||
+        Object.keys(rolloverSeed.capacities).length !== members.length ||
+        !capacitiesMatch
+      ) {
+        throw new StaleDistributionDraftError();
+      }
     }
     if (
       draft.allocations.length === 0 &&

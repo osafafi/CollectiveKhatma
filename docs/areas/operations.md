@@ -53,6 +53,8 @@ the inbox.
 Roster schema: `roster/{memberId}.holdPages` is an optional boolean for backward
 compatibility with existing documents. New members start with `false`; member
 and admin controls may update it, and completing assigned pages resets it.
+Legacy roster documents without `completedPages` are normalized to an empty
+array at the Firestore read boundary.
 
 Hard rules:
 

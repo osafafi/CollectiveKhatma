@@ -42,6 +42,8 @@ Hard rules:
   zero-change or stale previews explain why confirmation cannot proceed.
 - Busy distribution blocks double press. Success closes the dialog and is
   announced on the dashboard; failure remains in the dialog for review/retry.
+- Round controls stay disabled until every active khatma's assignment listener
+  is ready; an unloaded collection is never previewed as an empty one.
 - Dashboard warnings are grouped per khatma in a count-labelled accordion that
   is collapsed by default.
 - Each dashboard khatma groups retained round assignments into separate

@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import {
   selectAssignmentsForKhatma,
+  selectAssignmentsListener,
   selectKhatmas,
   selectRoster,
   useAppSelector,
@@ -91,6 +92,11 @@ function SeriesBlock({
       ),
     shallowEqual,
   );
+  const assignmentsReady = useAppSelector((state) =>
+    group.active.every(
+      (khatma) => selectAssignmentsListener(state, khatma.id)?.status === 'ready',
+    ),
+  );
   return (
     <SurfaceCard title={seriesTitle(group.latest, toWesternDigits)}>
       <Stack spacing={3}>
@@ -102,6 +108,7 @@ function SeriesBlock({
           allKhatmas={allKhatmas}
           roster={roster}
           assignmentsByKhatma={assignmentsByKhatma}
+          assignmentsReady={assignmentsReady}
           scopeMaps={scopeMaps}
         />
       </Stack>

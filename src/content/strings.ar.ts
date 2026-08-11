@@ -189,6 +189,7 @@ export const strings = {
       'راجع اقتراح التوزيع وعدّله قبل حفظ أي صفحات أو بدء ختمة جديدة.',
     prepareNextRound: 'تجهيز الجولة التالية',
     adjustCurrentRound: 'تعديل الجولة الحالية',
+    roundDataLoading: 'جارٍ تحميل بيانات الجولة…',
     confirmAndStartRound: 'تأكيد وبدء الجولة',
     roundPreviewSummary: '{assignments} تعيينات جديدة، و{skipped} بلا تعيين جديد.',
     optionalRoundAdjustments: 'تعديل الأشخاص والسعات (اختياري)',

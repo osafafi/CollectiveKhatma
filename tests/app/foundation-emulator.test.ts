@@ -1,5 +1,5 @@
 import { deleteApp, initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createAppStore,
@@ -138,6 +138,21 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      // Production contains roster records created before lifetime page tracking.
+      // The UI and transaction must see the same logical empty page history.
+      await adminDb
+        .collection('roster')
+        .doc(personId)
+        .update({ completedPages: FieldValue.delete() });
+      await vi.waitFor(
+        () => {
+          expect(
+            selectPersonById(adminClient.store.getState(), personId!)?.completedPages,
+          ).toEqual([]);
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+
       await expect(
         createKhatma({
           seriesId: `partial-series-${suffix}`,
@@ -235,7 +250,9 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         ],
         members: distributionMembers,
         newKhatmaPool: FULL_QURAN_PAGES,
-        newKhatmaSeriesNumber: 2,
+        // This metadata is intentionally stale. The plan stays in the current
+        // khatma, so an unused rollover template must not block confirmation.
+        newKhatmaSeriesNumber: 99,
         adjustments,
       });
       const distribution = await commitDistributionRun({
@@ -246,8 +263,8 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         today: '2099-06-14',
         rolloverSeed: {
           seriesId: `emulator-series-${suffix}`,
-          seriesName: 'Emulator series',
-          seriesNumber: 2,
+          seriesName: 'Unused stale rollover label',
+          seriesNumber: 99,
           totalPages: 604,
           scope: { kind: 'full' },
           memberIds: [personId],
@@ -378,6 +395,9 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      // The stale-preview regression is now proven; restore the modern schema
+      // before the remainder of this smoke exercises roster update rules.
+      await adminDb.collection('roster').doc(personId).update({ completedPages: [] });
       await disableSelfAndReleasePages(personId);
       await vi.waitFor(
         () => {

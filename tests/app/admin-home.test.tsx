@@ -343,6 +343,26 @@ describe('admin Home dashboard', () => {
     ).toBeVisible();
   });
 
+  it('waits for assignment snapshots before enabling round controls', async () => {
+    const harness = renderAdmin({
+      data: {
+        roster: [amina],
+        khatmas: [makeKhatma('k1')],
+      },
+    });
+
+    const prepare = await screen.findByRole('button', {
+      name: strings.admin.prepareNextRound,
+    });
+    expect(prepare).toBeDisabled();
+    expect(screen.getByText(strings.admin.roundDataLoading)).toBeVisible();
+
+    act(() => harness.subscriptions.assignment('k1').emit([]));
+
+    await waitFor(() => expect(prepare).toBeEnabled());
+    expect(screen.queryByText(strings.admin.roundDataLoading)).toBeNull();
+  });
+
   it('only offers swaps between members with exactly equal capacities', async () => {
     const commitDistributionRun = vi
       .fn<WriteOperations['commitDistributionRun']>()
