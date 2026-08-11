@@ -210,6 +210,8 @@ export const strings = {
     noDistributionChanges: 'لا يوجد تغيير يمكن تنفيذه. راجع الأسباب الظاهرة أعلاه.',
     staleDistributionPreview:
       'تغيّرت البيانات منذ فتح المعاينة. أغلقها وافتح اقتراحًا محدثًا.',
+    staleRolloverPreview:
+      'لا تطابق بيانات الختمة التالية الحالة الحالية. أغلق المعاينة وأعد تجهيزها.',
     roundCommitSuccess: 'تم تأكيد الجولة وحفظ جميع التغييرات.',
     zeroAssignmentSuccess: 'تم تحديث حالة الجولة بدون تعيين صفحات جديدة.',
     savedAssignmentCount: 'عدد التعيينات المحفوظة: {count}',

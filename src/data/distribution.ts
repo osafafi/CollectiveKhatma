@@ -77,10 +77,15 @@ export interface DistributionOutcome {
   releaseCount?: number;
 }
 
+export type StaleDistributionDraftReason = 'source-revision' | 'rollover-metadata';
+
 export class StaleDistributionDraftError extends Error {
-  constructor() {
-    super('commitDistributionRun: the preview source changed before confirmation');
+  readonly reason: StaleDistributionDraftReason;
+
+  constructor(reason: StaleDistributionDraftReason = 'source-revision') {
+    super(`commitDistributionRun: stale ${reason}`);
     this.name = 'StaleDistributionDraftError';
+    this.reason = reason;
   }
 }
 
@@ -450,7 +455,7 @@ export function commitDistributionRun(
         Object.keys(rolloverSeed.capacities).length !== members.length ||
         !capacitiesMatch
       ) {
-        throw new StaleDistributionDraftError();
+        throw new StaleDistributionDraftError('rollover-metadata');
       }
     }
     if (

@@ -148,6 +148,23 @@ function hasPendingPages(khatmas: readonly DistributionKhatmaState[], memberId: 
   );
 }
 
+/**
+ * JSON's object-key order is an implementation detail, and Firestore may return
+ * the same map in a different insertion order through a listener and a
+ * transaction lookup. Canonicalize maps before hashing while preserving array
+ * order, which remains meaningful for roster rotation and page pools.
+ */
+function canonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, canonicalValue(entry)]),
+  );
+}
+
 function stableRevision(
   input: Pick<
     BuildDistributionDraftInput,
@@ -155,25 +172,34 @@ function stableRevision(
   >,
 ): string {
   const memberIds = new Set(input.members.map((member) => member.id));
-  const serialized = JSON.stringify({
-    khatmas: input.khatmas.map((khatma) => ({
-      id: khatma.id,
-      seriesNumber: khatma.seriesNumber,
-      remainingPages: khatma.remainingPages,
-      roundCount: khatma.roundCount,
-      assignments: khatma.assignments
-        .filter((assignment) => memberIds.has(assignment.memberId))
-        .map((assignment) => ({
-          memberId: assignment.memberId,
-          rounds: assignment.rounds,
-          doneByRound: assignment.doneByRound,
-          missedStreak: assignment.missedStreak,
-        })),
-    })),
-    members: input.members,
-    newKhatmaPool: input.newKhatmaPool,
-    newKhatmaSeriesNumber: input.newKhatmaSeriesNumber,
-  });
+  const serialized = JSON.stringify(
+    canonicalValue({
+      khatmas: input.khatmas.map((khatma) => ({
+        id: khatma.id,
+        seriesNumber: khatma.seriesNumber,
+        remainingPages: khatma.remainingPages,
+        roundCount: khatma.roundCount,
+        assignments: khatma.assignments
+          .filter((assignment) => memberIds.has(assignment.memberId))
+          .map((assignment) => ({
+            memberId: assignment.memberId,
+            rounds: assignment.rounds,
+            doneByRound: assignment.doneByRound,
+            missedStreak: assignment.missedStreak,
+          })),
+      })),
+      members: input.members.map((member) => ({
+        ...member,
+        // Lifetime pages are a set for planner overlap; their insertion order is
+        // not part of the distribution state.
+        completedPages: [...new Set(member.completedPages)].sort(
+          (left, right) => left - right,
+        ),
+      })),
+      newKhatmaPool: input.newKhatmaPool,
+      newKhatmaSeriesNumber: input.newKhatmaSeriesNumber,
+    }),
+  );
   let hash = 2166136261;
   for (let index = 0; index < serialized.length; index++) {
     hash ^= serialized.charCodeAt(index);

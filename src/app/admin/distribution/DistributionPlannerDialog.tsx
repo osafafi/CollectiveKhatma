@@ -758,7 +758,10 @@ export function DistributionPlannerDialog({
                 })}
               >
                 {commit.state.error.name === 'StaleDistributionDraftError'
-                  ? strings.admin.staleDistributionPreview
+                  ? 'reason' in commit.state.error &&
+                    commit.state.error.reason === 'rollover-metadata'
+                    ? strings.admin.staleRolloverPreview
+                    : strings.admin.staleDistributionPreview
                   : commit.state.error.name === 'NoDistributionChangesError'
                     ? strings.admin.noDistributionChanges
                     : strings.admin.distributeError}

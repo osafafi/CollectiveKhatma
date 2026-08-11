@@ -39,7 +39,8 @@ Hard rules:
   there is no raw page-ownership editor.
 - Same-day starts remain available because distribution dates are informational.
   Rollover is planned automatically and requires an explicit acknowledgment;
-  zero-change or stale previews explain why confirmation cannot proceed.
+  zero-change or stale previews explain why confirmation cannot proceed, and a
+  rollover-metadata mismatch is distinguished from a changed live snapshot.
 - Busy distribution blocks double press. Success closes the dialog and is
   announced on the dashboard; failure remains in the dialog for review/retry.
 - Round controls stay disabled until every active khatma's assignment listener

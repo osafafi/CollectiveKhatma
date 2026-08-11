@@ -21,6 +21,7 @@
     "emulators:kill": "node scripts/kill-emulators.mjs",
     "emulators:restart": "npm run emulators:kill && npm run emulators",
     "seed": "tsx scripts/seed-emulator.ts",
+    "migrate:schema": "tsx scripts/migrate-firestore-schema.ts",
     "build:quran": "tsx scripts/build-quran-data.ts",
     "deploy:rules": "firebase deploy --only firestore:rules --project collectivekhatma --non-interactive"
   },

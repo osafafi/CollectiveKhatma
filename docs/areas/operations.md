@@ -56,6 +56,13 @@ and admin controls may update it, and completing assigned pages resets it.
 Legacy roster documents without `completedPages` are normalized to an empty
 array at the Firestore read boundary.
 
+`npm run migrate:schema` performs a read-only production schema audit using the
+web configuration in `.env` and reports counts without names or ids. Applying
+safe additive defaults requires the explicit
+`-- --apply --confirm=BACKFILL_SCHEMA` flags. Apply mode never deletes fields
+and aborts before writing if it finds a partial/non-full khatma or an unsafe
+roster page-history shape.
+
 Hard rules:
 
 - Only `src/data` imports Firebase.

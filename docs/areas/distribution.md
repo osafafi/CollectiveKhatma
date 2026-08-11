@@ -64,7 +64,9 @@ Hard rules:
 - Confirm is atomic and rejects a stale `sourceRevision`; crossing from N to N+1
   needs an explicit acknowledgment on the same decision screen. The transaction
   validates rollover metadata only when the rebuilt plan actually crosses that
-  boundary, so unused next-khatma metadata cannot block an ordinary round.
+  boundary, so unused next-khatma metadata cannot block an ordinary round. The
+  revision canonicalizes Firestore map keys and lifetime-page set order, so
+  semantically identical listener and transaction snapshots compare equally.
 - Current-round adjustment recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;
   preserved Surah and Juz pages stay held. The reshuffle stays in the current

@@ -188,4 +188,35 @@ describe('distribution draft', () => {
       }),
     ).toThrow(InvalidDistributionDraftError);
   });
+
+  it('uses one revision for semantically equal Firestore maps and page sets', () => {
+    const firstMember = member('reader');
+    firstMember.completedPages = [4, 2, 4];
+    const firstChunk = chunk(1, [7]);
+    const input = draftInput(
+      [khatma('khatma-1', 1, [8, 9], [assignment('reader', [firstChunk])])],
+      [firstMember],
+    );
+
+    const reorderedChunk = {
+      redistributedPages: [],
+      loosePages: [7],
+      pages: [7],
+      date: '2026-08-10',
+      round: 1,
+      status: 'pending' as const,
+      runId: 'run-1',
+      id: 'chunk-1-7',
+    };
+    const secondMember = member('reader');
+    secondMember.completedPages = [2, 4];
+    const reordered = draftInput(
+      [khatma('khatma-1', 1, [8, 9], [assignment('reader', [reorderedChunk])])],
+      [secondMember],
+    );
+
+    expect(buildDistributionDraft(reordered).sourceRevision).toBe(
+      buildDistributionDraft(input).sourceRevision,
+    );
+  });
 });
