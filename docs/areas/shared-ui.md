@@ -29,8 +29,9 @@ Theme contract (redesign):
   ring and `color-scheme`, `.quran-text`, `.ayah-marker` (gold Quran-font ayah
   glyph), the redesign keyframes (fadeUp/shimmer/floaty/ringIn), and a
   `prefers-reduced-motion` kill-switch.
-- The card gradient never reaches `NestedSurface`, ring centers, or the tab
-  bar (all pinned solid). Contrast floors are theme-test guarded in BOTH modes.
+- The card gradient reaches cards and dialog paper, but never `NestedSurface`,
+  ring centers, or the tab bar (those remain pinned solid). Contrast floors are
+  theme-test guarded in BOTH modes.
 
 Component recipes:
 

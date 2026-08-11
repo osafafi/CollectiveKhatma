@@ -247,6 +247,12 @@ describe('MUI theme — token mapping', () => {
       backgroundImage: cardGradient('light', 'subtle', 160),
       boxShadow: t.cardShadow,
     });
+    expect(theme.components?.MuiDialog?.styleOverrides?.paper).toMatchObject({
+      borderRadius: 20,
+      backgroundColor: t.surface,
+      backgroundImage: cardGradient('light', 'subtle', 160),
+      boxShadow: t.cardShadow,
+    });
     // The dark elevation overlay must never lighten Paper surfaces.
     expect(theme.components?.MuiPaper?.styleOverrides?.root).toMatchObject({
       backgroundImage: 'none',

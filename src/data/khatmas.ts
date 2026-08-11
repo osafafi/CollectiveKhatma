@@ -16,6 +16,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
+import { isChunkCompleted, isChunkReleased } from '@/domain/chunkStatus';
 import { removeKhatmaMember } from '@/domain/assignment';
 import type { Assignment, Khatma, MemberCapacity } from '@/domain/types';
 import { assignmentDoc, assignmentsCol, emptyAssignment } from './assignments';
@@ -56,16 +57,31 @@ export type CreateKhatmaInput = Omit<
   'id' | 'createdAt' | 'status' | 'completedAt' | 'roundCount' | 'lastDistributionDate'
 > & { createdAt?: number };
 
+export class FullQuranKhatmaRequiredError extends Error {
+  constructor() {
+    super('createKhatma: new khatmas must contain Quran pages 1 through 604');
+    this.name = 'FullQuranKhatmaRequiredError';
+  }
+}
+
 /**
  * Create a khatma together with one EMPTY assignment doc per member, atomically
  * in a single batch (REQUIREMENTS §5). Pages are handed out later by
- * distribution rounds, so assignments start with no chunks. `remainingPages`
- * must be the full resolved scope pool (`resolvePageScope(scope)`). For a new
+ * distribution rounds, so assignments start with no chunks. New khatmas always
+ * use full scope with the exact initial pool of Quran pages 1 through 604. For a new
  * series mint `seriesId` with `crypto.randomUUID()` and use `seriesNumber: 1`;
  * to continue a series pass the existing `seriesId` and the next number.
  * Returns the new khatma id.
  */
 export async function createKhatma(input: CreateKhatmaInput): Promise<string> {
+  if (
+    input.scope.kind !== 'full' ||
+    input.totalPages !== 604 ||
+    input.remainingPages.length !== 604 ||
+    input.remainingPages.some((page, index) => page !== index + 1)
+  ) {
+    throw new FullQuranKhatmaRequiredError();
+  }
   const khatmaRef = doc(khatmasCol);
   const batch = writeBatch(db);
 
@@ -193,8 +209,19 @@ export async function releaseMemberChunk(
     const assignment = aSnap.data() as Assignment;
     const release = releaseChunk(assignment, khatma.remainingPages);
     if (!release) return;
+    const releasedAt = Date.now();
     const rounds = assignment.rounds.map((c) =>
-      release.rounds.includes(c.round) ? { ...c, released: true as const } : c,
+      release.rounds.includes(c.round) &&
+      !isChunkReleased(c) &&
+      !isChunkCompleted(assignment, c)
+        ? {
+            ...c,
+            status: 'released' as const,
+            released: true as const,
+            releasedAt,
+            releaseReason: 'admin-release',
+          }
+        : c,
     );
     tx.update(kRef, { remainingPages: release.remainingPages });
     tx.set(aRef, { ...assignment, rounds, missedStreak: release.missedStreak });

@@ -10,10 +10,10 @@ import {
   setFeedbackRead,
   submitFeedback,
 } from '@/data/feedbackOperations';
-import {
-  AlreadyDistributedError,
-  runDistribution,
-  type DistributionOutcome,
+import type {
+  CommitDistributionRunParams,
+  DistributionOutcome,
+  RunDistributionParams,
 } from '@/data/distribution';
 import {
   addMemberToKhatma,
@@ -36,8 +36,20 @@ import {
 import { disableSelfAndReleasePages } from '@/data/personStatus';
 
 /** Feature-facing errors and results exposed without leaking the data layer. */
-export { AlreadyDistributedError, DuplicatePersonNameError, ReleasedChunkError };
+export { DuplicatePersonNameError, ReleasedChunkError };
 export type { DistributionOutcome };
+
+type RunDistribution = (params: RunDistributionParams) => Promise<DistributionOutcome>;
+type CommitDistributionRun = (
+  params: CommitDistributionRunParams,
+) => Promise<DistributionOutcome>;
+
+// Distribution planning is admin-only and comparatively large. Keep both
+// transaction adapters out of the member's initial bundle.
+const runDistribution: RunDistribution = async (params) =>
+  (await import('@/data/distribution')).runDistribution(params);
+const commitDistributionRun: CommitDistributionRun = async (params) =>
+  (await import('@/data/distribution')).commitDistributionRun(params);
 
 /** Every Firestore mutation available to React features through the data boundary. */
 export interface WriteOperations {
@@ -62,7 +74,8 @@ export interface WriteOperations {
   markRoundDone: typeof markRoundDone;
   clearRoundDone: typeof clearRoundDone;
   clearWarning: typeof clearWarning;
-  runDistribution: typeof runDistribution;
+  runDistribution: RunDistribution;
+  commitDistributionRun: CommitDistributionRun;
 }
 
 /** Production adapter. Tests can replace it through {@link WriteOperationsProvider}. */
@@ -89,4 +102,5 @@ export const writeOperations: WriteOperations = Object.freeze({
   clearRoundDone,
   clearWarning,
   runDistribution,
+  commitDistributionRun,
 });

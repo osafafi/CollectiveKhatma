@@ -1,4 +1,4 @@
-import { currentChunk, isRoundDone } from '@/domain/progress';
+import { currentChunk, isChunkCompleted } from '@/domain/progress';
 import type { Assignment, Khatma } from '@/domain/types';
 
 export type QuranPageState = 'done' | 'assigned' | 'remaining';
@@ -35,7 +35,7 @@ export function buildQuranPageEntries(
 
   for (const assignment of assignments) {
     for (const chunk of assignment.rounds) {
-      if (chunk.released === true || !isRoundDone(assignment, chunk.round)) continue;
+      if (!isChunkCompleted(assignment, chunk)) continue;
       for (const page of chunk.pages) doneByPage.set(page, assignment.memberId);
     }
 

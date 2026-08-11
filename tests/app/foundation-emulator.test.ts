@@ -17,14 +17,20 @@ import {
 import { selectFeedback } from '@/app/store/feedbackSelectors';
 import { firestoreSubscriptionSources } from '@/app/store/firestoreSubscriptionSources';
 import { markRoundDone } from '@/data/assignments';
-import { runDistribution } from '@/data/distribution';
+import { commitDistributionRun, runDistribution } from '@/data/distribution';
 import { deleteFeedback, setFeedbackRead, submitFeedback } from '@/data/feedback';
-import { createKhatma } from '@/data/khatmas';
+import { createKhatma, FullQuranKhatmaRequiredError } from '@/data/khatmas';
 import { disableSelfAndReleasePages } from '@/data/personStatus';
 import { addPerson, updatePerson } from '@/data/roster';
+import {
+  buildDistributionDraft,
+  defaultDistributionAdjustments,
+} from '@/domain/distributionDraft';
 
 const runEmulatorSmoke = process.env.RUN_FIRESTORE_EMULATOR_SMOKE === 'true';
 const emulatorDescribe = runEmulatorSmoke ? describe : describe.skip;
+const FULL_QURAN_PAGES = Array.from({ length: 604 }, (_, index) => index + 1);
+const FULL_QURAN_CAPACITY = { pages: 602, surahs: 0, juz: 0 };
 
 interface TestClient {
   store: AppStore;
@@ -83,6 +89,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
     const adminDb = getFirestore(adminApp);
     let personId: string | undefined;
     let khatmaId: string | undefined;
+    let distributionRunId: string | undefined;
     const feedbackIds: string[] = [];
     const clients: TestClient[] = [];
 
@@ -131,6 +138,20 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
+      await expect(
+        createKhatma({
+          seriesId: `partial-series-${suffix}`,
+          seriesName: 'Partial khatma must be rejected',
+          seriesNumber: 1,
+          totalPages: 2,
+          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          memberIds: [personId],
+          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          duaReciterId: personId,
+          remainingPages: [1, 2],
+        }),
+      ).rejects.toBeInstanceOf(FullQuranKhatmaRequiredError);
+
       retainFeedback(adminClient);
       feedbackIds.push(
         await submitFeedback(personId, 'Emulator reader', 'First emulator feedback'),
@@ -163,12 +184,12 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         seriesId: `emulator-series-${suffix}`,
         seriesName: 'Emulator series',
         seriesNumber: 1,
-        totalPages: 2,
-        scope: { kind: 'range', fromPage: 1, toPage: 2 },
+        totalPages: 604,
+        scope: { kind: 'full' },
         memberIds: [personId],
-        capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+        capacities: { [personId]: FULL_QURAN_CAPACITY },
         duaReciterId: personId,
-        remainingPages: [1, 2],
+        remainingPages: FULL_QURAN_PAGES,
       });
       retainAssignments(adminClient, khatmaId);
       retainAssignments(memberClient, khatmaId);
@@ -189,30 +210,69 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         { timeout: 10_000, interval: 50 },
       );
 
-      const distribution = await runDistribution({
-        khatmaIds: [khatmaId],
-        members: [
+      const distributionMembers = [
+        {
+          id: personId,
+          capacity: FULL_QURAN_CAPACITY,
+          completedPages: [],
+          enabled: true,
+          holdPages: false,
+        },
+      ];
+      const adjustments = defaultDistributionAdjustments();
+      const preview = buildDistributionDraft({
+        mode: 'new-round',
+        khatmas: [
           {
-            id: personId,
-            capacity: { pages: 2, surahs: 0, juz: 0 },
-            completedPages: [],
-            enabled: true,
+            id: khatmaId,
+            seriesNumber: 1,
+            remainingPages: FULL_QURAN_PAGES,
+            roundCount: 0,
+            assignments: [
+              { memberId: personId, rounds: [], doneByRound: {}, missedStreak: 0 },
+            ],
           },
         ],
+        members: distributionMembers,
+        newKhatmaPool: FULL_QURAN_PAGES,
+        newKhatmaSeriesNumber: 2,
+        adjustments,
+      });
+      const distribution = await commitDistributionRun({
+        khatmaIds: [khatmaId],
+        mode: 'new-round',
+        expectedSourceRevision: preview.sourceRevision,
+        adjustments,
         today: '2099-06-14',
         rolloverSeed: {
           seriesId: `emulator-series-${suffix}`,
           seriesName: 'Emulator series',
           seriesNumber: 2,
-          totalPages: 2,
-          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          totalPages: 604,
+          scope: { kind: 'full' },
           memberIds: [personId],
-          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          capacities: { [personId]: FULL_QURAN_CAPACITY },
           duaReciterId: personId,
-          pool: [1, 2],
+          pool: FULL_QURAN_PAGES,
         },
       });
-      expect(distribution).toEqual({ completedKhatmaIds: [], chunkCount: 1 });
+      distributionRunId = distribution.runId;
+      expect(distribution).toMatchObject({
+        revision: 1,
+        completedKhatmaIds: [],
+        chunkCount: 1,
+      });
+      expect(distributionRunId).toEqual(expect.any(String));
+      expect(
+        (
+          await adminDb.collection('distributionRuns').doc(distributionRunId!).get()
+        ).data(),
+      ).toMatchObject({
+        status: 'open',
+        number: 1,
+        revision: 1,
+        khatmaIds: [khatmaId],
+      });
 
       await vi.waitFor(
         () => {
@@ -223,37 +283,75 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             expect(
               selectAssignmentByMemberId(client.store.getState(), khatmaId!, personId!)
                 ?.rounds,
-            ).toEqual([expect.objectContaining({ round: 1, pages: [1, 2] })]);
+            ).toEqual([
+              expect.objectContaining({
+                runId: distributionRunId,
+                status: 'pending',
+                round: 1,
+                pages: FULL_QURAN_PAGES,
+              }),
+            ]);
           }
         },
         { timeout: 10_000, interval: 50 },
       );
 
-      const redistribution = await runDistribution({
-        khatmaIds: [khatmaId],
-        members: [
+      const currentAssignment = selectAssignmentByMemberId(
+        adminClient.store.getState(),
+        khatmaId,
+        personId,
+      )!;
+      const adjustmentPreview = buildDistributionDraft({
+        mode: 'adjust-current',
+        khatmas: [
           {
-            id: personId,
-            capacity: { pages: 2, surahs: 0, juz: 0 },
-            completedPages: [],
-            enabled: true,
+            id: khatmaId,
+            seriesNumber: 1,
+            remainingPages: [],
+            roundCount: 1,
+            assignments: [currentAssignment],
           },
         ],
+        members: distributionMembers,
+        newKhatmaPool: FULL_QURAN_PAGES,
+        newKhatmaSeriesNumber: 2,
+        adjustments,
+      });
+      const redistribution = await commitDistributionRun({
+        khatmaIds: [khatmaId],
+        mode: 'adjust-current',
+        expectedSourceRevision: adjustmentPreview.sourceRevision,
+        adjustments,
         today: '2099-06-14',
-        redistributePages: true,
         rolloverSeed: {
           seriesId: `emulator-series-${suffix}`,
           seriesName: 'Emulator series',
           seriesNumber: 2,
-          totalPages: 2,
-          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          totalPages: 604,
+          scope: { kind: 'full' },
           memberIds: [personId],
-          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          capacities: { [personId]: FULL_QURAN_CAPACITY },
           duaReciterId: personId,
-          pool: [1, 2],
+          pool: FULL_QURAN_PAGES,
         },
       });
-      expect(redistribution).toEqual({ completedKhatmaIds: [], chunkCount: 1 });
+      expect(redistribution).toMatchObject({
+        runId: distributionRunId,
+        revision: 2,
+        completedKhatmaIds: [],
+        chunkCount: 1,
+        releaseCount: 1,
+      });
+      expect(
+        (
+          await adminDb.collection('distributionRuns').doc(distributionRunId!).get()
+        ).data(),
+      ).toMatchObject({
+        status: 'open',
+        number: 1,
+        revision: 2,
+        mode: 'adjust-current',
+      });
 
       await vi.waitFor(
         () => {
@@ -261,8 +359,19 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           expect(selectKhatmaById(state, khatmaId!)?.roundCount).toBe(1);
           expect(selectAssignmentByMemberId(state, khatmaId!, personId!)?.rounds).toEqual(
             [
-              expect.objectContaining({ round: 1, pages: [], released: true }),
-              expect.objectContaining({ round: 1, pages: [1, 2] }),
+              expect.objectContaining({
+                runId: distributionRunId,
+                status: 'released',
+                round: 1,
+                pages: [],
+                released: true,
+              }),
+              expect.objectContaining({
+                runId: distributionRunId,
+                status: 'pending',
+                round: 1,
+                pages: FULL_QURAN_PAGES,
+              }),
             ],
           );
         },
@@ -278,11 +387,15 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             );
             expect(
               selectKhatmaById(client.store.getState(), khatmaId!)?.remainingPages,
-            ).toEqual([1, 2]);
+            ).toEqual(FULL_QURAN_PAGES);
             expect(
               selectAssignmentByMemberId(client.store.getState(), khatmaId!, personId!)
                 ?.rounds[1],
-            ).toMatchObject({ round: 1, pages: [1, 2], released: true });
+            ).toMatchObject({
+              round: 1,
+              pages: FULL_QURAN_PAGES,
+              released: true,
+            });
           }
         },
         { timeout: 10_000, interval: 50 },
@@ -294,7 +407,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         members: [
           {
             id: personId,
-            capacity: { pages: 2, surahs: 0, juz: 0 },
+            capacity: FULL_QURAN_CAPACITY,
             completedPages: [],
             enabled: true,
           },
@@ -304,12 +417,12 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           seriesId: `emulator-series-${suffix}`,
           seriesName: 'Emulator series',
           seriesNumber: 2,
-          totalPages: 2,
-          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          totalPages: 604,
+          scope: { kind: 'full' },
           memberIds: [personId],
-          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          capacities: { [personId]: FULL_QURAN_CAPACITY },
           duaReciterId: personId,
-          pool: [1, 2],
+          pool: FULL_QURAN_PAGES,
         },
       });
       expect(reassignment).toEqual({ completedKhatmaIds: [], chunkCount: 1 });
@@ -321,7 +434,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           ).toEqual([
             expect.objectContaining({ round: 1, released: true }),
             expect.objectContaining({ round: 1, released: true }),
-            expect.objectContaining({ round: 2, pages: [1, 2] }),
+            expect.objectContaining({ round: 2, pages: FULL_QURAN_PAGES }),
           ]);
         },
         { timeout: 10_000, interval: 50 },
@@ -347,7 +460,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
             expect(assignment?.missedStreak).toBe(0);
             expect(
               selectPersonById(client.store.getState(), personId!)?.completedPages,
-            ).toEqual([1, 2]);
+            ).toEqual(FULL_QURAN_PAGES);
             expect(selectPersonById(client.store.getState(), personId!)?.holdPages).toBe(
               true,
             );
@@ -384,8 +497,8 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         members: [
           {
             id: personId,
-            capacity: { pages: 2, surahs: 0, juz: 0 },
-            completedPages: [1, 2],
+            capacity: FULL_QURAN_CAPACITY,
+            completedPages: FULL_QURAN_PAGES,
             enabled: false,
           },
         ],
@@ -394,12 +507,12 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           seriesId: `emulator-series-${suffix}`,
           seriesName: 'Emulator series',
           seriesNumber: 2,
-          totalPages: 2,
-          scope: { kind: 'range', fromPage: 1, toPage: 2 },
+          totalPages: 604,
+          scope: { kind: 'full' },
           memberIds: [personId],
-          capacities: { [personId]: { pages: 2, surahs: 0, juz: 0 } },
+          capacities: { [personId]: FULL_QURAN_CAPACITY },
           duaReciterId: personId,
-          pool: [1, 2],
+          pool: FULL_QURAN_PAGES,
         },
       });
       expect(completion).toEqual({
@@ -445,6 +558,8 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           .delete();
       }
       if (khatmaId) await adminDb.collection('khatmas').doc(khatmaId).delete();
+      if (distributionRunId)
+        await adminDb.collection('distributionRuns').doc(distributionRunId).delete();
       if (personId) await adminDb.collection('roster').doc(personId).delete();
       for (const feedbackId of feedbackIds) {
         await adminDb
@@ -457,4 +572,142 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
       await deleteApp(adminApp);
     }
   }, 60_000);
+
+  it('atomically creates a full-Quran rollover with its first pages assigned', async () => {
+    expect(process.env.FIRESTORE_EMULATOR_HOST).toBeTruthy();
+
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const adminApp = initializeApp({ projectId: 'collectivekhatma' }, `roll-${suffix}`);
+    const adminDb = getFirestore(adminApp);
+    const memberIds: string[] = [];
+    let khatmaId: string | undefined;
+    let rolloverKhatmaId: string | undefined;
+    let runId: string | undefined;
+
+    try {
+      const finishingMemberId = await addPerson({
+        name: `Rollover finisher ${suffix}`,
+        pagesPerDay: 4,
+      });
+      const nextMemberId = await addPerson({
+        name: `Rollover next reader ${suffix}`,
+        pagesPerDay: 2,
+      });
+      memberIds.push(finishingMemberId, nextMemberId);
+      const capacities = {
+        [finishingMemberId]: { pages: 4, surahs: 0, juz: 0 },
+        [nextMemberId]: { pages: 2, surahs: 0, juz: 0 },
+      };
+
+      khatmaId = await createKhatma({
+        seriesId: `rollover-series-${suffix}`,
+        seriesName: 'Emulator rollover series',
+        seriesNumber: 1,
+        totalPages: 604,
+        scope: { kind: 'full' },
+        memberIds,
+        capacities,
+        duaReciterId: finishingMemberId,
+        remainingPages: FULL_QURAN_PAGES,
+      });
+      await adminDb
+        .collection('khatmas')
+        .doc(khatmaId)
+        .update({
+          remainingPages: [601, 602, 603, 604],
+          roundCount: 46,
+        });
+
+      const members = [
+        {
+          id: finishingMemberId,
+          capacity: capacities[finishingMemberId]!,
+          completedPages: [],
+          enabled: true,
+          holdPages: false,
+        },
+        {
+          id: nextMemberId,
+          capacity: capacities[nextMemberId]!,
+          completedPages: [],
+          enabled: true,
+          holdPages: false,
+        },
+      ];
+      const adjustments = defaultDistributionAdjustments();
+      const preview = buildDistributionDraft({
+        mode: 'new-round',
+        khatmas: [
+          {
+            id: khatmaId,
+            seriesNumber: 1,
+            remainingPages: [601, 602, 603, 604],
+            roundCount: 46,
+            assignments: memberIds.map((memberId) => ({
+              memberId,
+              rounds: [],
+              doneByRound: {},
+              missedStreak: 0,
+            })),
+          },
+        ],
+        members,
+        newKhatmaPool: FULL_QURAN_PAGES,
+        newKhatmaSeriesNumber: 2,
+        adjustments,
+      });
+      expect(preview.plan.rollover).toBeDefined();
+
+      const outcome = await commitDistributionRun({
+        khatmaIds: [khatmaId],
+        mode: 'new-round',
+        expectedSourceRevision: preview.sourceRevision,
+        adjustments,
+        today: '2099-06-17',
+        rolloverSeed: {
+          seriesId: `rollover-series-${suffix}`,
+          seriesName: 'Emulator rollover series',
+          seriesNumber: 2,
+          totalPages: 604,
+          scope: { kind: 'full' },
+          memberIds,
+          capacities,
+          duaReciterId: finishingMemberId,
+          pool: FULL_QURAN_PAGES,
+        },
+      });
+      rolloverKhatmaId = outcome.rolloverKhatmaId;
+      runId = outcome.runId;
+
+      expect(rolloverKhatmaId).toEqual(expect.any(String));
+      const rollover = (
+        await adminDb.collection('khatmas').doc(rolloverKhatmaId!).get()
+      ).data();
+      expect(rollover).toMatchObject({
+        seriesNumber: 2,
+        totalPages: 604,
+        scope: { kind: 'full' },
+        roundCount: 1,
+      });
+      expect(rollover?.remainingPages).toHaveLength(600);
+    } finally {
+      for (const id of [khatmaId, rolloverKhatmaId]) {
+        if (!id) continue;
+        for (const memberId of memberIds) {
+          await adminDb
+            .collection('khatmas')
+            .doc(id)
+            .collection('assignments')
+            .doc(memberId)
+            .delete();
+        }
+        await adminDb.collection('khatmas').doc(id).delete();
+      }
+      if (runId) await adminDb.collection('distributionRuns').doc(runId).delete();
+      for (const memberId of memberIds) {
+        await adminDb.collection('roster').doc(memberId).delete();
+      }
+      await deleteApp(adminApp);
+    }
+  }, 30_000);
 });

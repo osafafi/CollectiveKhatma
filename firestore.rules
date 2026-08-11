@@ -21,7 +21,10 @@ service cloud.firestore {
     // Khatmas and their per-member assignments.
     match /khatmas/{khatmaId} {
       allow read: if true;
-      allow create, update: if isValidKhatma(request.resource.data);
+      allow create: if isValidKhatma(request.resource.data)
+        && hasFullQuranScope(request.resource.data);
+      allow update: if isValidKhatma(request.resource.data)
+        && hasFullQuranScope(request.resource.data);
       allow delete: if true;
       match /assignments/{memberId} {
         allow read: if true;
@@ -38,6 +41,13 @@ service cloud.firestore {
         && request.resource.data.isRead == false;
       allow update: if isValidFeedback(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow delete: if true;
+    }
+
+    // One explicit, series-wide admin-confirmed distribution operation.
+    match /distributionRuns/{runId} {
+      allow read: if true;
+      allow create, update: if isValidDistributionRun(request.resource.data);
       allow delete: if true;
     }
 
@@ -87,7 +97,32 @@ service cloud.firestore {
         && d.duaReciterId is string
         && (!('imageName' in d) || d.imageName is string)
         && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
+        && (!('currentDistributionRunId' in d) || d.currentDistributionRunId is string)
+        && (!('distributionRevision' in d) || d.distributionRevision is number)
         && (!('completedAt' in d) || d.completedAt is number);
+    }
+
+    function hasFullQuranScope(d) {
+      return d.scope.kind == 'full'
+        && d.totalPages == 604
+        && d.remainingPages.size() <= 604;
+    }
+
+    function isValidDistributionRun(d) {
+      return d.keys().hasOnly([
+          'seriesId', 'number', 'status', 'revision', 'mode', 'khatmaIds',
+          'openedAt', 'updatedAt', 'closedAt', 'rollover'
+        ])
+        && d.seriesId is string
+        && d.number is number
+        && (d.status == 'open' || d.status == 'closed')
+        && d.revision is number
+        && (d.mode == 'new-round' || d.mode == 'adjust-current')
+        && d.khatmaIds is list
+        && d.openedAt is number
+        && d.updatedAt is number
+        && (!('closedAt' in d) || d.closedAt is number)
+        && (!('rollover' in d) || d.rollover is map);
     }
 
     function isValidAssignment(d) {

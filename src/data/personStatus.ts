@@ -1,5 +1,6 @@
 import { doc, getDocs, query, runTransaction, where } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
+import { isChunkCompleted, isChunkReleased } from '@/domain/chunkStatus';
 import type { Assignment, Khatma } from '@/domain/types';
 import { assignmentDoc } from './assignments';
 import { db } from './firebase';
@@ -37,9 +38,18 @@ export async function disableSelfAndReleasePages(memberId: string): Promise<void
       const assignment = target.assignmentSnap.data() as Assignment;
       const release = releaseChunk(assignment, khatma.remainingPages);
       if (!release) continue;
+      const releasedAt = Date.now();
       const rounds = assignment.rounds.map((chunk) =>
-        release.rounds.includes(chunk.round)
-          ? { ...chunk, released: true as const }
+        release.rounds.includes(chunk.round) &&
+        !isChunkReleased(chunk) &&
+        !isChunkCompleted(assignment, chunk)
+          ? {
+              ...chunk,
+              status: 'released' as const,
+              released: true as const,
+              releasedAt,
+              releaseReason: 'member-paused',
+            }
           : chunk,
       );
       tx.update(target.khatmaRef, { remainingPages: release.remainingPages });

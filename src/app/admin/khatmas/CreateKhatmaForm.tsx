@@ -6,7 +6,6 @@ import {
   useCreateKhatmaPrefill,
   type CreateKhatmaPrefill,
 } from '@/app/admin/createKhatmaPrefillContext';
-import { useQuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { useSurahs } from '@/app/admin/useSurahs';
 import { AppButton } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
@@ -28,7 +27,6 @@ import {
 /** Route-scoped create controller. Its draft survives every live snapshot. */
 export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
   const roster = useAppSelector(selectRoster);
-  const scopeMaps = useQuranScopeMaps();
   const surahs = useSurahs();
   const createKhatma = useWriteOperation('createKhatma');
   const setSeriesImage = useWriteOperation('setSeriesImage');
@@ -68,11 +66,10 @@ export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
       setError(strings.admin.selectMembers);
       return;
     }
-    const scope = buildKhatmaScope(draft);
+    const scope = buildKhatmaScope();
     let pool: number[];
     try {
-      if (!scope) throw new Error('invalid');
-      pool = resolvePageScope(scope, scopeMaps?.surahToPages);
+      pool = resolvePageScope(scope);
     } catch (cause) {
       console.error('onCreate: scope resolution failed', cause);
       setError(strings.admin.createError);

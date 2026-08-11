@@ -15,7 +15,6 @@ import {
   setFeedbackRead,
   submitFeedback,
 } from '@/data/feedbackOperations';
-import { runDistribution } from '@/data/distribution';
 import {
   addMemberToKhatma,
   completeKhatma,
@@ -64,7 +63,8 @@ describe('write operations', () => {
       markRoundDone,
       clearRoundDone,
       clearWarning,
-      runDistribution,
+      runDistribution: expect.any(Function),
+      commitDistributionRun: expect.any(Function),
     });
   });
 

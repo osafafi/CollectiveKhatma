@@ -15,7 +15,6 @@ import type { Surah } from '@/content/quran/types';
 import { findSeriesByName, nextSeriesNumber } from '@/domain/series';
 import type { Khatma, MemberCapacity, Person } from '@/domain/types';
 import { CreateKhatmaCapacityRow } from './CreateKhatmaCapacityRow';
-import { CreateKhatmaScopeControls } from './CreateKhatmaScopeControls';
 import { requiredDraftCapacity, type CreateKhatmaDraft } from './createKhatmaDraft';
 
 interface CreateKhatmaFieldsProps {
@@ -103,7 +102,7 @@ export function CreateKhatmaFields({
         />
 
         <FieldGroup label={strings.admin.scopeLabel}>
-          <CreateKhatmaScopeControls draft={draft} setDraft={setDraft} surahs={surahs} />
+          <Typography>{strings.admin.fullQuranOnly}</Typography>
         </FieldGroup>
 
         <FieldGroup label={strings.admin.membersLabel}>

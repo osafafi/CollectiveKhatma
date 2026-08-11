@@ -75,7 +75,7 @@ measured from those two production entries.
 | `npm run check`                | Run the full local type/lint/test/build/docs/format gate      |
 | `npm test`                     | Run the Vitest unit tests                                     |
 | `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)        |
-| `npm run seed`                 | Seed roster + default du3a into the running emulator          |
+| `npm run seed`                 | Seed intent-named distribution edge cases into the emulator   |
 | `npm run build:quran`          | (Re)generate the bundled Quran dataset under `public/quran/`  |
 
 ## Firebase setup

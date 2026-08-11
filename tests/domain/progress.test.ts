@@ -98,6 +98,23 @@ describe('per-assignment progress', () => {
     expect(donePageCount(fresh)).toBe(0);
   });
 
+  it('reads explicit chunk lifecycle statuses without legacy fields', () => {
+    const explicit: Assignment = {
+      memberId: 'status-reader',
+      rounds: [
+        { ...chunk(1, '2026-07-20', [1, 2]), status: 'completed', completedAt: 1 },
+        { ...chunk(2, '2026-07-21', [3, 4]), status: 'released', releasedAt: 2 },
+        { ...chunk(3, '2026-07-22', [5, 6]), status: 'pending' },
+      ],
+      doneByRound: {},
+      missedStreak: 0,
+    };
+
+    expect(isRoundDone(explicit, 1)).toBe(true);
+    expect(donePageCount(explicit)).toBe(2);
+    expect(currentChunk(explicit)?.pages).toEqual([5, 6]);
+  });
+
   it('finds the replacement chunk appended by a same-round redistribution', () => {
     const redistributed: Assignment = {
       ...partly,

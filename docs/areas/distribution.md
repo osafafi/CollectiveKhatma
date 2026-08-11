@@ -5,13 +5,16 @@ Owns: round planning, assignment, warning streak, release, redistribution, rollo
 Start files:
 
 - Pure plan: `src/domain/distribution.ts`
+- Preview/revision model: `src/domain/distributionDraft.ts`
 - Scope math: `src/domain/assignment.ts`
 - Transaction: `src/data/distribution.ts`
 - UI write door: `src/app/operations/writeOperations.ts`
 - Admin trigger: `src/app/admin/pages/HomePage.tsx`
 - Member result: `src/app/member/KhatmaLandingPage.tsx`
 
-Flow: admin click -> operation -> Firestore transaction -> subscriptions -> store -> both apps.
+Flow: admin prepares a frozen series preview -> adjusts constrained decisions ->
+confirms -> Firestore transaction rebuilds/revision-checks the preview ->
+subscriptions -> store -> both apps.
 
 Tests: domain `distribution`, `assignment`, `rotation`, `progress`; `admin-home`,
 `admin-integration`, `member-khatma-routes`; emulator smoke for transaction changes.
@@ -43,8 +46,24 @@ Hard rules:
 - The khatma detail page derives selectable Surah capacities from the same
   page-to-Surah map: every page in the Surah unit must still be in
   `remainingPages`, so partially read or currently held Surahs are excluded.
-- Same local date blocks a second normal distribution.
-- Redistribution recalls and reassigns unread loose pages only among readers whose
+- The admin explicitly starts each round. `lastDistributionDate` is display/audit
+  metadata only; it is not a 24-hour or same-date business rule.
+- A confirmed series-wide `DistributionRun` is `open` until the next run closes
+  it. A current-round adjustment increments that run's revision. New assignment
+  chunks reference the run and have an explicit `pending`, `completed`, or
+  `released` status; legacy `doneByRound`/`released` fields remain readable.
+- The preview covers every active N/N+1 khatma in the series and shows exact
+  allocations, retained pending pages, releases, skips, and rollover. The admin
+  sees proposed assignments first; optional collapsed controls allow including
+  or excluding a reader, changing that round's loose-page capacity, and choosing
+  keep/release/add for pending pages.
+- Proposed chunks can swap recipients only within the same khatma. Compatible
+  recipients have exactly equal loose-page capacities and matching Surah/Juz
+  capacity settings. The swap moves the whole proposed chunk and never exposes
+  raw page ownership.
+- Confirm is atomic and rejects a stale `sourceRevision`; crossing from N to N+1
+  needs an explicit acknowledgment on the same decision screen.
+- Current-round adjustment recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;
   preserved Surah and Juz pages stay held. The reshuffle stays in the current
   round, does not increment `roundCount`, and cannot roll over into a new khatma.

@@ -14,7 +14,6 @@ export {
   type WriteOperationResult,
 } from './useWriteOperation';
 export {
-  AlreadyDistributedError,
   DuplicatePersonNameError,
   ReleasedChunkError,
   writeOperations,

@@ -5,19 +5,19 @@ import { resolve } from 'node:path';
 const outputDirectory = resolve('dist');
 const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 
-// 2026-07: redesign landed (theme factory with a light+dark token map, motion
-// keyframes, hero header chrome; fonts unchanged). Measured after Phase 6:
-// member 361.2/526.1 kB, admin 364.1/528.9 kB after the page-holding feature.
+// 2026-08: explicit run/chunk lifecycle compatibility affects both entries; the
+// admin also gained the series-wide preview/adjust/confirm planner. Measured at
+// member 365.2/530.2 kB and admin 371.3/536.2 kB; budgets retain ~2 kB headroom.
 const budgets = {
   member: {
     entry: 'index.html',
-    initialJavaScriptGzipBytes: 362_000,
-    initialTransferBytes: 528_000,
+    initialJavaScriptGzipBytes: 367_000,
+    initialTransferBytes: 532_000,
   },
   admin: {
     entry: 'admin-nano.html',
-    initialJavaScriptGzipBytes: 368_000,
-    initialTransferBytes: 533_000,
+    initialJavaScriptGzipBytes: 373_000,
+    initialTransferBytes: 538_000,
   },
 };
 

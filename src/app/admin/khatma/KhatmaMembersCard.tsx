@@ -13,7 +13,7 @@ import { AppButton, StatusChip, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import type { Surah } from '@/content/quran/types';
 import { warningLevel } from '@/domain/distribution';
-import { isRoundDone, latestReadableChunk } from '@/domain/progress';
+import { isChunkReleased, isRoundDone, latestReadableChunk } from '@/domain/progress';
 import { activeKhatmaIdsInSeries } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import { AddKhatmaMemberForm } from './AddKhatmaMemberForm';
@@ -252,7 +252,9 @@ function ChunkChip({ assignment, chunk, done, onToggle }: ChunkChipProps) {
     const last = assignment.rounds[assignment.rounds.length - 1];
     return (
       <Typography component="span" variant="body2" color="text.secondary">
-        {last?.released === true ? strings.admin.chunkReleased : strings.admin.noChunk}
+        {last && isChunkReleased(last)
+          ? strings.admin.chunkReleased
+          : strings.admin.noChunk}
       </Typography>
     );
   }

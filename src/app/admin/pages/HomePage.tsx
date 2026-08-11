@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { shallowEqual } from 'react-redux';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
@@ -19,25 +20,12 @@ import {
   selectRoster,
   useAppSelector,
 } from '@/app/store';
-import {
-  AlreadyDistributedError,
-  useWriteOperation,
-  type DistributionOutcome,
-  type OperationState,
-} from '@/app/operations';
-import { useConfirmation } from '@/app/providers';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
-import {
-  AppButton,
-  NestedSurface,
-  StatusChip,
-  SurfaceCard,
-} from '@/components/primitives';
+import { NestedSurface, StatusChip, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toWesternDigits } from '@/content/quran/symbols';
-import { requiredCapacity, resolvePageScope } from '@/domain/assignment';
-import { warningLevel, type DistributionMember } from '@/domain/distribution';
+import { warningLevel } from '@/domain/distribution';
 import { personAvatar } from '@/domain/personAppearance';
 import {
   currentChunk,
@@ -45,21 +33,15 @@ import {
   roundReaderRecords,
   type RoundReaderRecord,
 } from '@/domain/progress';
-import { pickDuaReciter } from '@/domain/rotation';
-import {
-  activeSeriesGroups,
-  nextSeriesNumber,
-  seriesTitle,
-  type SeriesGroup,
-} from '@/domain/series';
+import { activeSeriesGroups, seriesTitle, type SeriesGroup } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
-import { todayIso } from '@/app/admin/todayIso';
 import { useQuranScopeMaps, type QuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
+import { DistributionPlannerDialog } from '@/app/admin/distribution/DistributionPlannerDialog';
 
 /**
  * Admin Home `#/home` (current UI contract). One block per active series, one sub-block
  * per active khatma: at-a-glance metrics, pending readers, warnings,
- * and the daily distribute/redistribute action that drives the round model.
+ * and the series-level preview/adjust/confirm controls that drive the round model.
  */
 export function AdminHomePage() {
   const khatmas = useAppSelector(selectKhatmas);
@@ -98,35 +80,37 @@ function SeriesBlock({
   allKhatmas: readonly Khatma[];
   scopeMaps: QuranScopeMaps | null;
 }) {
+  const roster = useAppSelector(selectRoster);
+  const assignmentsByKhatma = useAppSelector(
+    (state) =>
+      Object.fromEntries(
+        group.active.map((khatma) => [
+          khatma.id,
+          selectAssignmentsForKhatma(state, khatma.id),
+        ]),
+      ),
+    shallowEqual,
+  );
   return (
     <SurfaceCard title={seriesTitle(group.latest, toWesternDigits)}>
       <Stack spacing={3}>
         {group.active.map((khatma) => (
-          <KhatmaBlock
-            key={khatma.id}
-            group={group}
-            khatma={khatma}
-            allKhatmas={allKhatmas}
-            scopeMaps={scopeMaps}
-          />
+          <KhatmaBlock key={khatma.id} khatma={khatma} />
         ))}
+        <DistributionPlannerDialog
+          group={group}
+          allKhatmas={allKhatmas}
+          roster={roster}
+          assignmentsByKhatma={assignmentsByKhatma}
+          scopeMaps={scopeMaps}
+        />
       </Stack>
     </SurfaceCard>
   );
 }
 
-/** Keep one khatma's metrics, readers, warnings, and action visibly together. */
-function KhatmaBlock({
-  group,
-  khatma,
-  allKhatmas,
-  scopeMaps,
-}: {
-  group: SeriesGroup;
-  khatma: Khatma;
-  allKhatmas: readonly Khatma[];
-  scopeMaps: QuranScopeMaps | null;
-}) {
+/** Keep one khatma's metrics, readers, and warnings visibly together. */
+function KhatmaBlock({ khatma }: { khatma: Khatma }) {
   const assignments = useAppSelector((state) =>
     selectAssignmentsForKhatma(state, khatma.id),
   );
@@ -139,13 +123,6 @@ function KhatmaBlock({
         <QuranPageGrid khatma={khatma} assignments={assignments} roster={roster} />
         <RoundReadingStatus assignments={assignments} roster={roster} />
         <Warnings assignments={assignments} roster={roster} />
-        <DistributeAction
-          group={group}
-          khatma={khatma}
-          allKhatmas={allKhatmas}
-          roster={roster}
-          scopeMaps={scopeMaps}
-        />
       </Stack>
     </NestedSurface>
   );
@@ -426,162 +403,4 @@ function pageRanges(pages: readonly number[]): string {
     i++;
   }
   return ranges.join('، ');
-}
-
-// -----------------------------------------------------------------------------
-// The daily distribute / redistribute action.
-// -----------------------------------------------------------------------------
-
-/**
- * Per-khatma distribute button. The React twin of the legacy `distributionAction`
- * + `onDistribute` — the injectable `runDistribution` boundary replaces the direct
- * data call, `useConfirmation()` replaces `window.confirm`, and the operation's
- * `isPending` provides the busy-disable (P8). The same-day guard (P7) is a
- * `khatma.lastDistributionDate === todayIso()` check that flips the primary
- * distribute into an outlined redistribute; redistribution bypasses the guard.
- */
-function DistributeAction({
-  group,
-  khatma,
-  allKhatmas,
-  roster,
-  scopeMaps,
-}: {
-  group: SeriesGroup;
-  khatma: Khatma;
-  allKhatmas: readonly Khatma[];
-  roster: readonly Person[];
-  scopeMaps: QuranScopeMaps | null;
-}) {
-  const distribution = useWriteOperation('runDistribution');
-  const { confirm } = useConfirmation();
-  const [scopeError, setScopeError] = useState(false);
-  // Remember which action produced the current success note (after a distribute
-  // the same-day guard flips the button to redistribute, so the button label can
-  // no longer tell us what just ran).
-  const [lastRedistribute, setLastRedistribute] = useState(false);
-
-  const distributedToday = khatma.lastDistributionDate === todayIso();
-  const busy = distribution.isPending;
-
-  const run = async (redistribute: boolean) => {
-    const confirmed = await confirm(
-      redistribute ? strings.admin.confirmRedistribute : strings.admin.confirmDistribute,
-    );
-    if (!confirmed) return;
-
-    let pool: number[];
-    try {
-      pool = resolvePageScope(khatma.scope, scopeMaps?.surahToPages);
-    } catch {
-      setScopeError(true);
-      return;
-    }
-    setScopeError(false);
-    setLastRedistribute(redistribute);
-
-    // Only the newest active khatma seeds the rollover pool; an older overlapping
-    // khatma rolls into the existing newer one instead of minting another.
-    const isNewestActive = group.active.every(
-      (active) => active.seriesNumber <= khatma.seriesNumber,
-    );
-    await distribution.execute({
-      khatmaIds: [khatma.id],
-      members: distributionMembers(khatma, roster),
-      today: todayIso(),
-      unitOfPage: scopeMaps?.pageUnitMaps,
-      redistributePages: redistribute,
-      rolloverSeed: {
-        seriesId: group.seriesId,
-        seriesName: group.seriesName,
-        ...(group.latest.imageName ? { imageName: group.latest.imageName } : {}),
-        seriesNumber: nextSeriesNumber(allKhatmas, group.seriesId),
-        totalPages: pool.length,
-        scope: khatma.scope,
-        memberIds: khatma.memberIds,
-        duaReciterId: pickDuaReciter(khatma.memberIds, allKhatmas),
-        capacities: khatma.capacities,
-        pool: isNewestActive ? pool : [],
-      },
-    });
-  };
-
-  const status = distributionStatus(scopeError, distribution.state, lastRedistribute);
-
-  return (
-    <Stack spacing={2}>
-      {distributedToday ? (
-        <Typography color="success.main" sx={{ fontWeight: 600 }}>
-          {strings.admin.distributedToday}
-        </Typography>
-      ) : null}
-      {/* Full-width senior CTA per mock 5a; redistribute stays quieter. */}
-      <AppButton
-        hero
-        variant={distributedToday ? 'outlined' : 'contained'}
-        disabled={busy}
-        onClick={() => void run(distributedToday)}
-        sx={busy ? { opacity: 0.5 } : undefined}
-      >
-        {distributedToday ? strings.admin.redistribute : strings.admin.distribute}
-      </AppButton>
-      {status ? (
-        // Intentional a11y delta (current UI contract): the legacy shows every status —
-        // successes and errors alike — in the same green. Errors get error tone +
-        // an `alert` role here so a failed distribution is not announced as success.
-        <Typography
-          role={status.tone === 'error' ? 'alert' : 'status'}
-          color={status.tone === 'error' ? 'error.main' : 'success.main'}
-        >
-          {status.text}
-        </Typography>
-      ) : null}
-    </Stack>
-  );
-}
-
-function distributionMembers(
-  khatma: Khatma,
-  roster: readonly Person[],
-): DistributionMember[] {
-  return khatma.memberIds
-    .map((id) => roster.find((person) => person.id === id))
-    .filter((person): person is Person => person !== undefined)
-    .map((person) => ({
-      id: person.id,
-      capacity: requiredCapacity(khatma, person.id),
-      completedPages: person.completedPages,
-      enabled: person.enabled,
-      holdPages: person.holdPages === true,
-    }));
-}
-
-/** Compose the status line + its semantic tone from the operation outcome. */
-function distributionStatus(
-  scopeError: boolean,
-  state: OperationState<DistributionOutcome>,
-  lastRedistribute: boolean,
-): { text: string; tone: 'success' | 'error' } | null {
-  if (scopeError) return { text: strings.admin.distributeError, tone: 'error' };
-  if (state.status === 'success') {
-    const notes: string[] = [
-      lastRedistribute
-        ? strings.admin.redistributeSuccess
-        : strings.admin.distributeSuccess,
-    ];
-    if (state.result.rolloverKhatmaId) notes.push(strings.admin.rolloverNote);
-    if (state.result.completedKhatmaIds.length > 0)
-      notes.push(strings.admin.completedNote);
-    return { text: notes.join(' · '), tone: 'success' };
-  }
-  if (state.status === 'failure') {
-    return {
-      text:
-        state.error instanceof AlreadyDistributedError
-          ? strings.admin.alreadyDistributed
-          : strings.admin.distributeError,
-      tone: 'error',
-    };
-  }
-  return null;
 }

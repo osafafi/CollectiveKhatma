@@ -19,7 +19,11 @@ Tests: `admin-khatmas`, `admin-khatma`, `admin-draft-stability`,
 
 Hard rules:
 
-- Scope kind is `full`, `range`, or `surahs`.
+- Every newly created khatma and automatic rollover covers the complete Quran:
+  full scope, 604 pages, and an initial pool of pages 1–604. The legacy
+  `range`/`surahs` scope variants remain readable so existing data does not
+  break, but the create UI, data adapter, and Firestore writes require full
+  Quran khatmas.
 - Every member has additive `{ pages, surahs, juz }` capacity, where `surahs`
   selects one Surah id and `juz` selects one Juz number (`1..30`; `0` means none).
 - On an active khatma's detail page, Surah capacity menus offer only Surahs whose

@@ -16,6 +16,7 @@
 
 import type { PageUnitMaps } from './assignment';
 import type { Assignment, MemberCapacity, WarningLevel } from './types';
+import { isChunkCompleted, isChunkReleased } from './chunkStatus';
 
 /** Roster info the planner needs about one participating member. */
 export interface DistributionMember {
@@ -244,6 +245,7 @@ function pickFrontBlockMatch(
 /** A member's chunk located across the series' khatmas. */
 interface LocatedChunk {
   khatmaId: string;
+  seriesNumber: number;
   round: number;
   date: string;
   pages: number[];
@@ -266,14 +268,19 @@ function latestChunk(
     if (!assignment) continue;
     for (const chunk of assignment.rounds) {
       if (chunk.pages.length === 0) continue;
-      if (!latest || chunk.date >= latest.date) {
+      if (
+        !latest ||
+        chunk.date > latest.date ||
+        (chunk.date === latest.date && k.seriesNumber >= latest.seriesNumber)
+      ) {
         latest = {
           khatmaId: k.id,
+          seriesNumber: k.seriesNumber,
           round: chunk.round,
           date: chunk.date,
           pages: chunk.pages,
-          released: chunk.released === true,
-          done: assignment.doneByRound[chunk.round] !== undefined,
+          released: isChunkReleased(chunk),
+          done: isChunkCompleted(assignment, chunk),
         };
       }
     }
@@ -413,8 +420,8 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
       a.rounds.every(
         (chunk) =>
           chunk.pages.length === 0 ||
-          chunk.released === true ||
-          a.doneByRound[chunk.round] !== undefined,
+          isChunkReleased(chunk) ||
+          isChunkCompleted(a, chunk),
       ),
     );
     if (allSettled) completions.push(k.id);
@@ -464,8 +471,8 @@ export function releaseChunk(
   const pending = assignment.rounds.filter(
     (chunk) =>
       chunk.pages.length > 0 &&
-      chunk.released !== true &&
-      assignment.doneByRound[chunk.round] === undefined,
+      !isChunkReleased(chunk) &&
+      !isChunkCompleted(assignment, chunk),
   );
   if (pending.length === 0) return undefined;
   return {
@@ -498,8 +505,8 @@ function hasPendingChunk(assignment: Assignment): boolean {
   return assignment.rounds.some(
     (chunk) =>
       chunk.pages.length > 0 &&
-      chunk.released !== true &&
-      assignment.doneByRound[chunk.round] === undefined,
+      !isChunkReleased(chunk) &&
+      !isChunkCompleted(assignment, chunk),
   );
 }
 
@@ -556,8 +563,8 @@ export function recallLoosePagesFromAssignment(
 
   for (let i = 0; i < rounds.length; i++) {
     const chunk = rounds[i]!;
-    if (chunk.pages.length === 0 || chunk.released === true) continue;
-    if (assignment.doneByRound[chunk.round] !== undefined) continue;
+    if (chunk.pages.length === 0 || isChunkReleased(chunk)) continue;
+    if (isChunkCompleted(assignment, chunk)) continue;
 
     const recalled = new Set(
       chunk.loosePages.filter((page) => chunk.pages.includes(page)),
@@ -572,7 +579,13 @@ export function recallLoosePagesFromAssignment(
       redistributedPages: [...new Set([...chunk.redistributedPages, ...recalled])].sort(
         (a, b) => a - b,
       ),
-      ...(pages.length === 0 ? { released: true as const } : {}),
+      ...(pages.length === 0
+        ? {
+            status: 'released' as const,
+            released: true as const,
+            releaseReason: 'redistributed' as const,
+          }
+        : {}),
     };
     nextRemainingPages = mergeSorted(nextRemainingPages, [...recalled]);
     changed = true;

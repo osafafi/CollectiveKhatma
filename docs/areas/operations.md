@@ -18,12 +18,30 @@ Firestore transaction/rule change: run domain tests, data callers, then the opt-
 emulator smoke with Firestore emulator running. Record if not run.
 
 `npm run seed` writes only to the local Firestore emulator and skips roster or
-khatma collections that already contain data. Its default dataset contains two
-active full-Quran series generated through the real distribution planner: one
-around halfway with current/older completions plus an older warned pending
-assignment, and one settled at the point where its next distribution rolls over.
-Use `npm run seed -- --dry-run` to build and summarize both scenarios without
-reading or writing emulator data.
+khatma collections that already contain data. Roster and khatma names describe
+their test intent in the Emulator UI. Its default dataset contains
+`KhatmaRoundPreviewTest`, a planner-generated halfway state with late and pending
+readers; `KhatmaRolloverTest`, settled immediately before rollover; and the
+full-Quran `KhatmaRedistributionTest`, with completed, loose-page, accumulated
+hold, mixed Surah/loose, disabled, and ready-without-pages cases. Every seeded
+khatma covers pages 1–604; its remaining pool reflects the scenario state. Use
+`npm run seed -- --dry-run` to build and summarize all scenarios without reading
+or writing emulator data. Seeded assignment chunks include explicit lifecycle
+status/run references, and matching `distributionRuns` records make revision,
+completion, and current-run behavior inspectable in the Emulator UI.
+
+Distribution schema: `distributionRuns/{runId}` records a confirmed series-wide
+run with number, mode, open/closed status, revision, khatma ids, timestamps, and
+optional rollover pair. Khatmas mirror `currentDistributionRunId` and
+`distributionRevision`. New chunks carry `id`, `runId`, `status`, and lifecycle
+timestamps; readers remain backward-compatible with legacy `released` and
+`doneByRound` data.
+
+Khatma create and update rules require full scope and 604 total pages. The data
+adapter requires an ordinary new khatma to start with the exact 1–604 pool; an
+atomic rollover may create N+1 with its first round already assigned, so its
+persisted `remainingPages` is legitimately smaller at creation time. New UI and
+rollover writes always create full-Quran khatmas.
 
 Feedback schema: `content/feedback/messages/{feedbackId}` is append-only at
 submission time. Each document stores `memberId`, `memberName`, `message`,

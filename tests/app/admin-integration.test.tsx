@@ -179,9 +179,11 @@ describe('admin application integration', () => {
   });
 
   it('distributes on Home, then a live completion snapshot drops the khatma and releases its listener (distribution + P10)', async () => {
-    const runDistribution = vi
-      .fn<WriteOperations['runDistribution']>()
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
       .mockResolvedValue({
+        runId: 'run-1',
+        revision: 1,
         completedKhatmaIds: ['k1'],
         chunkCount: 1,
       } as DistributionOutcome);
@@ -191,7 +193,7 @@ describe('admin application integration', () => {
         khatmas: [makeKhatma('k1')],
         assignments: { k1: [makeAssignment(amina.id)] },
       },
-      operations: { ...writeOperations, runDistribution },
+      operations: { ...writeOperations, commitDistributionRun },
     });
 
     // The active khatma's assignments are subscribed while it is on the dashboard.
@@ -201,18 +203,15 @@ describe('admin application integration', () => {
     });
 
     await harness.user.click(
-      await screen.findByRole('button', { name: strings.admin.distribute }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     );
     await harness.user.click(
-      screen.getByRole('button', { name: strings.common.confirm }),
+      screen.getByRole('button', { name: strings.admin.confirmAndStartRound }),
     );
 
     // The distribution reports a completion.
-    const status = await screen.findByText((text) =>
-      text.includes(strings.admin.distributeSuccess),
-    );
-    expect(status).toHaveTextContent(strings.admin.completedNote);
-    expect(runDistribution).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(strings.admin.roundCommitSuccess)).toBeVisible();
+    expect(commitDistributionRun).toHaveBeenCalledTimes(1);
 
     // The realtime snapshot that completes k1 drops it from the active dashboard
     // and releases its now-unwanted assignment listener (P10) — no dangling sub.
@@ -283,10 +282,12 @@ describe('admin application integration', () => {
   });
 
   it('recovers from a failed distribution: an error alert, a re-enabled button, then a successful retry (error flow)', async () => {
-    const runDistribution = vi
-      .fn<WriteOperations['runDistribution']>()
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce({
+        runId: 'run-1',
+        revision: 1,
         completedKhatmaIds: [],
         chunkCount: 1,
       } as DistributionOutcome);
@@ -296,33 +297,30 @@ describe('admin application integration', () => {
         khatmas: [makeKhatma('k1')],
         assignments: { k1: [makeAssignment(amina.id)] },
       },
-      operations: { ...writeOperations, runDistribution },
+      operations: { ...writeOperations, commitDistributionRun },
     });
 
-    const distribute = await screen.findByRole('button', {
-      name: strings.admin.distribute,
-    });
-    await harness.user.click(distribute);
     await harness.user.click(
-      screen.getByRole('button', { name: strings.common.confirm }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     );
+    const confirm = screen.getByRole('button', {
+      name: strings.admin.confirmAndStartRound,
+    });
+    await harness.user.click(confirm);
 
     // A generic failure is surfaced as an error alert (the generic copy, not the
-    // same-day AlreadyDistributed message) — never announced as a green success.
+    // stale-preview message) — never announced as a green success.
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(strings.admin.distributeError);
-    expect(alert).not.toHaveTextContent(strings.admin.alreadyDistributed);
+    expect(alert).not.toHaveTextContent(strings.admin.staleDistributionPreview);
 
     // The busy state cleared with the failure, so the admin can retry.
-    await waitFor(() => expect(distribute).toBeEnabled());
+    await waitFor(() => expect(confirm).toBeEnabled());
 
-    await harness.user.click(distribute);
-    await harness.user.click(
-      screen.getByRole('button', { name: strings.common.confirm }),
-    );
+    await harness.user.click(confirm);
 
     const success = await screen.findByRole('status');
-    expect(success).toHaveTextContent(strings.admin.distributeSuccess);
-    expect(runDistribution).toHaveBeenCalledTimes(2);
+    expect(success).toHaveTextContent(strings.admin.roundCommitSuccess);
+    expect(commitDistributionRun).toHaveBeenCalledTimes(2);
   });
 });

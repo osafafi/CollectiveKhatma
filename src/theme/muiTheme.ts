@@ -234,7 +234,14 @@ export function createKhatmaTheme(
       },
       MuiDialog: {
         styleOverrides: {
-          paper: { borderRadius: RADII.card },
+          paper: {
+            borderRadius: RADII.card,
+            backgroundColor: t.surface,
+            backgroundImage: custom.cardBg.startsWith('linear-gradient')
+              ? custom.cardBg
+              : 'none',
+            boxShadow: custom.cardShadow,
+          },
         },
       },
       MuiTextField: {

@@ -5,7 +5,10 @@ import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
 import type { QuranIndex, Surah } from '@/content/quran/types';
 import { toWesternDigits } from '@/content/quran/symbols';
-import { AlreadyDistributedError, type DistributionOutcome } from '@/data/distribution';
+import {
+  StaleDistributionDraftError,
+  type DistributionOutcome,
+} from '@/data/distribution';
 import { seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import { todayIso } from '@/app/admin/todayIso';
@@ -38,6 +41,7 @@ const amina: Person = {
   createdAt: 1,
 };
 const maryam: Person = { ...amina, id: 'p2', name: 'Maryam', emoji: '🌙' };
+const fatima: Person = { ...amina, id: 'p3', name: 'Fatima', pagesPerDay: 3 };
 
 function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
   return {
@@ -200,12 +204,14 @@ describe('admin Home dashboard', () => {
     });
 
     expect(screen.getByText(strings.admin.noActive)).toBeVisible();
-    expect(screen.queryByRole('button', { name: strings.admin.distribute })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: strings.admin.prepareNextRound }),
+    ).toBeNull();
   });
 
-  it('confirms, busy-disables, and reports success with rollover/completed notes', async () => {
+  it('previews, confirms atomically, and reports the committed run', async () => {
     const pending = deferred<DistributionOutcome>();
-    const runDistribution = vi.fn<WriteOperations['runDistribution']>(
+    const commitDistributionRun = vi.fn<WriteOperations['commitDistributionRun']>(
       () => pending.promise,
     );
     const harness = renderAdmin({
@@ -214,91 +220,109 @@ describe('admin Home dashboard', () => {
         khatmas: [makeKhatma('k1')],
         assignments: { k1: [makeAssignment(amina.id)] },
       },
-      operations: { ...writeOperations, runDistribution },
+      operations: { ...writeOperations, commitDistributionRun },
     });
 
-    const distribute = await screen.findByRole('button', {
-      name: strings.admin.distribute,
-    });
-    await harness.user.click(distribute);
-
-    // Confirmation gate: the confirm copy appears; approving runs distribution.
-    expect(screen.getByText(strings.admin.confirmDistribute)).toBeVisible();
     await harness.user.click(
-      screen.getByRole('button', { name: strings.common.confirm }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     );
+    expect(
+      screen.getByRole('heading', { name: strings.admin.prepareNextRound }),
+    ).toBeVisible();
+    expect(screen.getByText('Amina', { selector: 'p' })).toBeVisible();
 
-    // Busy-disable prevents a double-press while the write is in flight (P8).
-    await waitFor(() => expect(distribute).toBeDisabled());
-    expect(runDistribution).toHaveBeenCalledTimes(1);
-    expect(runDistribution.mock.calls[0]![0]).toMatchObject({
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.admin.optionalRoundAdjustments }),
+    );
+    expect(screen.getByLabelText(strings.admin.roundCapacity)).toHaveValue(2);
+
+    const confirm = screen.getByRole('button', {
+      name: strings.admin.confirmAndStartRound,
+    });
+    await harness.user.click(confirm);
+
+    await waitFor(() => expect(confirm).toBeDisabled());
+    expect(commitDistributionRun).toHaveBeenCalledTimes(1);
+    expect(commitDistributionRun.mock.calls[0]![0]).toMatchObject({
       khatmaIds: ['k1'],
       today: todayIso(),
-      redistributePages: false,
+      mode: 'new-round',
     });
+    expect(commitDistributionRun.mock.calls[0]![0].expectedSourceRevision).toEqual(
+      expect.any(String),
+    );
 
     await act(async () => {
       pending.resolve({
+        runId: 'run-2',
+        revision: 1,
         rolloverKhatmaId: 'roll',
         completedKhatmaIds: ['k1'],
         chunkCount: 1,
       });
     });
 
-    const status = await screen.findByText((text) =>
-      text.includes(strings.admin.distributeSuccess),
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent(strings.admin.roundCommitSuccess);
+    expect(status).toHaveTextContent(
+      strings.admin.savedAssignmentCount.replace('{count}', '1'),
     );
     expect(status).toHaveTextContent(strings.admin.rolloverNote);
     expect(status).toHaveTextContent(strings.admin.completedNote);
-    expect(status).toHaveAttribute('role', 'status');
+    expect(
+      screen.queryByRole('heading', { name: strings.admin.prepareNextRound }),
+    ).toBeNull();
   });
 
-  it('does not distribute when the confirmation is dismissed', async () => {
-    const runDistribution = vi.fn<WriteOperations['runDistribution']>();
+  it('does not commit when the preview is dismissed', async () => {
+    const commitDistributionRun = vi.fn<WriteOperations['commitDistributionRun']>();
     const harness = renderAdmin({
       data: {
         roster: [amina],
         khatmas: [makeKhatma('k1')],
         assignments: { k1: [makeAssignment(amina.id)] },
       },
-      operations: { ...writeOperations, runDistribution },
+      operations: { ...writeOperations, commitDistributionRun },
     });
 
     await harness.user.click(
-      await screen.findByRole('button', { name: strings.admin.distribute }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     );
     await harness.user.click(screen.getByRole('button', { name: strings.common.cancel }));
 
-    expect(runDistribution).not.toHaveBeenCalled();
-    expect(screen.queryByText(strings.admin.distributeSuccess)).toBeNull();
+    expect(commitDistributionRun).not.toHaveBeenCalled();
+    expect(screen.queryByText(strings.admin.roundCommitSuccess)).toBeNull();
   });
 
-  it('surfaces a same-day collision as an error, not a green success (P7)', async () => {
-    const runDistribution = vi
-      .fn<WriteOperations['runDistribution']>()
-      .mockRejectedValue(new AlreadyDistributedError());
+  it('surfaces a stale preview and keeps it open for review', async () => {
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
+      .mockRejectedValue(new StaleDistributionDraftError());
     const harness = renderAdmin({
       data: {
         roster: [amina],
         khatmas: [makeKhatma('k1')],
         assignments: { k1: [makeAssignment(amina.id)] },
       },
-      operations: { ...writeOperations, runDistribution },
+      operations: { ...writeOperations, commitDistributionRun },
     });
 
     await harness.user.click(
-      await screen.findByRole('button', { name: strings.admin.distribute }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     );
     await harness.user.click(
-      screen.getByRole('button', { name: strings.common.confirm }),
+      screen.getByRole('button', { name: strings.admin.confirmAndStartRound }),
     );
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(strings.admin.alreadyDistributed);
+    expect(alert).toHaveTextContent(strings.admin.staleDistributionPreview);
+    expect(
+      screen.getByRole('heading', { name: strings.admin.prepareNextRound }),
+    ).toBeVisible();
   });
 
-  it('offers redistribute (guard-bypassing) once distributed today', async () => {
-    renderAdmin({
+  it('keeps the date informational and offers both admin-controlled actions', async () => {
+    const harness = renderAdmin({
       data: {
         roster: [amina],
         khatmas: [makeKhatma('k1', { lastDistributionDate: todayIso() })],
@@ -306,11 +330,126 @@ describe('admin Home dashboard', () => {
       },
     });
 
-    expect(await screen.findByText(strings.admin.distributedToday)).toBeVisible();
     expect(
-      screen.getByRole('button', { name: strings.admin.redistribute }),
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
     ).toBeEnabled();
-    expect(screen.queryByRole('button', { name: strings.admin.distribute })).toBeNull();
+    const adjust = screen.getByRole('button', {
+      name: strings.admin.adjustCurrentRound,
+    });
+    expect(adjust).toBeEnabled();
+    await harness.user.click(adjust);
+    expect(
+      screen.getByRole('heading', { name: strings.admin.adjustCurrentRound }),
+    ).toBeVisible();
+  });
+
+  it('only offers swaps between members with exactly equal capacities', async () => {
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
+      .mockResolvedValue({
+        runId: 'run-swapped',
+        revision: 1,
+        completedKhatmaIds: [],
+        chunkCount: 3,
+      });
+    const harness = renderAdmin({
+      data: {
+        roster: [amina, maryam, fatima],
+        khatmas: [
+          makeKhatma('k1', {
+            totalPages: 12,
+            remainingPages: Array.from({ length: 12 }, (_, index) => index + 1),
+            memberIds: [amina.id, maryam.id, fatima.id],
+            capacities: {
+              [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+              [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+              [fatima.id]: { pages: 3, surahs: 0, juz: 0 },
+            },
+          }),
+        ],
+        assignments: {
+          k1: [
+            makeAssignment(amina.id),
+            makeAssignment(maryam.id),
+            makeAssignment(fatima.id),
+          ],
+        },
+      },
+      operations: { ...writeOperations, commitDistributionRun },
+    });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
+    );
+    const swapSelects = screen.getAllByRole('combobox', {
+      name: strings.admin.swapPagesWith,
+    });
+    expect(swapSelects).toHaveLength(2);
+    await harness.user.click(swapSelects[0]!);
+    const swapOptions = within(screen.getByRole('listbox'));
+    expect(swapOptions.queryByRole('option', { name: fatima.name })).toBeNull();
+    await harness.user.click(swapOptions.getByRole('option', { name: maryam.name }));
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.admin.confirmAndStartRound }),
+    );
+
+    expect(commitDistributionRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adjustments: expect.objectContaining({ recipientOrder: ['p2', 'p1', 'p3'] }),
+      }),
+    );
+  });
+
+  it('requires explicit rollover acknowledgment before confirmation', async () => {
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
+      .mockResolvedValue({
+        runId: 'run-rollover',
+        revision: 1,
+        rolloverKhatmaId: 'k2',
+        completedKhatmaIds: ['k1'],
+        chunkCount: 1,
+      });
+    const harness = renderAdmin({
+      data: {
+        roster: [amina],
+        khatmas: [makeKhatma('k1', { remainingPages: [] })],
+        assignments: { k1: [makeAssignment(amina.id)] },
+      },
+      operations: { ...writeOperations, commitDistributionRun },
+    });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
+    );
+    expect(screen.getByText(/لن تُنشأ قبل التأكيد/)).toBeVisible();
+    const confirm = screen.getByRole('button', {
+      name: strings.admin.confirmAndStartRound,
+    });
+    expect(confirm).toBeDisabled();
+    await harness.user.click(
+      screen.getByRole('checkbox', { name: strings.admin.confirmRolloverBoundary }),
+    );
+    expect(confirm).toBeEnabled();
+    expect(commitDistributionRun).not.toHaveBeenCalled();
+  });
+
+  it('explains and disables a zero-change current-round adjustment', async () => {
+    const harness = renderAdmin({
+      data: {
+        roster: [amina],
+        khatmas: [makeKhatma('k1')],
+        assignments: { k1: [makeAssignment(amina.id)] },
+      },
+    });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.admin.adjustCurrentRound }),
+    );
+    expect(screen.getByText(strings.admin.noDistributionChanges)).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: strings.admin.confirmAndStartRound }),
+    ).toBeDisabled();
   });
 
   it('subscribes to every active khatma plus the open detail khatma (P9)', () => {

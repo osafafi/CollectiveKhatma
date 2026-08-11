@@ -15,7 +15,12 @@ import { CollapsibleCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { toWesternDigits } from '@/content/quran/symbols';
 import { personAvatar } from '@/domain/personAppearance';
-import { isRoundDone, khatmaProgress, pendingReaders } from '@/domain/progress';
+import {
+  isChunkReleased,
+  isRoundDone,
+  khatmaProgress,
+  pendingReaders,
+} from '@/domain/progress';
 import type { Assignment, Khatma, Person } from '@/domain/types';
 
 interface GroupProgressCardProps {
@@ -37,7 +42,7 @@ export function GroupProgressCard({
       (chunk) =>
         chunk.round === khatma.roundCount &&
         chunk.pages.length > 0 &&
-        chunk.released !== true,
+        !isChunkReleased(chunk),
     ),
   );
   const doneCount = inRound.filter((assignment) =>

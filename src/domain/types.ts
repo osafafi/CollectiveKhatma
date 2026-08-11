@@ -63,6 +63,23 @@ export interface MemberCapacity {
 }
 
 export type KhatmaStatus = 'active' | 'completed';
+export type DistributionRunStatus = 'open' | 'closed';
+export type AssignmentChunkStatus = 'pending' | 'completed' | 'released';
+
+/** One explicitly confirmed, series-wide distribution operation. */
+export interface DistributionRun {
+  id: string;
+  seriesId: string;
+  number: number;
+  status: DistributionRunStatus;
+  revision: number;
+  mode: 'new-round' | 'adjust-current';
+  khatmaIds: string[];
+  openedAt: number;
+  updatedAt: number;
+  closedAt?: number;
+  rollover?: { fromKhatmaId: string; toKhatmaId: string };
+}
 
 /**
  * What a khatma should cover. The admin picks one of these; the UI resolves it
@@ -90,9 +107,9 @@ export type PageScope =
  *    or `remainingPages`.
  * 2. `remainingPages` is always ascending; distribution shifts from the front;
  *    released pages merge back in sorted position (so they re-serve first).
- * 3. `lastDistributionDate === today` blocks a new round, except an explicit
- *    page redistribution that recalls and reshuffles the current round's loose
- *    pages without advancing `roundCount`.
+ * 3. A confirmed series-level run owns the round boundary. The local date is
+ *    informational metadata; current-round adjustment changes the open run's
+ *    revision without advancing `roundCount`.
  */
 export interface Khatma {
   id: string;
@@ -121,8 +138,12 @@ export interface Khatma {
   remainingPages: number[];
   /** How many distribution rounds have run against THIS khatma. */
   roundCount: number;
-  /** ISO date (YYYY-MM-DD) of the last distribution — same-day idempotency guard. */
+  /** ISO date (YYYY-MM-DD) of the last distribution, for display/audit only. */
   lastDistributionDate?: string;
+  /** The open series-wide run that most recently changed this khatma. */
+  currentDistributionRunId?: string;
+  /** Mirrors the open run revision for dashboard and stale-preview metadata. */
+  distributionRevision?: number;
   /**
    * The single member designated to recite du3a2 al-khatma for THIS khatma.
    * Chosen by rotation at creation/rollover so the duty spreads across cycles
@@ -139,6 +160,12 @@ export interface Khatma {
  * Append-only history on the {@link Assignment}.
  */
 export interface RoundChunk {
+  /** Stable identity for new-schema chunks; legacy chunks omit it. */
+  id?: string;
+  /** Series-level distribution run that created this chunk. */
+  runId?: string;
+  /** Explicit lifecycle for new chunks; legacy fields remain readable. */
+  status?: AssignmentChunkStatus;
   /** Khatma-local round number, 1-based (matches `Khatma.roundCount` sequence). */
   round: number;
   /** ISO date (YYYY-MM-DD) the chunk was distributed. */
@@ -154,6 +181,9 @@ export interface RoundChunk {
    * and reassigned. The chunk is kept as history; it can never be marked done.
    */
   released?: true;
+  completedAt?: number;
+  releasedAt?: number;
+  releaseReason?: string;
 }
 
 /**

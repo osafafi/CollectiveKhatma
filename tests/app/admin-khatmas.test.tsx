@@ -16,8 +16,8 @@ import {
   type RenderWithAppProvidersOptions,
 } from '../support/reactTestHarness';
 
-// The create form loads surah/juz maps (scope resolution) and surah names (the
-// checklist + capacity selects); mock the loader so jsdom tests stay offline.
+// The create form loads Surah names for capacity selects; mock the Quran loaders
+// so jsdom tests stay offline.
 const loader = vi.hoisted(() => ({
   getQuranIndex: vi.fn<() => Promise<QuranIndex>>(),
   getSurahs: vi.fn<() => Promise<Surah[]>>(),
@@ -221,6 +221,8 @@ describe('admin Khatmas list/create', () => {
   it('creates a brand-new series (full scope, solo capacity default) and resets', async () => {
     const { user, operations } = renderKhatmas({ roster: [amina], khatmas: [] });
     await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
+
+    expect(screen.getByText(strings.admin.fullQuranOnly)).toBeVisible();
 
     await user.type(
       screen.getByLabelText(strings.admin.seriesNamePlaceholder),

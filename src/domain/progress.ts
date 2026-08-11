@@ -1,6 +1,9 @@
 /** Pure progress / insight calculations (REQUIREMENTS §6, §8). */
 
 import type { Assignment, Khatma, Person, RoundChunk } from './types';
+import { isChunkCompleted, isChunkReleased } from './chunkStatus';
+
+export { isChunkCompleted, isChunkReleased } from './chunkStatus';
 
 export const QURAN_TOTAL_PAGES = 604;
 
@@ -74,9 +77,9 @@ export function memberReadingInsights({
     if (assignment.memberId !== memberId) continue;
 
     for (const chunk of assignment.rounds) {
-      const completedAt = assignment.doneByRound?.[chunk.round];
+      const completedAt = chunk.completedAt ?? assignment.doneByRound?.[chunk.round];
       if (
-        chunk.released === true ||
+        isChunkReleased(chunk) ||
         chunk.pages.length === 0 ||
         completedAt === undefined ||
         !Number.isFinite(completedAt)
@@ -139,7 +142,7 @@ export function khatmaPercent(donePages: number, totalPages: number): number {
 
 /** True if the member has marked round `round` done. */
 export function isRoundDone(a: Assignment, round: number): boolean {
-  return a.doneByRound?.[round] !== undefined;
+  return a.rounds.some((chunk) => chunk.round === round && isChunkCompleted(a, chunk));
 }
 
 /** Latest chunk recorded for a round (redistribution can replace it in-place). */
@@ -158,7 +161,7 @@ export function latestChunkForRound(
 export function pendingChunks(a: Assignment): RoundChunk[] {
   return a.rounds.filter(
     (chunk) =>
-      chunk.pages.length > 0 && chunk.released !== true && !isRoundDone(a, chunk.round),
+      chunk.pages.length > 0 && !isChunkReleased(chunk) && !isChunkCompleted(a, chunk),
   );
 }
 
@@ -198,7 +201,7 @@ export function latestReadableChunk(a: Assignment): RoundChunk | undefined {
   if (pending) return pending;
   for (let i = a.rounds.length - 1; i >= 0; i--) {
     const chunk = a.rounds[i];
-    if (chunk && chunk.pages.length > 0 && chunk.released !== true) return chunk;
+    if (chunk && chunk.pages.length > 0 && !isChunkReleased(chunk)) return chunk;
   }
   return undefined;
 }
@@ -206,10 +209,7 @@ export function latestReadableChunk(a: Assignment): RoundChunk | undefined {
 /** Pages the member actually completed (chunks whose round is marked done). */
 export function donePageCount(a: Assignment): number {
   return a.rounds.reduce(
-    (sum, chunk) =>
-      chunk.released !== true && isRoundDone(a, chunk.round)
-        ? sum + chunk.pages.length
-        : sum,
+    (sum, chunk) => (isChunkCompleted(a, chunk) ? sum + chunk.pages.length : sum),
     0,
   );
 }
@@ -277,7 +277,7 @@ export function roundReaderRecords(
       round: chunk.round,
       pages: chunk.pages,
     };
-    if (isRoundDone(assignment, chunk.round)) records.completed.push(record);
+    if (isChunkCompleted(assignment, chunk)) records.completed.push(record);
     else records.pending.push(record);
   }
   const newestRoundFirst = (a: RoundReaderRecord, b: RoundReaderRecord): number =>

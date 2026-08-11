@@ -3,10 +3,6 @@ import type { MemberCapacity, PageScope } from '@/domain/types';
 
 export interface CreateKhatmaDraft {
   seriesName: string;
-  scopeKind: PageScope['kind'];
-  rangeFrom: string;
-  rangeTo: string;
-  surahIds: Set<number>;
   memberIds: Set<string>;
   memberCaps: Record<string, MemberCapacity>;
   reciterId: string;
@@ -19,10 +15,6 @@ export interface CreateKhatmaDraft {
 export function emptyCreateKhatmaDraft(): CreateKhatmaDraft {
   return {
     seriesName: '',
-    scopeKind: 'full',
-    rangeFrom: '1',
-    rangeTo: '604',
-    surahIds: new Set(),
     memberIds: new Set(),
     memberCaps: {},
     reciterId: '',
@@ -32,23 +24,8 @@ export function emptyCreateKhatmaDraft(): CreateKhatmaDraft {
   };
 }
 
-export function buildKhatmaScope(draft: CreateKhatmaDraft): PageScope | null {
-  switch (draft.scopeKind) {
-    case 'full':
-      return { kind: 'full' };
-    case 'range': {
-      const fromPage = parseInt(draft.rangeFrom, 10);
-      const toPage = parseInt(draft.rangeTo, 10);
-      if (!Number.isInteger(fromPage) || !Number.isInteger(toPage)) return null;
-      if (fromPage < 1 || toPage < fromPage) return null;
-      return { kind: 'range', fromPage, toPage };
-    }
-    case 'surahs': {
-      const surahIds = [...draft.surahIds].sort((a, b) => a - b);
-      if (surahIds.length === 0) return null;
-      return { kind: 'surahs', surahIds };
-    }
-  }
+export function buildKhatmaScope(): PageScope {
+  return { kind: 'full' };
 }
 
 export function buildKhatmaCapacities(
@@ -81,28 +58,7 @@ export function createKhatmaDraftFromPrefill(
       Object.entries(prefill.memberCaps).map(([id, cap]) => [id, { ...cap }]),
     ),
     reciterId: prefill.reciterId,
-    ...scopeToDraftFields(prefill.scope),
   };
-}
-
-function scopeToDraftFields(scope: PageScope): Partial<CreateKhatmaDraft> {
-  if (scope.kind === 'range') {
-    return {
-      scopeKind: 'range',
-      rangeFrom: String(scope.fromPage),
-      rangeTo: String(scope.toPage),
-      surahIds: new Set(),
-    };
-  }
-  if (scope.kind === 'surahs') {
-    return {
-      scopeKind: 'surahs',
-      rangeFrom: '1',
-      rangeTo: '604',
-      surahIds: new Set(scope.surahIds),
-    };
-  }
-  return { scopeKind: 'full', rangeFrom: '1', rangeTo: '604', surahIds: new Set() };
 }
 
 export function toCount(value: string): number {

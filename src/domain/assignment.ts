@@ -1,4 +1,5 @@
 import type { Assignment, Khatma, MemberCapacity, PageScope } from './types';
+import { isChunkReleased } from './chunkStatus';
 
 export type { PageScope };
 
@@ -163,7 +164,7 @@ export function removeKhatmaMember(
   memberId: string,
 ): KhatmaMemberRemoval {
   const heldPages =
-    assignment?.rounds.flatMap((chunk) => (chunk.released === true ? [] : chunk.pages)) ??
+    assignment?.rounds.flatMap((chunk) => (isChunkReleased(chunk) ? [] : chunk.pages)) ??
     [];
   const memberIds = khatma.memberIds.filter((id) => id !== memberId);
   const capacities = { ...khatma.capacities };

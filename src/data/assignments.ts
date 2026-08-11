@@ -12,7 +12,12 @@ import {
   type DocumentReference,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { latestChunkForRound, pendingChunks } from '@/domain/progress';
+import {
+  isChunkCompleted,
+  isChunkReleased,
+  latestChunkForRound,
+  pendingChunks,
+} from '@/domain/progress';
 import type { Assignment } from '@/domain/types';
 import { db } from './firebase';
 
@@ -96,15 +101,22 @@ export function markRoundDone(
       );
     }
     const data = snap.data() as Assignment;
-    if (data.doneByRound[round] !== undefined) return; // already done — idempotent
-
     const chunk = latestChunkForRound(data, round);
     if (!chunk) throw new Error(`markRoundDone: no round ${round} for ${memberId}`);
-    if (chunk.released === true) throw new ReleasedChunkError();
+    if (isChunkCompleted(data, chunk)) return; // already done — idempotent
+    if (isChunkReleased(chunk)) throw new ReleasedChunkError();
 
     const pending = pendingChunks(data);
     const completedAt = Date.now();
-    const assignmentUpdates: Record<string, unknown> = { missedStreak: 0 };
+    const pendingIds = new Set(pending.map((pendingChunk) => pendingChunk.id));
+    const pendingRounds = new Set(pending.map((pendingChunk) => pendingChunk.round));
+    const rounds = data.rounds.map((existingChunk) =>
+      (existingChunk.id !== undefined && pendingIds.has(existingChunk.id)) ||
+      (existingChunk.id === undefined && pendingRounds.has(existingChunk.round))
+        ? { ...existingChunk, status: 'completed' as const, completedAt }
+        : existingChunk,
+    );
+    const assignmentUpdates: Record<string, unknown> = { missedStreak: 0, rounds };
     for (const pendingChunk of pending) {
       assignmentUpdates[`doneByRound.${pendingChunk.round}`] = completedAt;
     }
@@ -149,10 +161,19 @@ export function clearRoundDone(
     const snap = await tx.get(assignmentRef);
     if (!snap.exists()) return;
     const data = snap.data() as Assignment;
-    if (data.doneByRound[round] === undefined) return; // not done — nothing to clear
+    const chunk = latestChunkForRound(data, round);
+    if (!chunk || !isChunkCompleted(data, chunk)) return;
 
-    const pages = latestChunkForRound(data, round)?.pages ?? [];
-    tx.update(assignmentRef, { [`doneByRound.${round}`]: deleteField() });
+    const pages = chunk.pages;
+    const rounds = data.rounds.map((existingChunk) => {
+      if (existingChunk !== chunk) return existingChunk;
+      const { completedAt: _completedAt, ...withoutCompletedAt } = existingChunk;
+      return { ...withoutCompletedAt, status: 'pending' as const };
+    });
+    tx.update(assignmentRef, {
+      rounds,
+      [`doneByRound.${round}`]: deleteField(),
+    });
     if (pages.length > 0) {
       tx.update(personRef, { completedPages: arrayRemove(...pages) });
     }

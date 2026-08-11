@@ -21,7 +21,27 @@ Hard rules:
 - Feature UI never imports `src/data`.
 - Firestore data lives in Redux. Drafts, dialogs, caret, and busy state stay local.
 - Drafts survive live snapshots. Reset only after successful submit.
-- Busy distribution blocks double press.
+- The dashboard exposes one series-level round-control surface after all active
+  N/N+1 khatma blocks. “Prepare next round” and “Adjust current round” open a
+  single decision screen with proposed assignments visible immediately; no
+  write happens before confirmation.
+- The preview stays frozen across live snapshots. Its main surface lists exact
+  page ranges, recipients, target khatma, and rollover. Participation,
+  per-round page capacity, pending-page policy, and skipped-reader details live
+  in collapsed optional sections so the common path remains short.
+- The round-control dialog has no flat visual sections: its shell, title,
+  summary, optional controls, proposed assignments and rows, skipped/release
+  notices, rollover confirmation, and action footer use the shared token-based
+  emerald/gold/card gradients to make section boundaries scannable.
+- An assignment row offers “swap pages with” only when another proposed
+  recipient is in the same khatma and has exactly equal loose-page, Surah, and
+  Juz capacity settings. The admin swaps whole proposed chunks;
+  there is no raw page-ownership editor.
+- Same-day starts remain available because distribution dates are informational.
+  Rollover is planned automatically and requires an explicit acknowledgment;
+  zero-change or stale previews explain why confirmation cannot proceed.
+- Busy distribution blocks double press. Success closes the dialog and is
+  announced on the dashboard; failure remains in the dialog for review/retry.
 - Dashboard warnings are grouped per khatma in a count-labelled accordion that
   is collapsed by default.
 - Each dashboard khatma groups retained round assignments into separate
