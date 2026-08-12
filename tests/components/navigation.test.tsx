@@ -170,7 +170,7 @@ describe('HeroHeader', () => {
 });
 
 describe('Responsive shell contracts', () => {
-  it('clears the mobile tab bar and reserves the RTL desktop rail', () => {
+  it('pins the mobile tab bar to the dynamic viewport and reserves the RTL desktop rail', () => {
     expect(appShellFrameSx.paddingInlineStart).toEqual({ lg: '96px' });
     expect(appShellContentSx).toMatchObject({
       width: '100%',
@@ -179,7 +179,8 @@ describe('Responsive shell contracts', () => {
     expect(appNavLayout).toEqual({
       mobile: {
         insetInline: 0,
-        bottom: 0,
+        top: '100dvh',
+        transform: 'translateY(-100%)',
         borderTopWidth: '1px',
         maxListWidth: 576,
         flexDirection: 'row',

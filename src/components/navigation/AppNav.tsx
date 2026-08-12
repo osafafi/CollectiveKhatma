@@ -7,7 +7,9 @@ import { appNavLayout } from './layoutContracts';
 /**
  * Responsive primary navigation.
  *
- * - **Mobile (`< lg`)**: a fixed full-width **bottom** bar with a top border. The
+ * - **Mobile (`< lg`)**: a fixed full-width **bottom** bar with a top border. It
+ *   uses the dynamic viewport's lower edge instead of `bottom: 0`, avoiding an
+ *   iOS 26 WebKit bug after browser-toolbar or keyboard viewport changes. The
  *   `.tab-bar` retained global style adds the iOS home-indicator safe-area inset.
  * - **Desktop (`>= lg`)**: promotes to a **right-anchored vertical rail**. In RTL
  *   the physical right edge is the inline **start**, so the rail is pinned with
@@ -43,10 +45,14 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
         borderWidth: 0,
         // Mobile bottom bar (full width, top border) → desktop right rail.
         insetInline: { xs: appNavLayout.mobile.insetInline, lg: 'auto' },
-        bottom: { xs: appNavLayout.mobile.bottom, lg: 'auto' },
+        top: { xs: appNavLayout.mobile.top, lg: appNavLayout.desktop.top },
+        bottom: 'auto',
+        transform: {
+          xs: appNavLayout.mobile.transform,
+          lg: 'none',
+        },
         borderTopWidth: { xs: appNavLayout.mobile.borderTopWidth, lg: 0 },
         insetInlineStart: { lg: appNavLayout.desktop.insetInlineStart },
-        top: { lg: appNavLayout.desktop.top },
         height: { lg: appNavLayout.desktop.height },
         width: { lg: appNavLayout.desktop.railWidth },
         borderInlineEndWidth: { lg: '1px' },

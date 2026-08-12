@@ -2,7 +2,11 @@
 export const appNavLayout = {
   mobile: {
     insetInline: 0,
-    bottom: 0,
+    // Avoid iOS 26 WebKit's intermittent `position: fixed; bottom: 0`
+    // viewport bug. Anchor the bar's top to the dynamic viewport edge, then
+    // lift it by its own (safe-area-aware) height instead.
+    top: '100dvh',
+    transform: 'translateY(-100%)',
     borderTopWidth: '1px',
     maxListWidth: 576,
     flexDirection: 'row',

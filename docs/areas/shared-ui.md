@@ -42,8 +42,11 @@ Component recipes:
 - `SurfaceCard` takes `appear` for the staggered fadeUp entry; `StatusChip`
   adds the gold `accent` tone; `DonutChart` = the progress ring (ringIn,
   cellRem track) and accepts an optional short center caption; `SegmentBar`
-  neutral tone = cellRem; `AppNav` renders the
-  56×32 active pill on the bottom bar and the desktop rail.
+  neutral tone = cellRem; `AppNav` renders the 56×32 active pill on the bottom
+  bar and the desktop rail. On mobile, the bar is fixed to the dynamic
+  viewport's lower edge using `top: 100dvh` plus a self-height translation; do
+  not replace that with `bottom: 0`, which can drift after toolbar or keyboard
+  viewport changes in iOS 26 WebKit.
 
 Hard rules:
 
