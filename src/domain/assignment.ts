@@ -1,4 +1,4 @@
-import type { Assignment, Khatma, MemberCapacity, PageScope } from './types';
+import type { Assignment, Khatma, MemberCapacity, PageScope, RoundChunk } from './types';
 import { isChunkReleased } from './chunkStatus';
 
 export type { PageScope };
@@ -178,5 +178,64 @@ export function removeKhatmaMember(
     capacities,
     duaReciterId:
       khatma.duaReciterId === memberId ? (memberIds[0] ?? '') : khatma.duaReciterId,
+  };
+}
+
+export interface RemainingPagesAssignmentPlan {
+  remainingPages: [];
+  roundCount: number;
+  assignment: Assignment;
+}
+
+/**
+ * Move an active khatma's entire unread pool into one participant's new manual
+ * round. A fresh round number is essential: legacy `doneByRound` keys are keyed
+ * only by round, so reusing a completed round would make the new pages appear
+ * completed immediately.
+ */
+export function planRemainingPagesAssignment(
+  khatma: Pick<Khatma, 'status' | 'memberIds' | 'remainingPages' | 'roundCount'>,
+  assignment: Assignment | undefined,
+  memberId: string,
+  date: string,
+  chunkId: string,
+): RemainingPagesAssignmentPlan | undefined {
+  if (khatma.status !== 'active') {
+    throw new Error('planRemainingPagesAssignment: khatma must be active');
+  }
+  if (!khatma.memberIds.includes(memberId)) {
+    throw new Error('planRemainingPagesAssignment: assignee must participate');
+  }
+  if (assignment && assignment.memberId !== memberId) {
+    throw new Error('planRemainingPagesAssignment: assignment member mismatch');
+  }
+  if (khatma.remainingPages.length === 0) return undefined;
+
+  const existing = assignment ?? {
+    memberId,
+    rounds: [],
+    doneByRound: {},
+    missedStreak: 0,
+  };
+  const latestStoredRound = existing.rounds.reduce(
+    (latest, chunk) => Math.max(latest, chunk.round),
+    0,
+  );
+  const roundCount = Math.max(khatma.roundCount, latestStoredRound) + 1;
+  const pages = [...khatma.remainingPages];
+  const chunk: RoundChunk = {
+    id: chunkId,
+    status: 'pending',
+    round: roundCount,
+    date,
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
+  };
+
+  return {
+    remainingPages: [],
+    roundCount,
+    assignment: { ...existing, rounds: [...existing.rounds, chunk] },
   };
 }

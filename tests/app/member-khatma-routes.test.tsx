@@ -111,6 +111,10 @@ describe('member khatma routes', () => {
     const completed = makeKhatma('completed', {
       seriesId: 'shared',
       status: 'completed',
+      memberIds: [amina.id, maryam.id],
+      duaReciterId: maryam.id,
+      completedAt: Date.UTC(2026, 5, 30),
+      imageName: 'green-arch.svg',
       createdAt: 0,
     });
     localStorage.setItem(`khatma.du3aAck.${done.id}`, '1');
@@ -158,12 +162,30 @@ describe('member khatma routes', () => {
       expect.stringContaining('/khatma-images/placeholder.svg'),
     );
     expect(screen.queryByText(seriesTitle(irrelevant, toWesternDigits))).toBeNull();
-    // Two active series cards + the completed khatma in the redesign's
-    // "previous" section (mock 4a).
-    expect(screen.getAllByRole('link', { name: /فتح الختمة/ })).toHaveLength(3);
+    // Completed khatmas are separated from active cards in a closed disclosure.
+    const previousHeading = screen.getByRole('heading', {
+      name: strings.member.previousHeading,
+    });
+    const previousDisclosure = previousHeading.closest('details')!;
+    expect(previousDisclosure).not.toHaveAttribute('open');
+    await harness.user.click(previousHeading);
+    expect(previousDisclosure).toHaveAttribute('open');
+    const completedTitle = seriesTitle(completed, toWesternDigits);
+    expect(screen.getByRole('heading', { name: completedTitle })).toBeVisible();
+    expect(screen.getByText(`${strings.member.completedOn} 2026-06-30`)).toBeVisible();
     expect(
-      screen.getByRole('heading', { name: strings.member.previousHeading }),
+      screen.getByText(`${strings.member.du3aReciterLabel}: ${maryam.name}`),
     ).toBeVisible();
+    expect(
+      screen.getByRole('img', {
+        name: `${strings.admin.seriesImageAlt}: ${completedTitle}`,
+      }),
+    ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
+    expect(
+      screen.queryByRole('link', {
+        name: `${strings.member.openKhatma}: ${completedTitle}`,
+      }),
+    ).toBeNull();
 
     expect(harness.subscriptions.assignment(first.id).counts().active).toBe(1);
     expect(harness.subscriptions.assignment(latest.id).counts().active).toBe(1);

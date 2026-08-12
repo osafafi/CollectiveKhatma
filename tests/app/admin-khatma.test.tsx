@@ -123,6 +123,9 @@ function mockOperations() {
     addMemberToKhatma: vi
       .fn<WriteOperations['addMemberToKhatma']>()
       .mockResolvedValue(undefined),
+    assignRemainingPages: vi
+      .fn<WriteOperations['assignRemainingPages']>()
+      .mockResolvedValue(undefined),
     updatePerson: vi.fn<WriteOperations['updatePerson']>().mockResolvedValue(undefined),
     releaseMemberChunk: vi
       .fn<WriteOperations['releaseMemberChunk']>()
@@ -155,6 +158,7 @@ function renderDetail(
 
 describe('admin Khatma detail', () => {
   beforeEach(() => {
+    localStorage.clear();
     loader.getQuranIndex.mockReset();
     loader.getQuranIndex.mockResolvedValue(INDEX);
     loader.getSurahs.mockReset();
@@ -461,6 +465,45 @@ describe('admin Khatma detail', () => {
     await user.click(await screen.findByRole('button', { name: strings.admin.remove }));
     await user.click(screen.getByRole('button', { name: strings.common.confirm }));
     expect(operations.deleteKhatma).toHaveBeenCalledWith('k');
+  });
+
+  it('assigns the whole remaining pool to the remembered admin selection', async () => {
+    const administrator: Person = {
+      ...amina,
+      id: 'ELHROjNnSMgIWMnZKLYH',
+      name: 'Admin',
+    };
+    const khatma = makeKhatma('k', {
+      memberIds: [administrator.id, maryam.id],
+      capacities: {
+        [administrator.id]: { pages: 2, surahs: 0, juz: 0 },
+        [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+      },
+      duaReciterId: administrator.id,
+      remainingPages: [603, 604],
+    });
+    const { user, operations } = renderDetail('k', {
+      roster: [administrator, maryam],
+      khatmas: [khatma],
+      assignments: {
+        k: [makeAssignment(administrator.id), makeAssignment(maryam.id)],
+      },
+    });
+
+    expect(
+      screen.getByRole('combobox', { name: strings.admin.remainingAssigneeLabel }),
+    ).toHaveTextContent('Admin');
+    await user.click(
+      screen.getByRole('button', { name: strings.admin.assignRemainingButton }),
+    );
+    expect(screen.getByRole('dialog')).toHaveTextContent('Admin');
+    await user.click(screen.getByRole('button', { name: strings.common.confirm }));
+
+    expect(operations.assignRemainingPages).toHaveBeenCalledWith(
+      'k',
+      administrator.id,
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    );
   });
 
   it('starts the next khatma by opening a prefilled create form on the list route', async () => {

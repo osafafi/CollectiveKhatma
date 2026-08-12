@@ -32,5 +32,15 @@ Hard rules:
   struck-through names. The admin can re-enable an existing participant without
   changing their capacity. Disabled people outside that khatma are not listed.
 - Browser remembers person as `khatma.memberId`. No login. Trust model.
+- Admin roster rows show a derived 0–10 reliability grade without persisting a
+  person field. Completed, non-released history contributes 70% from the
+  longest local-calendar reading-day streak (full credit at 30 days) and 30%
+  from average completed pages per reading day across khatmas (full credit at
+  10 pages/day); the result is capped and rounded to one decimal. Grades below
+  5 use a red badge, 5 through 8 use orange, and 8 through 10 use a gold
+  badge with a star.
+- Each admin roster member stays in one bounded row split into two responsive
+  subrows: rename, remove, and score above; name, capacity, and activation below.
+  The lower subrow stacks its fields on phones and uses one line from `sm` up.
 
 Update this doc when person fields, identity, pause, or avatar flow changes.

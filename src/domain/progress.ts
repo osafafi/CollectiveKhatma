@@ -46,6 +46,58 @@ export interface MemberReadingInsightsInput {
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
+interface CompletedReadingRecord {
+  completedDate: Date;
+  day: number;
+  pages: number;
+}
+
+function completedReadingRecords(
+  memberId: string,
+  assignments: readonly Assignment[],
+): CompletedReadingRecord[] {
+  const records: CompletedReadingRecord[] = [];
+  for (const assignment of assignments) {
+    if (assignment.memberId !== memberId) continue;
+    for (const chunk of assignment.rounds) {
+      const completedAt = chunk.completedAt ?? assignment.doneByRound?.[chunk.round];
+      if (
+        isChunkReleased(chunk) ||
+        chunk.pages.length === 0 ||
+        completedAt === undefined ||
+        !Number.isFinite(completedAt)
+      ) {
+        continue;
+      }
+      const completedDate = new Date(completedAt);
+      if (Number.isNaN(completedDate.getTime())) continue;
+      records.push({
+        completedDate,
+        day:
+          Date.UTC(
+            completedDate.getFullYear(),
+            completedDate.getMonth(),
+            completedDate.getDate(),
+          ) / DAY_MS,
+        pages: chunk.pages.length,
+      });
+    }
+  }
+  return records;
+}
+
+function longestStreak(readingDays: ReadonlySet<number>): number {
+  let longest = 0;
+  let current = 0;
+  let previousDay: number | undefined;
+  for (const day of [...readingDays].sort((a, b) => a - b)) {
+    current = previousDay !== undefined && day === previousDay + 1 ? current + 1 : 1;
+    longest = Math.max(longest, current);
+    previousDay = day;
+  }
+  return longest;
+}
+
 /**
  * Personal-page metadata derived entirely from the existing roster, khatma,
  * round-history, and done-timestamp fields. No persisted counters are needed.
@@ -73,49 +125,16 @@ export function memberReadingInsights({
   const readingDays = new Set<number>();
   let pagesReadThisMonth = 0;
 
-  for (const assignment of assignments) {
-    if (assignment.memberId !== memberId) continue;
-
-    for (const chunk of assignment.rounds) {
-      const completedAt = chunk.completedAt ?? assignment.doneByRound?.[chunk.round];
-      if (
-        isChunkReleased(chunk) ||
-        chunk.pages.length === 0 ||
-        completedAt === undefined ||
-        !Number.isFinite(completedAt)
-      ) {
-        continue;
-      }
-
-      const completedDate = new Date(completedAt);
-      if (Number.isNaN(completedDate.getTime())) continue;
-
-      if (
-        completedDate.getFullYear() === referenceYear &&
-        completedDate.getMonth() === referenceMonth
-      ) {
-        pagesReadThisMonth += chunk.pages.length;
-      }
-
-      readingDays.add(
-        Date.UTC(
-          completedDate.getFullYear(),
-          completedDate.getMonth(),
-          completedDate.getDate(),
-        ) / DAY_MS,
-      );
+  for (const record of completedReadingRecords(memberId, assignments)) {
+    if (
+      record.completedDate.getFullYear() === referenceYear &&
+      record.completedDate.getMonth() === referenceMonth
+    ) {
+      pagesReadThisMonth += record.pages;
     }
+    readingDays.add(record.day);
   }
-
-  let longestDailyStreak = 0;
-  let currentStreak = 0;
-  let previousDay: number | undefined;
-  for (const day of [...readingDays].sort((a, b) => a - b)) {
-    currentStreak =
-      previousDay !== undefined && day === previousDay + 1 ? currentStreak + 1 : 1;
-    longestDailyStreak = Math.max(longestDailyStreak, currentStreak);
-    previousDay = day;
-  }
+  const longestDailyStreak = longestStreak(readingDays);
 
   return {
     completedPageCount,
@@ -127,6 +146,50 @@ export function memberReadingInsights({
     pagesReadThisMonth,
     longestDailyStreak,
   };
+}
+
+export const RELIABILITY_STREAK_TARGET_DAYS = 30;
+export const RELIABILITY_PAGES_PER_DAY_TARGET = 10;
+
+export interface MemberReliabilityScore {
+  /** Weighted 0–10 grade, rounded to one decimal. */
+  grade: number;
+  longestDailyStreak: number;
+  averageCompletedPagesPerReadingDay: number;
+}
+
+/**
+ * Admin reliability grade from delivered reading history: 70% longest daily
+ * streak (full credit at 30 days) and 30% average completed pages per reading
+ * day across khatmas (full credit at 10 pages/day). Pending and released pages
+ * never earn credit.
+ */
+export function memberReliabilityScores(
+  roster: readonly Pick<Person, 'id'>[],
+  assignments: readonly Assignment[],
+): Record<string, MemberReliabilityScore> {
+  return Object.fromEntries(
+    roster.map((person) => {
+      const records = completedReadingRecords(person.id, assignments);
+      const readingDays = new Set(records.map((record) => record.day));
+      const streak = longestStreak(readingDays);
+      const averagePages =
+        readingDays.size === 0
+          ? 0
+          : records.reduce((total, record) => total + record.pages, 0) / readingDays.size;
+      const weighted =
+        0.7 * Math.min(streak / RELIABILITY_STREAK_TARGET_DAYS, 1) +
+        0.3 * Math.min(averagePages / RELIABILITY_PAGES_PER_DAY_TARGET, 1);
+      return [
+        person.id,
+        {
+          grade: Math.round(weighted * 100) / 10,
+          longestDailyStreak: streak,
+          averageCompletedPagesPerReadingDay: Math.round(averagePages * 10) / 10,
+        },
+      ];
+    }),
+  );
 }
 
 /** A khatma's group completion as a whole-number percent of its total pages. */

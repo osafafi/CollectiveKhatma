@@ -6,6 +6,7 @@ const MEMBER_ID_KEY = 'khatma.memberId';
 const READING_SCALE_KEY = 'khatma.readingScale';
 const LAST_READ_PAGE_KEY = 'khatma.lastReadPage';
 const THEME_MODE_KEY = 'khatma.themeMode';
+const REMAINDER_ASSIGNEE_KEY = 'khatma.admin.remainderAssigneeId';
 const DU3A_ACK_PREFIX = 'khatma.du3aAck.';
 
 export const TOTAL_QURAN_PAGES = 604;
@@ -20,6 +21,23 @@ export function useRememberedMemberId(): PersistentValue<string | null> {
     setMemberIdState(nextMemberId);
     if (nextMemberId === null) remove(MEMBER_ID_KEY);
     else write(MEMBER_ID_KEY, nextMemberId);
+  }, []);
+
+  return [memberId, setMemberId];
+}
+
+/** Remember the admin's preferred recipient for end-of-khatma remainder pages. */
+export function useRememberedRemainderAssigneeId(
+  defaultMemberId: string | null = null,
+): PersistentValue<string | null> {
+  const [memberId, setMemberIdState] = useState<string | null>(
+    () => read(REMAINDER_ASSIGNEE_KEY) ?? defaultMemberId,
+  );
+
+  const setMemberId = useCallback((nextMemberId: string | null): void => {
+    setMemberIdState(nextMemberId);
+    if (nextMemberId === null) remove(REMAINDER_ASSIGNEE_KEY);
+    else write(REMAINDER_ASSIGNEE_KEY, nextMemberId);
   }, []);
 
   return [memberId, setMemberId];

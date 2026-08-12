@@ -17,6 +17,7 @@ import {
 } from '@/data/feedbackOperations';
 import {
   addMemberToKhatma,
+  assignRemainingPages,
   completeKhatma,
   createKhatma,
   deleteKhatma,
@@ -57,6 +58,7 @@ describe('write operations', () => {
       renameSeries,
       completeKhatma,
       addMemberToKhatma,
+      assignRemainingPages,
       releaseMemberChunk,
       removeMemberFromKhatma,
       deleteKhatma,

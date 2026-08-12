@@ -35,7 +35,10 @@ Hard rules:
   `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`.
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
   title variant on Settings); the khatmas list also shows a read-only
-  "previous" section of completed khatmas the member took part in.
+  "previous" disclosure of completed khatmas the member took part in. It is
+  collapsed by default so active and completed khatmas cannot read as one list;
+  its rows are not links and show the series artwork, numbered series title,
+  completion date, and duaa reader.
 - The personal page groups every pending assignment from the selected member's
   active khatmas into its own linked gradient card. Each entry shows khatma
   artwork, the numbered series title, assigned page count/numbers, and opens

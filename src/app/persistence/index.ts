@@ -4,5 +4,6 @@ export {
   useLastReadPage,
   useReadingScale,
   useRememberedMemberId,
+  useRememberedRemainderAssigneeId,
   useThemeMode,
 } from './browserPersistence';

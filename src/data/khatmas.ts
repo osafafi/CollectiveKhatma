@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { releaseChunk } from '@/domain/distribution';
 import { isChunkCompleted, isChunkReleased } from '@/domain/chunkStatus';
-import { removeKhatmaMember } from '@/domain/assignment';
+import { planRemainingPagesAssignment, removeKhatmaMember } from '@/domain/assignment';
 import type { Assignment, Khatma, MemberCapacity } from '@/domain/types';
 import { assignmentDoc, assignmentsCol, emptyAssignment } from './assignments';
 import { db } from './firebase';
@@ -225,6 +225,45 @@ export async function releaseMemberChunk(
     );
     tx.update(kRef, { remainingPages: release.remainingPages });
     tx.set(aRef, { ...assignment, rounds, missedStreak: release.missedStreak });
+  });
+}
+
+/**
+ * Assign every page still in an active khatma's pool to one current
+ * participant as a new manual round. The khatma and assignment move together
+ * transactionally, so no page can be duplicated or orphaned under contention.
+ */
+export async function assignRemainingPages(
+  khatmaId: string,
+  memberId: string,
+  date: string,
+): Promise<void> {
+  const assignedAt = Date.now();
+  await runTransaction(db, async (tx) => {
+    const kRef = doc(khatmasCol, khatmaId);
+    const aRef = assignmentDoc(khatmaId, memberId);
+    const [kSnap, aSnap] = await Promise.all([tx.get(kRef), tx.get(aRef)]);
+    if (!kSnap.exists()) {
+      throw new Error(`assignRemainingPages: khatma ${khatmaId} not found`);
+    }
+
+    const khatma = kSnap.data() as Omit<Khatma, 'id'>;
+    const assignment = aSnap.exists() ? (aSnap.data() as Assignment) : undefined;
+    const plan = planRemainingPagesAssignment(
+      khatma,
+      assignment,
+      memberId,
+      date,
+      `manual-remainder:${assignedAt}:${memberId}`,
+    );
+    if (!plan) return;
+
+    tx.update(kRef, {
+      remainingPages: plan.remainingPages,
+      roundCount: plan.roundCount,
+      lastDistributionDate: date,
+    });
+    tx.set(aRef, plan.assignment);
   });
 }
 

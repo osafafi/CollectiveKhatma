@@ -1,5 +1,6 @@
-import { Stack } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { useWriteOperation } from '@/app/operations';
+import { useRememberedRemainderAssigneeId } from '@/app/persistence';
 import { useConfirmation } from '@/app/providers';
 import { useAdminNavigate } from '@/app/routing/hooks';
 import { useCreateKhatmaPrefill } from '@/app/admin/createKhatmaPrefillContext';
@@ -10,7 +11,11 @@ import {
   type SelectOption,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
+import { toWesternDigits } from '@/content/quran/symbols';
 import type { Khatma, Person } from '@/domain/types';
+import { todayIso } from '@/app/admin/todayIso';
+
+const DEFAULT_REMAINDER_ASSIGNEE_ID = 'ELHROjNnSMgIWMnZKLYH';
 
 /** Reciter, lifecycle, and destructive controls for an active khatma. */
 export function ActiveKhatmaControls({
@@ -23,8 +28,17 @@ export function ActiveKhatmaControls({
   const members = roster.filter((person) => khatma.memberIds.includes(person.id));
   const updateKhatma = useWriteOperation('updateKhatma');
   const completeKhatma = useWriteOperation('completeKhatma');
+  const assignRemainingPages = useWriteOperation('assignRemainingPages');
   const deleteKhatma = useWriteOperation('deleteKhatma');
   const { confirm } = useConfirmation();
+  const [rememberedAssigneeId, rememberAssigneeId] = useRememberedRemainderAssigneeId(
+    DEFAULT_REMAINDER_ASSIGNEE_ID,
+  );
+  const remainderAssigneeId = members.some((person) => person.id === rememberedAssigneeId)
+    ? rememberedAssigneeId!
+    : members.some((person) => person.id === DEFAULT_REMAINDER_ASSIGNEE_ID)
+      ? DEFAULT_REMAINDER_ASSIGNEE_ID
+      : '';
 
   const onComplete = async () => {
     const confirmed = await confirm(strings.admin.confirmComplete);
@@ -36,6 +50,19 @@ export function ActiveKhatmaControls({
       tone: 'danger',
     });
     if (confirmed) void deleteKhatma.execute(khatma.id);
+  };
+
+  const onAssignRemaining = async () => {
+    const assignee = members.find((person) => person.id === remainderAssigneeId);
+    if (!assignee || khatma.remainingPages.length === 0) return;
+    const confirmed = await confirm(
+      strings.admin.confirmAssignRemaining
+        .replace('{count}', toWesternDigits(khatma.remainingPages.length))
+        .replace('{member}', assignee.name),
+    );
+    if (confirmed) {
+      void assignRemainingPages.execute(khatma.id, assignee.id, todayIso());
+    }
   };
 
   const reciterOptions: SelectOption[] = members.map((person) => ({
@@ -56,6 +83,45 @@ export function ActiveKhatmaControls({
               void updateKhatma.execute(khatma.id, { duaReciterId: value })
             }
           />
+        ) : null}
+        {khatma.remainingPages.length > 0 && members.length > 0 ? (
+          <Stack spacing={1.5}>
+            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 800 }}>
+              {strings.admin.assignRemainingHeading}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {strings.admin.assignRemainingDescription.replace(
+                '{count}',
+                toWesternDigits(khatma.remainingPages.length),
+              )}
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={2}
+              useFlexGap
+              sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+            >
+              <AppSelectField
+                label={strings.admin.remainingAssigneeLabel}
+                value={remainderAssigneeId}
+                options={reciterOptions}
+                fieldWidth={240}
+                disabled={assignRemainingPages.isPending}
+                onChange={(value) => rememberAssigneeId(value)}
+              />
+              <AppButton
+                disabled={!remainderAssigneeId || assignRemainingPages.isPending}
+                onClick={() => void onAssignRemaining()}
+              >
+                {strings.admin.assignRemainingButton}
+              </AppButton>
+            </Stack>
+            {assignRemainingPages.state.status === 'failure' ? (
+              <Typography role="alert" variant="caption" color="error.main">
+                {strings.admin.assignRemainingError}
+              </Typography>
+            ) : null}
+          </Stack>
         ) : null}
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <StartNextKhatmaButton khatma={khatma} />

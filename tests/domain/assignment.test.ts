@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPageUnitMaps,
   fullyUnreadSurahIds,
+  planRemainingPagesAssignment,
   removeKhatmaMember,
   resolvePageScope,
 } from '@/domain/assignment';
@@ -119,5 +120,89 @@ describe('removeKhatmaMember', () => {
         'removed',
       ),
     ).toMatchObject({ memberIds: [], capacities: {}, duaReciterId: '' });
+  });
+});
+
+describe('planRemainingPagesAssignment', () => {
+  it('moves the sorted pool into a fresh pending round for the selected member', () => {
+    const assignment: Assignment = {
+      memberId: 'admin',
+      rounds: [
+        {
+          round: 3,
+          date: '2026-08-10',
+          pages: [1, 2],
+          loosePages: [1, 2],
+          redistributedPages: [],
+          status: 'completed',
+        },
+      ],
+      doneByRound: { 3: 1 },
+      missedStreak: 0,
+    };
+
+    expect(
+      planRemainingPagesAssignment(
+        {
+          status: 'active',
+          memberIds: ['admin'],
+          remainingPages: [601, 602, 603, 604],
+          roundCount: 3,
+        },
+        assignment,
+        'admin',
+        '2026-08-12',
+        'manual-1',
+      ),
+    ).toEqual({
+      remainingPages: [],
+      roundCount: 4,
+      assignment: {
+        ...assignment,
+        rounds: [
+          ...assignment.rounds,
+          {
+            id: 'manual-1',
+            status: 'pending',
+            round: 4,
+            date: '2026-08-12',
+            pages: [601, 602, 603, 604],
+            loosePages: [601, 602, 603, 604],
+            redistributedPages: [],
+          },
+        ],
+      },
+    });
+  });
+
+  it('is a no-op for an empty pool and rejects non-participants', () => {
+    expect(
+      planRemainingPagesAssignment(
+        {
+          status: 'active',
+          memberIds: ['admin'],
+          remainingPages: [],
+          roundCount: 1,
+        },
+        undefined,
+        'admin',
+        '2026-08-12',
+        'manual-1',
+      ),
+    ).toBeUndefined();
+    expect(() =>
+      planRemainingPagesAssignment(
+        {
+          status: 'active',
+          memberIds: ['reader'],
+          remainingPages: [604],
+          roundCount: 1,
+        },
+        undefined,
+        'admin',
+        '2026-08-12',
+        'manual-2',
+      ),
+    ).toThrow(/participate/);
   });
 });

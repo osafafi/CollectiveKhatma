@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import { shallowEqual } from 'react-redux';
 import {
@@ -5,11 +6,13 @@ import {
   selectAssignmentsListener,
   selectKhatmas,
   selectKhatmasListener,
+  selectRoster,
   useAppSelector,
 } from '@/app/store';
 import { ErrorState } from '@/components/feedback';
 import {
   KhatmaSeriesArtwork,
+  CollapsibleCard,
   ProgressBar,
   StatusChip,
   SurfaceCard,
@@ -31,8 +34,10 @@ import { useMemberIdentity } from './memberIdentityContext';
 
 /** Member `#/khatmas`: greeting hero + one actionable row-card per active series. */
 export function KhatmasListPage() {
+  const [completedOpen, setCompletedOpen] = useState(false);
   const { memberId } = useMemberIdentity();
   const khatmas = useAppSelector(selectKhatmas);
+  const roster = useAppSelector(selectRoster);
   const listener = useAppSelector(selectKhatmasListener);
   const mine = khatmas.filter(
     (khatma) => khatma.status === 'active' && khatma.memberIds.includes(memberId),
@@ -98,18 +103,32 @@ export function KhatmasListPage() {
       )}
 
       {completed.length > 0 ? (
-        <>
-          <Typography component="h2" variant="h3" color="text.secondary">
-            {strings.member.previousHeading}
-          </Typography>
+        <CollapsibleCard
+          title={strings.member.previousHeading}
+          headingComponent="h2"
+          open={completedOpen}
+          onOpenChange={setCompletedOpen}
+          summaryEnd={
+            <Typography component="span" variant="body2" color="text.secondary">
+              {toWesternDigits(completed.length)}
+            </Typography>
+          }
+        >
           <Grid container spacing={4}>
             {completed.map((khatma, index) => (
               <Grid key={khatma.id} size={{ xs: 12, md: 6 }}>
-                <CompletedKhatmaCard khatma={khatma} appear={index} />
+                <CompletedKhatmaCard
+                  khatma={khatma}
+                  reciterName={
+                    roster.find((person) => person.id === khatma.duaReciterId)?.name ??
+                    strings.admin.none
+                  }
+                  appear={index}
+                />
               </Grid>
             ))}
           </Grid>
-        </>
+        </CollapsibleCard>
       ) : null}
     </Stack>
   );
@@ -182,16 +201,19 @@ function KhatmaSeriesCard({
   );
 }
 
-/** The design's "previous" row: completed khatmas the member took part in. */
-function CompletedKhatmaCard({ khatma, appear }: { khatma: Khatma; appear: number }) {
+/** Read-only summary of one completed khatma the member took part in. */
+function CompletedKhatmaCard({
+  khatma,
+  reciterName,
+  appear,
+}: {
+  khatma: Khatma;
+  reciterName: string;
+  appear: number;
+}) {
   const title = seriesTitle(khatma, toWesternDigits);
   return (
-    <SurfaceCard
-      href={memberHash.khatma(khatma.id)}
-      linkLabel={`${strings.member.openKhatma}: ${title}`}
-      appear={appear}
-      sx={{ height: '100%', opacity: 0.88 }}
-    >
+    <SurfaceCard appear={appear} sx={{ height: '100%', opacity: 0.88 }}>
       <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
         <KhatmaSeriesArtwork
           variant="avatar"
@@ -200,18 +222,14 @@ function CompletedKhatmaCard({ khatma, appear }: { khatma: Khatma; appear: numbe
           size={52}
         />
         <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <Typography component="h3" variant="subtitle1">
-              {title}
-            </Typography>
-            <StatusChip tone="accent" label={strings.admin.statusCompleted} />
-          </Stack>
+          <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
+            {title}
+          </Typography>
           <Typography variant="body2" color="text.secondary">
             {strings.member.completedOn} {formatCompletedDate(khatma.completedAt)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {strings.member.du3aReciterLabel}: {reciterName}
           </Typography>
         </Stack>
       </Stack>

@@ -5,6 +5,7 @@ import {
   useLastReadPage,
   useReadingScale,
   useRememberedMemberId,
+  useRememberedRemainderAssigneeId,
   useThemeMode,
 } from '@/app/persistence';
 
@@ -29,6 +30,17 @@ describe('React browser-persistence hooks', () => {
     act(() => result.current[1](null));
     expect(result.current[0]).toBeNull();
     expect(localStorage.getItem('khatma.memberId')).toBeNull();
+  });
+
+  it('defaults and remembers the admin remainder assignee', () => {
+    const first = renderHook(() => useRememberedRemainderAssigneeId('admin'));
+    expect(first.result.current[0]).toBe('admin');
+    act(() => first.result.current[1]('reader'));
+    expect(localStorage.getItem('khatma.admin.remainderAssigneeId')).toBe('reader');
+    first.unmount();
+
+    const resumed = renderHook(() => useRememberedRemainderAssigneeId('admin'));
+    expect(resumed.result.current[0]).toBe('reader');
   });
 
   it('falls back from an invalid reading scale, then applies and persists updates', () => {

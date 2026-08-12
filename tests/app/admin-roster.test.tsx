@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AdminExperience } from '@/app/admin/AdminApp';
 import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
-import type { Person } from '@/domain/types';
+import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
   renderWithAppProviders,
   type RenderWithAppProvidersOptions,
@@ -70,12 +70,132 @@ describe('admin Roster', () => {
     // toggle is what carries her state.
     const aminaRow = screen.getByText('Amina').closest('li')!;
     const maryamRow = screen.getByText('Maryam').closest('li')!;
+    const aminaActions = aminaRow.querySelector<HTMLElement>(
+      '[data-roster-row-section="actions"]',
+    )!;
+    const aminaMember = aminaRow.querySelector<HTMLElement>(
+      '[data-roster-row-section="member"]',
+    )!;
     expect(
-      within(aminaRow).getByRole('button', { name: strings.admin.disable }),
+      within(aminaActions).getByRole('button', {
+        name: `${strings.admin.rename}: ${amina.name}`,
+      }),
+    ).toBeVisible();
+    expect(
+      within(aminaActions).getByRole('button', {
+        name: `${strings.admin.remove}: ${amina.name}`,
+      }),
+    ).toBeVisible();
+    expect(
+      within(aminaActions).getByLabelText(`${strings.admin.reliabilityScore}: 0 / 10`),
+    ).toBeVisible();
+    expect(within(aminaMember).getByText('Amina')).toBeVisible();
+    expect(
+      within(aminaMember).getByRole('group', {
+        name: strings.admin.pagesPerDayLabel,
+      }),
+    ).toBeVisible();
+    expect(
+      within(aminaMember).getByRole('button', { name: strings.admin.disable }),
     ).toBeVisible();
     expect(
       within(maryamRow).getByRole('button', { name: strings.admin.enable }),
     ).toBeVisible();
+  });
+
+  it('shows a 0–10 reliability grade from completed streak and pages per reading day', async () => {
+    const sara: Person = { ...amina, id: 'p3', name: 'Sara', pagesPerDay: 5 };
+    const khatma: Khatma = {
+      id: 'completed',
+      seriesId: 'series',
+      seriesName: 'Series',
+      seriesNumber: 1,
+      totalPages: 604,
+      scope: { kind: 'full' },
+      memberIds: [amina.id, maryam.id, sara.id],
+      capacities: {
+        [amina.id]: { pages: 10, surahs: 0, juz: 0 },
+        [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+        [sara.id]: { pages: 5, surahs: 0, juz: 0 },
+      },
+      status: 'completed',
+      remainingPages: [],
+      roundCount: 30,
+      duaReciterId: amina.id,
+      completedAt: Date.UTC(2026, 7, 31),
+      createdAt: Date.UTC(2026, 7, 1),
+    };
+    const completedRound = (
+      round: number,
+      memberId: string,
+      pages: number[],
+      completedAt: number,
+    ): RoundChunk => ({
+      id: `${memberId}-${round}`,
+      status: 'completed',
+      completedAt,
+      round,
+      date: '2026-08-01',
+      pages,
+      loosePages: [...pages],
+      redistributedPages: [],
+    });
+    const aminaAssignment: Assignment = {
+      memberId: amina.id,
+      rounds: Array.from({ length: 30 }, (_, index) =>
+        completedRound(
+          index + 1,
+          amina.id,
+          Array.from({ length: 10 }, (_, page) => page + 1),
+          new Date(2026, 7, index + 1, 12).getTime(),
+        ),
+      ),
+      doneByRound: {},
+      missedStreak: 0,
+    };
+    const maryamAssignment: Assignment = {
+      memberId: maryam.id,
+      rounds: [completedRound(1, maryam.id, [1, 2], new Date(2026, 7, 1, 12).getTime())],
+      doneByRound: {},
+      missedStreak: 0,
+    };
+    const saraAssignment: Assignment = {
+      memberId: sara.id,
+      rounds: Array.from({ length: 15 }, (_, index) =>
+        completedRound(
+          index + 1,
+          sara.id,
+          [1, 2, 3, 4, 5],
+          new Date(2026, 7, index + 1, 12).getTime(),
+        ),
+      ),
+      doneByRound: {},
+      missedStreak: 0,
+    };
+    const harness = renderWithAppProviders(<AdminExperience />, {
+      route: '/roster',
+      data: {
+        roster: [amina, maryam, sara],
+        khatmas: [khatma],
+        assignments: {
+          [khatma.id]: [aminaAssignment, maryamAssignment, saraAssignment],
+        },
+      },
+      operations: mockRosterOperations(),
+    });
+
+    const topGrade = await screen.findByLabelText(
+      `${strings.admin.reliabilityScore}: 10 / 10`,
+    );
+    expect(topGrade).toHaveAttribute('data-grade-tone', 'top');
+    expect(topGrade.querySelector('svg')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(`${strings.admin.reliabilityScore}: 6 / 10`),
+    ).toHaveAttribute('data-grade-tone', 'medium');
+    expect(
+      screen.getByLabelText(`${strings.admin.reliabilityScore}: 0.8 / 10`),
+    ).toHaveAttribute('data-grade-tone', 'bad');
+    expect(harness.subscriptions.assignment(khatma.id).counts().active).toBe(1);
   });
 
   it('filters by name substring as-you-type and keeps the search caret focused (P4)', async () => {

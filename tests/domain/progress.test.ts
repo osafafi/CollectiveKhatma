@@ -7,6 +7,7 @@ import {
   khatmaProgress,
   latestChunkForRound,
   memberReadingInsights,
+  memberReliabilityScores,
   pendingReaders,
   roundReaderRecords,
 } from '@/domain/progress';
@@ -291,6 +292,60 @@ describe('memberReadingInsights', () => {
       topReaderPercent: 100,
       pagesReadThisMonth: 0,
       longestDailyStreak: 0,
+    });
+  });
+});
+
+describe('memberReliabilityScores', () => {
+  const atLocalNoon = (year: number, month: number, day: number): number =>
+    new Date(year, month - 1, day, 12).getTime();
+
+  it('weights completed-day streak at 70% and delivered pages/day at 30%', () => {
+    const rounds = Array.from({ length: 3 }, (_, index) => ({
+      ...chunk(index + 1, `2026-08-0${index + 1}`, [index * 5 + 1, index * 5 + 2]),
+      completedAt: atLocalNoon(2026, 8, index + 1),
+      status: 'completed' as const,
+    }));
+    const assignments: Assignment[] = [
+      { memberId: 'reader', rounds, doneByRound: {}, missedStreak: 0 },
+      {
+        memberId: 'reader',
+        rounds: [
+          {
+            ...chunk(1, '2026-08-02', [20, 21, 22, 23]),
+            completedAt: atLocalNoon(2026, 8, 2),
+            status: 'completed',
+          },
+        ],
+        doneByRound: {},
+        missedStreak: 0,
+      },
+      {
+        memberId: 'ignored',
+        rounds: [
+          {
+            ...chunk(1, '2026-08-01', [30, 31]),
+            status: 'released',
+          },
+        ],
+        doneByRound: {},
+        missedStreak: 0,
+      },
+    ];
+
+    expect(
+      memberReliabilityScores([{ id: 'reader' }, { id: 'new' }], assignments),
+    ).toEqual({
+      reader: {
+        grade: 1.7,
+        longestDailyStreak: 3,
+        averageCompletedPagesPerReadingDay: 3.3,
+      },
+      new: {
+        grade: 0,
+        longestDailyStreak: 0,
+        averageCompletedPagesPerReadingDay: 0,
+      },
     });
   });
 });

@@ -83,6 +83,7 @@ export const strings = {
     // Series history
     historyHeading: 'ختمات مكتملة من هذه السلسلة',
     completedOn: 'اكتملت في',
+    du3aReciterLabel: 'قارئ دعاء الختم',
     // Completion
     khatmaComplete: 'اكتملت الختمة، تقبّل الله',
     du3aHeading: 'دعاء ختم القرآن',
@@ -248,6 +249,9 @@ export const strings = {
     namePlaceholder: 'الاسم',
     notePlaceholder: 'ملاحظة (اختياري)',
     pagesPerDayLabel: 'صفحة/جولة',
+    reliabilityScore: 'درجة الموثوقية',
+    reliabilityScoreDetails:
+      'أطول تتابع: {streak} يوم · متوسط الإنجاز: {pages} صفحة/يوم قراءة',
     nameTaken: 'هذا الاسم مستخدم بالفعل',
     nameRequired: 'الرجاء إدخال الاسم',
     rename: 'إعادة تسمية العضو',
@@ -305,6 +309,12 @@ export const strings = {
     markDone: 'تحديد كمنجز',
     addMember: 'إضافة عضو للختمة',
     markComplete: 'إنهاء الختمة',
+    assignRemainingHeading: 'إسناد الصفحات المتبقية',
+    assignRemainingDescription: 'تبقّى {count} صفحة غير مسندة في هذه الختمة.',
+    remainingAssigneeLabel: 'إسناد المتبقي إلى',
+    assignRemainingButton: 'إسناد كل الصفحات المتبقية',
+    confirmAssignRemaining: 'إسناد {count} صفحة متبقية إلى {member}؟',
+    assignRemainingError: 'تعذّر إسناد الصفحات المتبقية، حاول مرة أخرى.',
     confirmComplete: 'إنهاء هذه الختمة ونقلها إلى «السابقة»؟',
     confirmRemoveKhatma: 'حذف هذه الختمة نهائيًا مع كل تكليفاتها؟',
     reciterIs: 'قارئ الدعاء',

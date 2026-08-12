@@ -17,6 +17,7 @@ import type {
 } from '@/data/distribution';
 import {
   addMemberToKhatma,
+  assignRemainingPages,
   completeKhatma,
   createKhatma,
   deleteKhatma,
@@ -68,6 +69,7 @@ export interface WriteOperations {
   renameSeries: typeof renameSeries;
   completeKhatma: typeof completeKhatma;
   addMemberToKhatma: typeof addMemberToKhatma;
+  assignRemainingPages: typeof assignRemainingPages;
   releaseMemberChunk: typeof releaseMemberChunk;
   removeMemberFromKhatma: typeof removeMemberFromKhatma;
   deleteKhatma: typeof deleteKhatma;
@@ -95,6 +97,7 @@ export const writeOperations: WriteOperations = Object.freeze({
   renameSeries,
   completeKhatma,
   addMemberToKhatma,
+  assignRemainingPages,
   releaseMemberChunk,
   removeMemberFromKhatma,
   deleteKhatma,

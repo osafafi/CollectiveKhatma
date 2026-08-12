@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { shallowEqual } from 'react-redux';
 import {
   Box,
   Dialog,
@@ -10,7 +11,16 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
-import { selectRoster, useAppSelector } from '@/app/store';
+import StarRoundedIcon from '@mui/icons-material/StarRounded';
+import { alpha } from '@mui/material/styles';
+import {
+  selectAssignmentsForKhatma,
+  selectAssignmentsListener,
+  selectKhatmas,
+  selectRoster,
+  useAppSelector,
+  useAssignmentsSubscription,
+} from '@/app/store';
 import { DuplicatePersonNameError, useWriteOperation } from '@/app/operations';
 import { useConfirmation } from '@/app/providers';
 import {
@@ -20,6 +30,8 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
+import { toWesternDigits } from '@/content/quran/symbols';
+import { memberReliabilityScores, type MemberReliabilityScore } from '@/domain/progress';
 import { isNameUnique, normalizeName } from '@/domain/validation';
 import type { Person } from '@/domain/types';
 
@@ -37,12 +49,26 @@ import type { Person } from '@/domain/types';
  */
 export function AdminRosterPage() {
   const roster = useAppSelector(selectRoster);
+  const khatmas = useAppSelector(selectKhatmas);
+  const assignments = useAppSelector(
+    (state) => khatmas.flatMap((khatma) => selectAssignmentsForKhatma(state, khatma.id)),
+    shallowEqual,
+  );
+  const scoresReady = useAppSelector((state) =>
+    khatmas.every(
+      (khatma) => selectAssignmentsListener(state, khatma.id)?.status === 'ready',
+    ),
+  );
+  const reliabilityScores = scoresReady
+    ? memberReliabilityScores(roster, assignments)
+    : {};
   const [search, setSearch] = useState('');
   const query = search.trim();
   const matches = query ? roster.filter((person) => person.name.includes(query)) : roster;
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="roster">
+      <CompletedKhatmaAssignmentSubscriptions />
       <SurfaceCard>
         <AppTextField
           type="search"
@@ -58,7 +84,12 @@ export function AdminRosterPage() {
         ) : (
           <Stack component="ul" spacing={0} sx={{ listStyle: 'none', m: 0, p: 0 }}>
             {matches.map((person) => (
-              <PersonRow key={person.id} person={person} roster={roster} />
+              <PersonRow
+                key={person.id}
+                person={person}
+                roster={roster}
+                reliability={reliabilityScores[person.id]}
+              />
             ))}
           </Stack>
         )}
@@ -69,17 +100,52 @@ export function AdminRosterPage() {
   );
 }
 
+/** Retain completed assignment histories only while roster grades are visible. */
+function CompletedKhatmaAssignmentSubscriptions() {
+  const completedIds = useAppSelector(
+    (state) =>
+      selectKhatmas(state)
+        .filter((khatma) => khatma.status === 'completed')
+        .map((khatma) => khatma.id),
+    shallowEqual,
+  );
+  return completedIds.map((khatmaId) => (
+    <CompletedKhatmaAssignmentSubscription key={khatmaId} khatmaId={khatmaId} />
+  ));
+}
+
+function CompletedKhatmaAssignmentSubscription({ khatmaId }: { khatmaId: string }) {
+  useAssignmentsSubscription(khatmaId);
+  return null;
+}
+
 /**
  * One roster row. The stepper and the pause toggle are fire-and-forget
  * `updatePerson` writes; remove confirms first, then `removePerson` — matching
  * the legacy feedback granularity (current UI contract quirk 5): none of these surface a
  * success/error status.
  */
-function PersonRow({ person, roster }: { person: Person; roster: readonly Person[] }) {
+function PersonRow({
+  person,
+  roster,
+  reliability,
+}: {
+  person: Person;
+  roster: readonly Person[];
+  reliability?: MemberReliabilityScore;
+}) {
   const updatePerson = useWriteOperation('updatePerson');
   const removePerson = useWriteOperation('removePerson');
   const { confirm } = useConfirmation();
   const [renameOpen, setRenameOpen] = useState(false);
+  const reliabilityTone =
+    reliability === undefined
+      ? 'loading'
+      : reliability.grade >= 8
+        ? 'top'
+        : reliability.grade >= 5
+          ? 'medium'
+          : 'bad';
 
   const onRemove = async () => {
     const confirmed = await confirm({
@@ -93,42 +159,129 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
     <Box
       component="li"
       sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: 2,
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gap: 1.5,
+        width: '100%',
+        minWidth: 0,
         borderBottom: 1,
         borderColor: 'divider',
         py: 2,
       }}
     >
       <Box
+        data-roster-row-section="actions"
         sx={{
-          flex: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          minWidth: 100,
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          width: '100%',
+          minWidth: 0,
         }}
       >
-        <IconButton
-          size="small"
-          title={strings.admin.rename}
-          aria-label={`${strings.admin.rename}: ${person.name}`}
-          onClick={() => setRenameOpen(true)}
-        >
-          <Box
-            component="svg"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            sx={{ width: 20, height: 20, fill: 'currentColor' }}
+        <Stack direction="row" spacing={0.5} sx={{ flex: 'none' }}>
+          <IconButton
+            size="small"
+            title={strings.admin.rename}
+            aria-label={`${strings.admin.rename}: ${person.name}`}
+            onClick={() => setRenameOpen(true)}
           >
-            <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
-          </Box>
-        </IconButton>
+            <Box
+              component="svg"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              sx={{ width: 20, height: 20, fill: 'currentColor' }}
+            >
+              <path d="M4 17.25V20h2.75l8.11-8.11-2.75-2.75L4 17.25Zm15.71-7.49a1 1 0 0 0 0-1.41l-2.06-2.06a1 1 0 0 0-1.41 0l-1.61 1.61 2.75 2.75 1.62-1.6Z" />
+            </Box>
+          </IconButton>
+          <IconButton
+            size="small"
+            color="error"
+            title={strings.admin.remove}
+            aria-label={`${strings.admin.remove}: ${person.name}`}
+            onClick={() => void onRemove()}
+          >
+            <DeleteOutlineRoundedIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+        <Box
+          component="span"
+          dir="ltr"
+          data-grade-tone={reliabilityTone}
+          aria-label={`${strings.admin.reliabilityScore}: ${reliability ? toWesternDigits(reliability.grade) : '—'} / 10`}
+          title={
+            reliability
+              ? strings.admin.reliabilityScoreDetails
+                  .replace('{streak}', toWesternDigits(reliability.longestDailyStreak))
+                  .replace(
+                    '{pages}',
+                    toWesternDigits(reliability.averageCompletedPagesPerReadingDay),
+                  )
+              : strings.common.loading
+          }
+          sx={(theme) => ({
+            flex: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.4,
+            px: 1.25,
+            py: 0.4,
+            borderRadius: 999,
+            color:
+              reliabilityTone === 'top'
+                ? theme.custom.goldInk
+                : reliabilityTone === 'medium'
+                  ? theme.palette.warning.dark
+                  : reliabilityTone === 'bad'
+                    ? theme.palette.error.main
+                    : theme.palette.text.secondary,
+            backgroundColor:
+              reliabilityTone === 'top'
+                ? theme.custom.goldSoft
+                : reliabilityTone === 'medium'
+                  ? alpha(theme.palette.warning.main, 0.16)
+                  : reliabilityTone === 'bad'
+                    ? alpha(theme.palette.error.main, 0.13)
+                    : theme.palette.action.hover,
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            fontVariantNumeric: 'tabular-nums',
+          })}
+        >
+          {reliabilityTone === 'top' ? (
+            <StarRoundedIcon aria-hidden="true" sx={{ fontSize: 15 }} />
+          ) : null}
+          {reliability ? toWesternDigits(reliability.grade) : '—'} / 10
+        </Box>
+      </Box>
+
+      <Box
+        data-roster-row-section="member"
+        sx={{
+          display: 'grid',
+          gridTemplateAreas: {
+            xs: '"name" "capacity" "activation"',
+            sm: '"name capacity activation"',
+          },
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            sm: 'minmax(120px, 1fr) auto auto',
+          },
+          alignItems: 'center',
+          gap: { xs: 1.5, sm: 2 },
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
         <Typography
           component="span"
           sx={{
+            gridArea: 'name',
+            minWidth: 0,
+            overflowWrap: 'anywhere',
             fontWeight: 600,
             ...(person.enabled
               ? undefined
@@ -137,32 +290,26 @@ function PersonRow({ person, roster }: { person: Person; roster: readonly Person
         >
           {person.emoji || ''} {person.name}
         </Typography>
+        <Box sx={{ gridArea: 'capacity', justifySelf: { xs: 'start', sm: 'auto' } }}>
+          <NumberStepper
+            label={strings.admin.pagesPerDayLabel}
+            value={person.pagesPerDay}
+            min={1}
+            onChange={(value) =>
+              void updatePerson.execute(person.id, { pagesPerDay: value })
+            }
+          />
+        </Box>
+        <AppButton
+          sx={{ gridArea: 'activation', px: 2, width: { xs: '100%', sm: 'auto' } }}
+          variant="outlined"
+          onClick={() =>
+            void updatePerson.execute(person.id, { enabled: !person.enabled })
+          }
+        >
+          {person.enabled ? strings.admin.disable : strings.admin.enable}
+        </AppButton>
       </Box>
-
-      <NumberStepper
-        label={strings.admin.pagesPerDayLabel}
-        value={person.pagesPerDay}
-        min={1}
-        onChange={(value) => void updatePerson.execute(person.id, { pagesPerDay: value })}
-      />
-
-      <AppButton
-        sx={{ px: 2 }}
-        variant="outlined"
-        onClick={() => void updatePerson.execute(person.id, { enabled: !person.enabled })}
-      >
-        {person.enabled ? strings.admin.disable : strings.admin.enable}
-      </AppButton>
-
-      <IconButton
-        size="small"
-        color="error"
-        title={strings.admin.remove}
-        aria-label={`${strings.admin.remove}: ${person.name}`}
-        onClick={() => void onRemove()}
-      >
-        <DeleteOutlineRoundedIcon fontSize="small" />
-      </IconButton>
 
       <RenamePersonDialog
         open={renameOpen}

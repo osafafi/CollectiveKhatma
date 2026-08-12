@@ -52,7 +52,10 @@ Hard rules:
   the member's latest readable assignment; completed rows do the same, even when
   that assignment belongs to an older round. Both show the actual round, member
   avatar/name, and exact page ranges. Released chunks appear in neither list.
-- Admin assignment subscriptions cover active khatmas plus open detail.
+- Admin assignment subscriptions cover active khatmas plus open detail. While
+  the roster route is mounted, it additionally retains completed-khatma
+  histories to derive reliability grades, then releases those listeners on
+  navigation.
 - The feedback listener is retained only by the mounted admin shell. Its header
   badge counts unread messages; the top drawer lists every message and supports
   read/unread, clipboard copy, and confirmed deletion. Drawer height is controlled

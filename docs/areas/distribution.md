@@ -48,6 +48,10 @@ Hard rules:
   `remainingPages`, so partially read or currently held Surahs are excluded.
 - The admin explicitly starts each round. `lastDistributionDate` is display/audit
   metadata only; it is not a 24-hour or same-date business rule.
+- The khatma detail can atomically drain its entire remaining pool into one
+  participant's manual pending chunk. This always advances to a fresh khatma
+  round (so legacy `doneByRound` marks cannot pre-complete it) and stamps the
+  local assignment date; it does not create a series-wide `DistributionRun`.
 - A confirmed series-wide `DistributionRun` is `open` until the next run closes
   it. A current-round adjustment increments that run's revision. New assignment
   chunks reference the run and have an explicit `pending`, `completed`, or

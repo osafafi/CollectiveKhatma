@@ -36,6 +36,10 @@ Hard rules:
 - Every active-khatma participant row exposes the member's global
   `احتفظ بصفحاتي` switch, using the same roster preference as the member's
   personal page.
+- An active khatma with unread pool pages exposes a confirmed admin action that
+  assigns the entire remaining pool to one current participant. The participant
+  select defaults to the admin roster id and remembers later choices in
+  `khatma.admin.remainderAssigneeId`.
 - Khatmas never keep roster ids that no longer resolve. After complete roster and
   khatma snapshots load, the admin app automatically removes legacy ghost members
   from every khatma, returning their non-released pages and deleting their
