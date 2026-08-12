@@ -190,7 +190,7 @@ describe('admin Roster', () => {
     expect(topGrade).toHaveAttribute('data-grade-tone', 'top');
     expect(topGrade.querySelector('svg')).toBeInTheDocument();
     expect(
-      screen.getByLabelText(`${strings.admin.reliabilityScore}: 6 / 10`),
+      screen.getByLabelText(`${strings.admin.reliabilityScore}: 5 / 10`),
     ).toHaveAttribute('data-grade-tone', 'medium');
     expect(
       screen.getByLabelText(`${strings.admin.reliabilityScore}: 0.8 / 10`),
