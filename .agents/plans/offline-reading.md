@@ -1,7 +1,9 @@
 # Offline reading — progress plan
 
-Branch: `feature/offline-reading`. Delete this file in the PR that lands the last
-layer; `AGENTS.md` says plans do not live on `main`.
+Branch: `feature/offline-reading`. **All four layers are done — delete this file
+before merging.** `AGENTS.md` says plans do not live on `main`; every durable
+fact below has been moved into `docs/areas/member-app.md` and
+`docs/areas/operations.md`, so nothing is lost with it.
 
 Goal: a member who loses connection mid-chunk keeps reading. Layers ship
 independently and in order — each is a usable improvement on its own.
@@ -13,7 +15,7 @@ independently and in order — each is a usable improvement on its own.
 | 1. Service worker + app shell | done  | 2026-09-03 |
 | 2. Quran text offline         | done  | 2026-09-03 |
 | 3. Assignment data offline    | done  | 2026-09-03 |
-| 4. "Finished" while offline   | todo  | —          |
+| 4. "Finished" while offline   | done  | 2026-09-03 |
 
 Update the row (`todo` / `wip` / `done`) and the session date at the end of every
 session, then commit. That table is the resume point.
@@ -49,10 +51,14 @@ code. The worker never calls `skipWaiting`, so a new build only takes over on a
 fresh open — a reload is not enough. Check `navigator.serviceWorker.controller`
 and the loaded `assets/member-*.js` hash before believing any offline result.
 
-**Not done, and expected.** Marking a round done still needs the network:
-`runTransaction` never works offline. That is Layer 4.
+Layer 4 finished the goal: a finish tap made with no connection is kept on the
+device and replayed when the network returns. Verified end to end against the
+emulator — tapped with Firestore killed, restarted it, and read the assignment
+document back over the emulator's REST API: `round 2 -> completed`,
+`doneByRound {2: ...}`, `missedStreak 0`. The write really landed; the success
+banner the member sees comes from that snapshot, not from optimism.
 
-**Next step: Layer 4.**
+**Nothing is left.** All four layers are done.
 
 ### Files Layer 1 touched
 
@@ -312,14 +318,55 @@ to show — no cache exists yet. The gate now says so
 `markRoundDone` (`src/data/assignments.ts`) uses `runTransaction`, which requires
 a server round-trip and **never** works offline, persistence or not.
 
-- [ ] Do **not** rewrite it as loose writes to ride Firestore's own write queue —
-      that drops the released-chunk check and the assignment+roster atomicity.
-- [ ] Instead: detect offline, queue the intent locally, replay on reconnect.
-      `markRoundDone` is already idempotent, so replay is safe as written.
-- [ ] UI: pending state, "سيُحفظ عند عودة الاتصال". Arabic copy goes in
-      `src/content/strings.ar.ts`.
-- [ ] Test the replay path, including a chunk released while the member was
-      offline (`ReleasedChunkError`).
+- [x] `markRoundDone` is untouched. No loose writes, so the released-chunk check
+      and the assignment+roster atomicity both survive exactly as they were.
+- [x] Detect offline, queue the intent locally, replay on reconnect.
+      `markRoundDone` is idempotent, so replay is safe and duplicates are free.
+- [x] UI: `strings.member.queuedFinish` — "سيُحفظ عند عودة الاتصال". Shown
+      instead of the success banner, never alongside it: until the write lands
+      the group has not been told anything.
+- [x] Replay path tested, including `ReleasedChunkError` — a chunk released
+      while the member was offline is dropped, not retried, because no number
+      of retries can make it land.
+
+**Two things the plan did not anticipate, both found by running it.**
+
+1. **A dead transaction hangs; it does not reject.** With the emulator killed
+   and `navigator.onLine` still reporting `true`, the finish tap sat with its
+   button disabled and no error — at 3 s, and it would have sat there forever.
+   So "detect offline" cannot be only `navigator.onLine`: that flag reports a
+   _network_, not a working internet, and a member on a connected-but-dead wifi
+   passes the check. Every write is now raced against an 8 s timeout and queued
+   if it wins. The same bound had to go inside the replay loop — without it one
+   unreachable entry holds the replay lock and no later tap is ever sent.
+2. **`online` does not fire if the browser never noticed the drop.** In exactly
+   that connected-but-dead case there is no event to replay on, so a queued tap
+   would wait for the next app launch while the member watched "saved, waiting
+   for a connection" with a working connection. Replay now also runs when the
+   tab becomes visible, and on a 60 s timer while anything is queued.
+
+**Deliberately not done.** The admin's own "mark done" control
+(`KhatmaMembersCard`) still writes straight through. Queuing an admin's
+correction on their behalf is not wanted; the admin works online at a desk.
+
+### Files Layer 4 touched
+
+- `src/app/operations/finishQueue.ts` — new. The durable queue and the replay
+  loop. No React, no Firebase: a plain external store plus a function that takes
+  the write as an argument, so it is drivable from a node test.
+- `src/app/operations/useFinishRound.ts` — new. `useFinishRound` for the two
+  member call sites, `useFinishQueueReplay` for the app-wide drain.
+- `src/app/operations/index.ts` — exports both.
+- `src/app/member/MemberApp.tsx` — mounts the replay above the routes.
+- `src/app/member/khatma/RoundActions.tsx`,
+  `src/app/member/reader/AssignedReaderPage.tsx` — both finish buttons now go
+  through the queue and render the queued state.
+- `src/content/strings.ar.ts` — `member.queuedFinish`,
+  `member.releasedWhileOffline`.
+- `scripts/check-bundle-budgets.mjs` — comment re-measured; the queue costs
+  ~1 kB gzip and the numbers still fit, with under 1 kB to spare.
+- `tests/app/finish-queue.test.ts` — new, 9 tests.
+- `tests/app/member-offline.test.tsx` — 5 more, now 16.
 
 ## Repo rules that bind this work
 
@@ -371,3 +418,10 @@ Append one line per session: date, layer, what actually changed.
   raised 367→388 (member) and 373→394 (admin) kB gz for the +21.9 kB persistence
   layer. Verified with the emulator killed: the assigned reader still rendered
   its chunk. 349 tests pass; `format:check` still fails on 32 untouched files.
+- 2026-09-03 — Layer 4 done, and with it the whole goal. Finish taps queue to
+  `khatma.pendingFinishes` and replay on reconnect / tab-visible / 60 s timer.
+  Found that an unreachable transaction hangs rather than rejecting, and that
+  `online` never fires when the browser did not notice the drop — both changed
+  the design, see the Layer 4 note. Verified by reading the assignment document
+  back out of the emulator after a reconnect. 363 tests pass; `format:check`
+  still fails on the same 32 untouched files.

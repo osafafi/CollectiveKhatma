@@ -6,7 +6,7 @@ import {
   selectKhatmasListener,
   useAppSelector,
 } from '@/app/store';
-import { useWriteOperation } from '@/app/operations';
+import { ReleasedChunkError, useFinishRound } from '@/app/operations';
 import { memberHash } from '@/app/routing/routes';
 import {
   AppButton,
@@ -335,8 +335,8 @@ function FinishFooter({
   storedDone: boolean;
   activeSeriesKhatmaIds: readonly string[];
 }) {
-  const markDone = useWriteOperation('markRoundDone');
-  const done = storedDone || markDone.state.status === 'success';
+  const finish = useFinishRound({ khatmaId, memberId, round, activeSeriesKhatmaIds });
+  const done = storedDone || finish.isDone;
 
   if (done) {
     return (
@@ -346,20 +346,26 @@ function FinishFooter({
     );
   }
 
+  // Kept on this device until the connection returns. Deliberately not the
+  // success banner: the group has not been told anything yet.
+  if (finish.isQueued) {
+    return (
+      <NoticeBanner tone="warning" role="status" sx={{ textAlign: 'center' }}>
+        {strings.member.queuedFinish}
+      </NoticeBanner>
+    );
+  }
+
   return (
     <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 4 }}>
-      <AppButton
-        hero
-        disabled={markDone.isPending}
-        onClick={() => {
-          void markDone.execute(khatmaId, memberId, round, activeSeriesKhatmaIds);
-        }}
-      >
+      <AppButton hero disabled={finish.isPending} onClick={finish.run}>
         {strings.member.finishedToday}
       </AppButton>
-      {markDone.state.status === 'failure' ? (
+      {finish.error ? (
         <Typography role="alert" color="error.main" sx={{ mt: 2, textAlign: 'center' }}>
-          {strings.member.saveError}
+          {finish.error instanceof ReleasedChunkError
+            ? strings.member.releasedNote
+            : strings.member.saveError}
         </Typography>
       ) : null}
     </Box>

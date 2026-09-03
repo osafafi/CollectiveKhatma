@@ -75,6 +75,14 @@ Hard rules:
   because member and admin share an origin and may be open together. This is
   what lets `onSnapshot` answer with no network; it costs ~21.9 kB gzip on both
   entries, which is why the bundle budgets moved in 2026-09.
+- `markRoundDone` and `clearRoundDone` run in transactions, and a Firestore
+  transaction always reads from the server — the local cache does not help it.
+  Offline it does not reject, it **hangs** (verified against a killed emulator),
+  so nothing may wait on it unbounded. `src/app/operations/finishQueue.ts` holds
+  a member's finish tap on the device and replays it on reconnect; every
+  replayed write is raced against `REPLAY_TIMEOUT_MS` so one unreachable entry
+  cannot hold the replay lock forever. Replay is safe because `markRoundDone` is
+  idempotent — re-tapping a completed round is a no-op.
 - An empty persistent cache arrives as a **ready** empty snapshot, not as a
   pending one. Listener status alone therefore cannot tell "nothing is cached
   on this device" apart from "nothing exists"; UI that must distinguish them

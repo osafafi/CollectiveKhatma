@@ -76,6 +76,12 @@ export const strings = {
     awaitingDistribution: 'بانتظار توزيع صفحات جديدة',
     noKhatmas: 'لست مشتركًا في أي ختمة حالية.',
     saveError: 'تعذّر حفظ الإنجاز، حاول مرة أخرى.',
+    // Shown when a finish tap is held on the device because Firestore could not
+    // be reached. It is deliberately not the success wording: nothing has
+    // reached the group yet.
+    queuedFinish: 'سيُحفظ عند عودة الاتصال',
+    releasedWhileOffline:
+      'أُعيدت صفحاتك إلى المجموعة أثناء انقطاع الاتصال، ولم يُسجَّل الإنجاز.',
     // Warnings (the member sees only their OWN warning, gently worded).
     warningNote:
       'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابع مع صفحاتك الجديدة عند توزيعها.',

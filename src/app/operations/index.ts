@@ -1,5 +1,22 @@
 export { WriteOperationsProvider } from './WriteOperationsProvider';
 export {
+  finishKey,
+  getQueuedFinishes,
+  isFinishQueued,
+  queueFinish,
+  replayFinishQueue,
+  resetFinishQueue,
+  subscribeToFinishQueue,
+  type MarkRoundDone,
+  type QueuedFinish,
+} from './finishQueue';
+export {
+  useFinishQueueReplay,
+  useFinishRound,
+  type FinishRoundResult,
+  type FinishRoundTarget,
+} from './useFinishRound';
+export {
   toOperationError,
   useOperation,
   type OperationState,

@@ -17,7 +17,7 @@ Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 `member-completion`, `member-personal-settings`, `member-integration`,
-`member-offline`.
+`member-offline`, `finish-queue`.
 
 Hard rules:
 
@@ -50,13 +50,24 @@ Hard rules:
   releases those historical listeners when the route unmounts.
 - Reader position survives unrelated live snapshots, but resets to the first
   page when a new round or same-round redistribution changes the assigned pages.
+- Finishing a round goes through `useFinishRound`, never
+  `useWriteOperation('markRoundDone')` directly. A transaction cannot run
+  offline (see `docs/areas/operations.md`), so the tap is kept on the device and
+  replayed when the connection returns — on the `online` event, on the tab
+  becoming visible, and on a slow timer while anything is queued, because
+  `online` does not fire when the browser never noticed the drop. Until it
+  lands the member sees `queuedFinish`, deliberately not the success banner:
+  nothing has reached the group yet. A tap whose pages were released while the
+  member was away is dropped rather than retried.
 - Released chunk cannot be marked done.
 - Completion interrupt hides normal nav until acknowledged.
 - Other members' warning levels are never shown.
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread
   document with the selected member id and current name on every submission.
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage`,
-  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`.
+  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`,
+  `khatma.pendingFinishes` (the offline finish queue, owned by
+  `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
   title variant on Settings); the khatmas list also shows a read-only
   "previous" disclosure of completed khatmas the member took part in. It is

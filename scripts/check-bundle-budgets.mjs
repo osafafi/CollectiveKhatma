@@ -13,8 +13,10 @@ const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 // IndexedDB layer into the bundle — measured at +21.9 kB gzip on each entry,
 // against 364.2/370.4 kB with the memory cache. Both entries pay it because
 // `src/data/firebase.ts` is shared, though only the member app reads offline;
-// splitting it would mean making `db` lazy across the whole data layer. Now
-// member 386.1/551.0 kB and admin 392.3/557.2 kB, keeping the same headroom.
+// splitting it would mean making `db` lazy across the whole data layer. With the
+// offline finish queue on top, now member 387.1/552.0 kB and admin
+// 393.2/558.1 kB — under 1 kB of headroom, so the next addition here has to
+// re-measure rather than assume.
 const budgets = {
   member: {
     entry: 'index.html',

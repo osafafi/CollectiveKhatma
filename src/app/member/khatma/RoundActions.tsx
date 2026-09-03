@@ -1,6 +1,6 @@
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { Stack, Typography } from '@mui/material';
-import { ReleasedChunkError, useWriteOperation } from '@/app/operations';
+import { ReleasedChunkError, useFinishRound } from '@/app/operations';
 import { memberHash } from '@/app/routing/routes';
 import { AppButton, NoticeBanner } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
@@ -21,8 +21,13 @@ export function RoundActions({
   storedDone,
   activeSeriesKhatmaIds,
 }: RoundActionsProps) {
-  const markDone = useWriteOperation('markRoundDone');
-  const done = storedDone || markDone.state.status === 'success';
+  const finish = useFinishRound({
+    khatmaId,
+    memberId,
+    round: chunk.round,
+    activeSeriesKhatmaIds,
+  });
+  const done = storedDone || finish.isDone;
 
   if (done) {
     return (
@@ -32,12 +37,21 @@ export function RoundActions({
     );
   }
 
+  // Held on this device, not saved to the group — so not the success banner.
+  if (finish.isQueued) {
+    return (
+      <NoticeBanner tone="warning" role="status" sx={{ textAlign: 'center' }}>
+        {strings.member.queuedFinish}
+      </NoticeBanner>
+    );
+  }
+
   const error =
-    markDone.state.status === 'failure'
-      ? markDone.state.error instanceof ReleasedChunkError
-        ? strings.member.releasedNote
-        : strings.member.saveError
-      : null;
+    finish.error instanceof ReleasedChunkError
+      ? strings.member.releasedNote
+      : finish.error
+        ? strings.member.saveError
+        : null;
 
   return (
     <Stack spacing={2}>
@@ -47,10 +61,8 @@ export function RoundActions({
       <AppButton
         hero
         startIcon={<CheckRoundedIcon />}
-        disabled={markDone.isPending}
-        onClick={() => {
-          void markDone.execute(khatmaId, memberId, chunk.round, activeSeriesKhatmaIds);
-        }}
+        disabled={finish.isPending}
+        onClick={finish.run}
       >
         {strings.member.finishedToday}
       </AppButton>

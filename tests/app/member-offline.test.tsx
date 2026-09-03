@@ -1,9 +1,15 @@
-import { act, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { act, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemberExperience } from '@/app/member/MemberApp';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
+import {
+  resetFinishQueue,
+  writeOperations,
+  type WriteOperations,
+} from '@/app/operations';
+import { ReleasedChunkError } from '@/data/assignments';
 import { strings } from '@/content/strings.ar';
-import type { Khatma, Person } from '@/domain/types';
+import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
 import {
   renderWithAppProviders,
   type RenderWithAppProvidersOptions,
@@ -33,6 +39,20 @@ function makeKhatma(id: string): Khatma {
     remainingPages: [30, 31, 32],
     roundCount: 1,
     createdAt: Date.UTC(2026, 6, 1),
+  };
+}
+
+function makeAssignment(memberId: string, rounds: RoundChunk[] = []): Assignment {
+  return { memberId, rounds, doneByRound: {}, missedStreak: 0 };
+}
+
+function round(roundNumber: number, pages: number[]): RoundChunk {
+  return {
+    round: roundNumber,
+    date: '2026-07-14',
+    pages,
+    loosePages: [...pages],
+    redistributedPages: [],
   };
 }
 
@@ -74,10 +94,12 @@ function renderMember(options: RenderWithAppProvidersOptions = {}) {
 
 beforeEach(() => {
   localStorage.clear();
+  resetFinishQueue();
   setOnline(true);
 });
 
 afterEach(() => {
+  resetFinishQueue();
   setOnline(true);
 });
 
@@ -194,5 +216,122 @@ describe('assigned reader without a khatma snapshot', () => {
     // the point is that it resolved from cached data instead of failing.
     expect(screen.getByText(strings.reader.noPagesToday)).toBeVisible();
     expect(screen.getByText(strings.member.offlineNotice)).toBeVisible();
+  });
+});
+
+describe('finishing a round while offline', () => {
+  const khatma = makeKhatma('k1');
+
+  function renderLanding(operations?: WriteOperations) {
+    return renderMember({
+      route: `/khatma/${khatma.id}`,
+      data: {
+        roster: [amina],
+        khatmas: [khatma],
+        assignments: { [khatma.id]: [makeAssignment(amina.id, [round(1, [1, 2])])] },
+      },
+      ...(operations ? { operations } : {}),
+    });
+  }
+
+  it('keeps the tap on the device instead of losing it', async () => {
+    const markRoundDone = vi.fn<WriteOperations['markRoundDone']>();
+    setOnline(false);
+    const harness = renderLanding({ ...writeOperations, markRoundDone });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    );
+
+    // Not the success banner: nothing has reached the group yet.
+    expect(screen.getByText(strings.member.queuedFinish)).toBeVisible();
+    expect(
+      screen.queryByText((content) => content.includes(strings.member.doneToday)),
+    ).toBeNull();
+    // `runTransaction` never completes offline, so it is not even attempted.
+    expect(markRoundDone).not.toHaveBeenCalled();
+  });
+
+  it('writes the tap to storage so it survives a reload', async () => {
+    setOnline(false);
+    const harness = renderLanding({
+      ...writeOperations,
+      markRoundDone: vi.fn<WriteOperations['markRoundDone']>(),
+    });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    );
+
+    const stored: unknown = JSON.parse(
+      localStorage.getItem('khatma.pendingFinishes') ?? '[]',
+    );
+    expect(stored).toMatchObject([{ khatmaId: khatma.id, memberId: amina.id, round: 1 }]);
+
+    // A fresh mount — what a reload gives — still shows it as waiting.
+    harness.unmount();
+    renderLanding({ ...writeOperations, markRoundDone: vi.fn() });
+    expect(await screen.findByText(strings.member.queuedFinish)).toBeVisible();
+  });
+
+  it('sends it when the connection comes back', async () => {
+    const markRoundDone = vi
+      .fn<WriteOperations['markRoundDone']>()
+      .mockResolvedValue(undefined);
+    setOnline(false);
+    const harness = renderLanding({ ...writeOperations, markRoundDone });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    );
+    expect(markRoundDone).not.toHaveBeenCalled();
+
+    goOnline();
+
+    await waitFor(() =>
+      expect(markRoundDone).toHaveBeenCalledWith(khatma.id, amina.id, 1, [khatma.id]),
+    );
+    await waitFor(() =>
+      expect(localStorage.getItem('khatma.pendingFinishes')).toBeNull(),
+    );
+  });
+
+  it('drops a tap whose pages were released while the member was away', async () => {
+    const markRoundDone = vi
+      .fn<WriteOperations['markRoundDone']>()
+      .mockRejectedValue(new ReleasedChunkError());
+    setOnline(false);
+    const harness = renderLanding({ ...writeOperations, markRoundDone });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    );
+    goOnline();
+
+    await waitFor(() => expect(markRoundDone).toHaveBeenCalledTimes(1));
+    // No retry can fix it, so the queue lets it go and the button returns.
+    await waitFor(() =>
+      expect(localStorage.getItem('khatma.pendingFinishes')).toBeNull(),
+    );
+    expect(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    ).toBeVisible();
+  });
+
+  it('still writes straight through when online', async () => {
+    const markRoundDone = vi
+      .fn<WriteOperations['markRoundDone']>()
+      .mockResolvedValue(undefined);
+    const harness = renderLanding({ ...writeOperations, markRoundDone });
+
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.member.finishedToday }),
+    );
+
+    expect(markRoundDone).toHaveBeenCalledWith(khatma.id, amina.id, 1, [khatma.id]);
+    expect(localStorage.getItem('khatma.pendingFinishes')).toBeNull();
+    expect(
+      await screen.findByText((content) => content.includes(strings.member.doneToday)),
+    ).toBeVisible();
   });
 });
