@@ -13,6 +13,7 @@ npm run check
 
 Focused test: `npm test -- tests/app/name.test.tsx`.
 Bundle-sensitive change: `npm run check:bundle-budgets`.
+Service-worker change: `npm run check:service-worker` after a build.
 
 Firestore transaction/rule change: run domain tests, data callers, then the opt-in
 emulator smoke with Firestore emulator running. Record if not run.
@@ -73,5 +74,16 @@ Hard rules:
 - The member entry ships `manifest.webmanifest`, PNG icons for standard,
   maskable, Apple touch, and favicon use. All install asset URLs remain valid
   under Vite's configured base path.
+- `vite-plugin-pwa` generates `dist/sw.js`, which precaches the member shell
+  only: its HTML, manifest, hashed JS/CSS/fonts, and icons. The mushaf under
+  `quran/` is not precached. The worker never calls `skipWaiting`, so a new
+  build takes over the next time the app is opened fresh.
+- The precache manifest is world-readable, so it must never name the hidden
+  admin entry or the chunks only that entry reaches.
+  `scripts/pwa-precache.ts` removes them from the graph in
+  `dist/.vite/manifest.json`, and `npm run check:service-worker` fails the build
+  if any reaches `sw.js`. `navigateFallback` is allowlisted to the base path
+  alone so the admin entry keeps reaching the network and its name stays out of
+  the worker.
 
 Update this doc when commands, schema, rules, CI, entries, emulator, or deploy flow changes.

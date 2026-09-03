@@ -20,6 +20,11 @@ Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 
 Hard rules:
 
+- `src/app/entries/member.tsx` registers the offline service worker on window
+  load, via plain `navigator.serviceWorker` rather than `virtual:pwa-register`,
+  so `workbox-window` stays out of the member bundle budget. Registration is a
+  no-op in development and tests. See `docs/areas/operations.md` for what the
+  worker precaches.
 - Persistent member listeners subscribe only to the selected member's active
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then

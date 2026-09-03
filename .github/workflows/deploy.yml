@@ -36,6 +36,8 @@ jobs:
         run: npm test
       - name: Build and check bundle budgets
         run: npm run check:bundle-budgets
+      - name: Check the member service worker
+        run: npm run check:service-worker
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).
           # Change to match your repo name, or delete for a user/custom-domain site.
