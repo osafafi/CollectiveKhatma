@@ -16,23 +16,58 @@ Start files:
 Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
-`member-completion`, `member-personal-settings`, `member-integration`.
+`member-completion`, `member-personal-settings`, `member-integration`,
+`member-offline`, `finish-queue`.
 
 Hard rules:
 
+- `src/app/entries/member.tsx` registers the offline service worker on window
+  load, via plain `navigator.serviceWorker` rather than `virtual:pwa-register`,
+  so `workbox-window` stays out of the member bundle budget. Registration is a
+  no-op in development and tests. See `docs/areas/operations.md` for what the
+  worker precaches.
+- The same entry starts the background mushaf sweep. It is a no-op until a
+  worker controls the page, so it never runs on a first visit, in development,
+  or in tests, and it stands down for Data Saver and while offline. The
+  assigned reader pushes the member's own chunk to the front of it.
+- `MemberShell` renders the offline banner above the shell frame rather than
+  inside the content column, because routed heroes cancel that column's padding
+  to bleed to the top edge and would ride up over it. `useOnlineStatus` owns the
+  signal (`navigator.onLine` plus the `online`/`offline` events) and the same
+  hook drives the gate and the assigned reader.
+- Offline the app runs on Firestore's persistent cache, so the roster, khatmas,
+  and assignments are last-known rather than absent. An empty cache arrives as a
+  ready-but-empty snapshot (see `docs/areas/operations.md`), so the identity gate
+  and the assigned reader key their offline dead end on having nothing to show,
+  not on listener status: the gate says nothing is saved on this device instead
+  of "no members yet", and the assigned reader says it could not load your pages
+  instead of claiming none are due. Online, an empty roster or khatma list is
+  still reported as the real answer it is, and a failed khatma subscription
+  reads as could-not-load rather than spinning.
 - Persistent member listeners subscribe only to the selected member's active
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then
   releases those historical listeners when the route unmounts.
 - Reader position survives unrelated live snapshots, but resets to the first
   page when a new round or same-round redistribution changes the assigned pages.
+- Finishing a round goes through `useFinishRound`, never
+  `useWriteOperation('markRoundDone')` directly. A transaction cannot run
+  offline (see `docs/areas/operations.md`), so the tap is kept on the device and
+  replayed when the connection returns — on the `online` event, on the tab
+  becoming visible, and on a slow timer while anything is queued, because
+  `online` does not fire when the browser never noticed the drop. Until it
+  lands the member sees `queuedFinish`, deliberately not the success banner:
+  nothing has reached the group yet. A tap whose pages were released while the
+  member was away is dropped rather than retried.
 - Released chunk cannot be marked done.
 - Completion interrupt hides normal nav until acknowledged.
 - Other members' warning levels are never shown.
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread
   document with the selected member id and current name on every submission.
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage`,
-  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`.
+  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`,
+  `khatma.pendingFinishes` (the offline finish queue, owned by
+  `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
   title variant on Settings); the khatmas list also shows a read-only
   "previous" disclosure of completed khatmas the member took part in. It is

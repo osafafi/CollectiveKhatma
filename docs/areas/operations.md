@@ -13,6 +13,7 @@ npm run check
 
 Focused test: `npm test -- tests/app/name.test.tsx`.
 Bundle-sensitive change: `npm run check:bundle-budgets`.
+Service-worker change: `npm run check:service-worker` after a build.
 
 Firestore transaction/rule change: run domain tests, data callers, then the opt-in
 emulator smoke with Firestore emulator running. Record if not run.
@@ -66,6 +67,27 @@ roster page-history shape.
 Hard rules:
 
 - Only `src/data` imports Firebase.
+- `firebase.ts` builds Firestore with `initializeFirestore`, not `getFirestore`,
+  so it can set a local cache. `localCache.ts` picks the persistent IndexedDB
+  cache when IndexedDB exists and the memory cache when it does not — Node (the
+  emulator smoke test) and private-browsing modes, where forcing persistence
+  stops the client from starting at all. The tab manager is the multi-tab one
+  because member and admin share an origin and may be open together. This is
+  what lets `onSnapshot` answer with no network; it costs ~21.9 kB gzip on both
+  entries, which is why the bundle budgets moved in 2026-09.
+- `markRoundDone` and `clearRoundDone` run in transactions, and a Firestore
+  transaction always reads from the server — the local cache does not help it.
+  Offline it does not reject, it **hangs** (verified against a killed emulator),
+  so nothing may wait on it unbounded. `src/app/operations/finishQueue.ts` holds
+  a member's finish tap on the device and replays it on reconnect; every
+  replayed write is raced against `REPLAY_TIMEOUT_MS` so one unreachable entry
+  cannot hold the replay lock forever. Replay is safe because `markRoundDone` is
+  idempotent — re-tapping a completed round is a no-op.
+- An empty persistent cache arrives as a **ready** empty snapshot, not as a
+  pending one. Listener status alone therefore cannot tell "nothing is cached
+  on this device" apart from "nothing exists"; UI that must distinguish them
+  has to look at whether it has anything to show. Verified against the emulator
+  with the backend stopped.
 - Firestore rules validate path and shape. They do not prove identity.
 - App is static. No server or Cloud Functions.
 - Never touch live Firebase or deploy unless user gives explicit authority.
@@ -73,5 +95,25 @@ Hard rules:
 - The member entry ships `manifest.webmanifest`, PNG icons for standard,
   maskable, Apple touch, and favicon use. All install asset URLs remain valid
   under Vite's configured base path.
+- `vite-plugin-pwa` generates `dist/sw.js`, which precaches the member shell
+  only: its HTML, manifest, hashed JS/CSS/fonts, and icons. The mushaf under
+  `quran/` is not precached. The worker never calls `skipWaiting`, so a new
+  build takes over the next time the app is opened fresh.
+- The mushaf is cached at runtime rather than precached: the worker serves
+  `quran/**.json` cache-first out of `quran-mushaf-v1`, and
+  `src/app/member/install/mushafPrefetch.ts` sweeps the whole dataset in after
+  first paint — 604 pages plus `surahs.json` and `index.json`, ~320 kB gzipped.
+  The dataset is immutable, so nothing revalidates. Rewriting it with
+  `npm run build:quran` means bumping `QURAN_CACHE_NAME` in
+  `scripts/sw-routes.ts` and deleting the superseded cache by hand —
+  `cleanupOutdatedCaches` prunes precaches, not this one.
+  `npm run check:service-worker` fails the build if the route goes missing.
+- The precache manifest is world-readable, so it must never name the hidden
+  admin entry or the chunks only that entry reaches.
+  `scripts/pwa-precache.ts` removes them from the graph in
+  `dist/.vite/manifest.json`, and `npm run check:service-worker` fails the build
+  if any reaches `sw.js`. `navigateFallback` is allowlisted to the base path
+  alone so the admin entry keeps reaching the network and its name stays out of
+  the worker.
 
 Update this doc when commands, schema, rules, CI, entries, emulator, or deploy flow changes.

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
-import { selectAssignmentsForKhatma, selectKhatmas, useAppSelector } from '@/app/store';
-import { useWriteOperation } from '@/app/operations';
+import {
+  selectAssignmentsForKhatma,
+  selectKhatmas,
+  selectKhatmasListener,
+  useAppSelector,
+} from '@/app/store';
+import { ReleasedChunkError, useFinishRound } from '@/app/operations';
 import { memberHash } from '@/app/routing/routes';
 import {
   AppButton,
@@ -15,7 +20,9 @@ import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import { activeKhatmaIdsInSeries, seriesTitle } from '@/domain/series';
 import type { RoundChunk } from '@/domain/types';
+import { startMushafPrefetch } from '../install/mushafPrefetch';
 import { useMemberIdentity } from '../memberIdentityContext';
+import { useOnlineStatus } from '../useOnlineStatus';
 import {
   QuranPageContent,
   ReaderBackground,
@@ -26,13 +33,16 @@ import { clampIndex, prefetchNeighbors } from './readerPaging';
 
 /**
  * Member assigned reader (`#/khatma/{id}/read`) — the current-round chunk with a
- * one-tap finish action. Resolution mirrors the legacy `showAssignedReader`: an
- * unloaded khatma list reads as loading, everything else that is not a readable
- * chunk of mine shows the back + "no pages" view.
+ * one-tap finish action. A khatma list that has not arrived yet reads as
+ * loading while one still can, as "could not load" once it cannot, and
+ * everything else that is not a readable chunk of mine shows the back +
+ * "no pages" view.
  */
 export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
   const { memberId, member } = useMemberIdentity();
   const khatmas = useAppSelector(selectKhatmas);
+  const khatmasListener = useAppSelector(selectKhatmasListener);
+  const online = useOnlineStatus();
   const assignments = useAppSelector((state) =>
     selectAssignmentsForKhatma(state, khatmaId),
   );
@@ -44,8 +54,18 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
       candidate.memberIds.includes(memberId),
   );
 
-  // Empty khatma collection reads as loading (including before the first snapshot).
-  if (khatmas.length === 0) return <LoadingCard />;
+  // Nothing to show yet. Offline that means this device has nothing cached —
+  // note that Firestore reports an empty cache as a *ready* empty snapshot, not
+  // as pending, so listener status alone cannot tell the two apart — and a
+  // failed subscription says the same. Only an empty list that arrived over a
+  // live connection is a real answer: this member has no khatma. Reading any of
+  // the others as "no pages", or as a spinner that never resolves, is a guess.
+  if (khatmas.length === 0) {
+    if (!online || khatmasListener.status === 'error') {
+      return <ReaderNoticeView khatmaId={khatmaId} message={strings.reader.loadFailed} />;
+    }
+    if (khatmasListener.status !== 'ready') return <LoadingCard />;
+  }
   if (!khatma) return <NoPagesView khatmaId={khatmaId} />;
 
   const paused = member ? !member.enabled : false;
@@ -108,6 +128,13 @@ function AssignedReaderCore({
   useEffect(() => {
     prefetchNeighbors(pages, index);
   }, [pages, index]);
+
+  // The member's own chunk jumps the queue of the background mushaf sweep, so
+  // the pages they were actually assigned are the first ones to survive a
+  // lost connection.
+  useEffect(() => {
+    startMushafPrefetch(pages);
+  }, [pages]);
 
   const indicator = `${strings.reader.page} ${toWesternDigits(page)}`;
   const progressIndicator = `${toWesternDigits(index + 1)} ${strings.reader.of} ${toWesternDigits(pages.length)}`;
@@ -308,8 +335,8 @@ function FinishFooter({
   storedDone: boolean;
   activeSeriesKhatmaIds: readonly string[];
 }) {
-  const markDone = useWriteOperation('markRoundDone');
-  const done = storedDone || markDone.state.status === 'success';
+  const finish = useFinishRound({ khatmaId, memberId, round, activeSeriesKhatmaIds });
+  const done = storedDone || finish.isDone;
 
   if (done) {
     return (
@@ -319,20 +346,26 @@ function FinishFooter({
     );
   }
 
+  // Kept on this device until the connection returns. Deliberately not the
+  // success banner: the group has not been told anything yet.
+  if (finish.isQueued) {
+    return (
+      <NoticeBanner tone="warning" role="status" sx={{ textAlign: 'center' }}>
+        {strings.member.queuedFinish}
+      </NoticeBanner>
+    );
+  }
+
   return (
     <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 4 }}>
-      <AppButton
-        hero
-        disabled={markDone.isPending}
-        onClick={() => {
-          void markDone.execute(khatmaId, memberId, round, activeSeriesKhatmaIds);
-        }}
-      >
+      <AppButton hero disabled={finish.isPending} onClick={finish.run}>
         {strings.member.finishedToday}
       </AppButton>
-      {markDone.state.status === 'failure' ? (
+      {finish.error ? (
         <Typography role="alert" color="error.main" sx={{ mt: 2, textAlign: 'center' }}>
-          {strings.member.saveError}
+          {finish.error instanceof ReleasedChunkError
+            ? strings.member.releasedNote
+            : strings.member.saveError}
         </Typography>
       ) : null}
     </Box>
@@ -350,6 +383,11 @@ function LoadingCard() {
 }
 
 function NoPagesView({ khatmaId }: { khatmaId: string }) {
+  return <ReaderNoticeView khatmaId={khatmaId} message={strings.reader.noPagesToday} />;
+}
+
+/** Back link plus one line of copy — every dead end this route can reach. */
+function ReaderNoticeView({ khatmaId, message }: { khatmaId: string; message: string }) {
   return (
     <Stack spacing={4} data-react-surface="member" data-route="khatmaRead">
       <AppButton
@@ -361,7 +399,7 @@ function NoPagesView({ khatmaId }: { khatmaId: string }) {
         ‹ {strings.member.back}
       </AppButton>
       <SurfaceCard>
-        <Typography color="text.secondary">{strings.reader.noPagesToday}</Typography>
+        <Typography color="text.secondary">{message}</Typography>
       </SurfaceCard>
     </Stack>
   );

@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'node:path';
 import { publicKhatmaImages } from './scripts/khatma-image-catalog';
+import { readViteManifest, withoutAdminFiles } from './scripts/pwa-precache';
+import { basePathOnly, QURAN_CACHE_NAME, quranDatasetRoute } from './scripts/sw-routes';
 
 /**
  * The admin app is a SEPARATE static entry with an unguessable filename. This
@@ -47,14 +50,74 @@ function vendorChunk(id: string): string | undefined {
   return undefined;
 }
 
+const base = process.env.BASE_PATH ?? '/';
+
 export default defineConfig({
   // Base path for GitHub Pages *project* sites (e.g. '/Ranqur/'). Set per
   // environment via the BASE_PATH env var; defaults to '/' for local dev and
   // custom-domain / user-page hosting.
-  base: process.env.BASE_PATH ?? '/',
+  base,
 
   // React owns JSX transformation and development Fast Refresh.
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Offline shell for the member app. Registration is manual (see
+    // `src/app/member/install/serviceWorkerRegistration.ts`) so `workbox-window`
+    // stays out of the member bundle and its size budget.
+    VitePWA({
+      injectRegister: null,
+      // `public/manifest.webmanifest` is hand-written and already linked from
+      // index.html; the plugin must not emit a competing one.
+      manifest: false,
+      filename: 'sw.js',
+      // No `skipWaiting`: a new worker waits rather than reloading a member
+      // mid-page. It takes over the next time the app is opened fresh.
+      registerType: 'prompt',
+      workbox: {
+        // The mushaf under `quran/` stays out of the precache — 604 files
+        // would stall the first install. The runtime route below caches it
+        // instead, page by page as it is actually read.
+        globPatterns: [
+          'index.html',
+          'manifest.webmanifest',
+          'assets/**/*.{js,css,woff2}',
+          'app-icons/**/*.png',
+        ],
+        // Hash routing means the member app only ever navigates to the base
+        // URL. An allowlist keeps the fallback off every other path — notably
+        // the admin entry, which must keep reaching the network and whose name
+        // must never be written into `sw.js`.
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [basePathOnly(base)],
+        // The mushaf never changes behind a given URL, so a cached page is
+        // correct forever and revalidating it only costs a round trip. Pages
+        // land here as they are read, and in bulk from the background sweep in
+        // `src/app/member/install/mushafPrefetch.ts`.
+        runtimeCaching: [
+          {
+            urlPattern: quranDatasetRoute(base),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: QURAN_CACHE_NAME,
+              // Same-origin, so only a complete 200 is worth keeping: caching
+              // an error or a partial response would poison the page forever.
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+        cleanupOutdatedCaches: true,
+        manifestTransforms: [
+          (entries) => ({
+            manifest: withoutAdminFiles(
+              entries,
+              readViteManifest(resolve(import.meta.dirname, 'dist')),
+              entryFiles.production,
+            ),
+          }),
+        ],
+      },
+    }),
+  ],
 
   define: {
     __KHATMA_SERIES_IMAGES__: JSON.stringify(publicKhatmaImages(import.meta.dirname)),

@@ -50,6 +50,12 @@ export const strings = {
     emptyRoster: 'لا يوجد أعضاء بعد',
     connecting: 'جارٍ الاتصال بقاعدة البيانات…',
     connectionError: 'تعذّر الاتصال بقاعدة البيانات. تأكّد من تشغيل المحاكي (emulator).',
+    // Connection state. `offlineNotice` rides above every member route while the
+    // browser reports no network; `offlineNoData` is the honest answer when
+    // there is also nothing saved on this device yet.
+    offlineNotice: 'لا يوجد اتصال بالإنترنت — تُعرض آخر البيانات المحفوظة على جهازك.',
+    offlineNoData:
+      'لا يوجد اتصال، ولا توجد بيانات محفوظة على هذا الجهاز. افتح التطبيق مرة واحدة متصلًا بالإنترنت.',
     // Identity gate
     choosePrompt: 'اختر اسمك للمتابعة',
     switchPerson: 'لست أنت؟',
@@ -70,6 +76,12 @@ export const strings = {
     awaitingDistribution: 'بانتظار توزيع صفحات جديدة',
     noKhatmas: 'لست مشتركًا في أي ختمة حالية.',
     saveError: 'تعذّر حفظ الإنجاز، حاول مرة أخرى.',
+    // Shown when a finish tap is held on the device because Firestore could not
+    // be reached. It is deliberately not the success wording: nothing has
+    // reached the group yet.
+    queuedFinish: 'سيُحفظ عند عودة الاتصال',
+    releasedWhileOffline:
+      'أُعيدت صفحاتك إلى المجموعة أثناء انقطاع الاتصال، ولم يُسجَّل الإنجاز.',
     // Warnings (the member sees only their OWN warning, gently worded).
     warningNote:
       'أُعيدت صفحات جولتك السابقة إلى المجموعة. تابع مع صفحاتك الجديدة عند توزيعها.',
@@ -124,6 +136,9 @@ export const strings = {
     bismillah: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
     readMyPages: 'اقرأ صفحاتي',
     noPagesToday: 'لا توجد صفحات مطلوبة منك حاليًا',
+    // Shown instead of an endless spinner when the assigned pages never arrive:
+    // offline with an empty cache, or a failed subscription.
+    loadFailed: 'تعذّر تحميل صفحاتك. تأكّد من الاتصال بالإنترنت وأعد المحاولة.',
     finishedReading: 'أتممت قراءة صفحاتي',
     sajda: '۩ سجدة',
   },

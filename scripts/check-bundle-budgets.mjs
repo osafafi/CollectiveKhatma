@@ -8,16 +8,25 @@ const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 // 2026-08: explicit run/chunk lifecycle compatibility affects both entries; the
 // admin also gained the series-wide preview/adjust/confirm planner. Measured at
 // member 365.2/530.2 kB and admin 371.3/536.2 kB; budgets retain ~2 kB headroom.
+//
+// 2026-09: offline reading. Firestore's persistent local cache pulls its
+// IndexedDB layer into the bundle — measured at +21.9 kB gzip on each entry,
+// against 364.2/370.4 kB with the memory cache. Both entries pay it because
+// `src/data/firebase.ts` is shared, though only the member app reads offline;
+// splitting it would mean making `db` lazy across the whole data layer. With the
+// offline finish queue on top, now member 387.1/552.0 kB and admin
+// 393.2/558.1 kB — under 1 kB of headroom, so the next addition here has to
+// re-measure rather than assume.
 const budgets = {
   member: {
     entry: 'index.html',
-    initialJavaScriptGzipBytes: 367_000,
-    initialTransferBytes: 532_000,
+    initialJavaScriptGzipBytes: 388_000,
+    initialTransferBytes: 553_000,
   },
   admin: {
     entry: 'admin-nano.html',
-    initialJavaScriptGzipBytes: 373_000,
-    initialTransferBytes: 538_000,
+    initialJavaScriptGzipBytes: 394_000,
+    initialTransferBytes: 559_000,
   },
 };
 

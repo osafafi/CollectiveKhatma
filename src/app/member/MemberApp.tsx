@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { AppProviders } from '@/app/providers/AppProviders';
+import { useFinishQueueReplay } from '@/app/operations';
 import { useReadingScale } from '@/app/persistence';
 import { MemberCompletionInterrupt } from '@/app/member/MemberCompletionInterrupt';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
@@ -26,6 +27,10 @@ export function MemberApp() {
 }
 
 export function MemberExperience() {
+  // Sits above the routes so a finish tap saved offline on one screen still
+  // reaches Firestore when the connection returns, wherever the member is then.
+  useFinishQueueReplay();
+
   return (
     <>
       <MemberAssignmentsSubscriptions />
