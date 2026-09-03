@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'node:path';
 import { publicKhatmaImages } from './scripts/khatma-image-catalog';
 import { readViteManifest, withoutAdminFiles } from './scripts/pwa-precache';
+import { basePathOnly, QURAN_CACHE_NAME, quranDatasetRoute } from './scripts/sw-routes';
 
 /**
  * The admin app is a SEPARATE static entry with an unguessable filename. This
@@ -51,11 +52,6 @@ function vendorChunk(id: string): string | undefined {
 
 const base = process.env.BASE_PATH ?? '/';
 
-/** Escape a literal path for embedding in a RegExp source. */
-function escapeRegExp(value: string): string {
-  return value.replaceAll(/[$()*+.?[\\\]^{|}]/g, (character) => `\\${character}`);
-}
-
 export default defineConfig({
   // Base path for GitHub Pages *project* sites (e.g. '/Ranqur/'). Set per
   // environment via the BASE_PATH env var; defaults to '/' for local dev and
@@ -78,8 +74,9 @@ export default defineConfig({
       // mid-page. It takes over the next time the app is opened fresh.
       registerType: 'prompt',
       workbox: {
-        // The mushaf under `quran/` is deliberately absent — caching it is its
-        // own layer, and precaching 604 files would stall the first install.
+        // The mushaf under `quran/` stays out of the precache — 604 files
+        // would stall the first install. The runtime route below caches it
+        // instead, page by page as it is actually read.
         globPatterns: [
           'index.html',
           'manifest.webmanifest',
@@ -91,7 +88,23 @@ export default defineConfig({
         // the admin entry, which must keep reaching the network and whose name
         // must never be written into `sw.js`.
         navigateFallback: 'index.html',
-        navigateFallbackAllowlist: [new RegExp(`^${escapeRegExp(base)}$`)],
+        navigateFallbackAllowlist: [basePathOnly(base)],
+        // The mushaf never changes behind a given URL, so a cached page is
+        // correct forever and revalidating it only costs a round trip. Pages
+        // land here as they are read, and in bulk from the background sweep in
+        // `src/app/member/install/mushafPrefetch.ts`.
+        runtimeCaching: [
+          {
+            urlPattern: quranDatasetRoute(base),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: QURAN_CACHE_NAME,
+              // Same-origin, so only a complete 200 is worth keeping: caching
+              // an error or a partial response would poison the page forever.
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
         cleanupOutdatedCaches: true,
         manifestTransforms: [
           (entries) => ({

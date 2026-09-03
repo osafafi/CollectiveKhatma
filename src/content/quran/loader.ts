@@ -11,6 +11,21 @@ import type { QuranIndex, QuranPage, Surah } from './types';
  */
 const base = import.meta.env.BASE_URL;
 
+/** URL of one mushaf page's JSON (1..604). */
+export function quranPageUrl(page: number): string {
+  return `${base}quran/pages/${String(page).padStart(3, '0')}.json`;
+}
+
+const surahsUrl = `${base}quran/surahs.json`;
+const indexUrl = `${base}quran/index.json`;
+
+/**
+ * The two dataset files that are not per-page. Exported so the offline sweep in
+ * `src/app/member/install/mushafPrefetch.ts` warms exactly the URLs this loader
+ * asks for, rather than rebuilding them and drifting.
+ */
+export const quranMetadataUrls: readonly string[] = [surahsUrl, indexUrl];
+
 const pageCache = new Map<number, Promise<QuranPage>>();
 let surahsCache: Promise<Surah[]> | undefined;
 let indexCache: Promise<QuranIndex> | undefined;
@@ -25,8 +40,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 export function getPage(page: number): Promise<QuranPage> {
   let cached = pageCache.get(page);
   if (!cached) {
-    const file = `${base}quran/pages/${String(page).padStart(3, '0')}.json`;
-    cached = fetchJson<QuranPage>(file);
+    cached = fetchJson<QuranPage>(quranPageUrl(page));
     pageCache.set(page, cached);
   }
   return cached;
@@ -34,10 +48,10 @@ export function getPage(page: number): Promise<QuranPage> {
 
 /** Load surah metadata (headings, chapter page ranges for assignment). Cached. */
 export function getSurahs(): Promise<Surah[]> {
-  return (surahsCache ??= fetchJson<Surah[]>(`${base}quran/surahs.json`));
+  return (surahsCache ??= fetchJson<Surah[]>(surahsUrl));
 }
 
 /** Load the navigation / assignment-resolution index. Cached. */
 export function getQuranIndex(): Promise<QuranIndex> {
-  return (indexCache ??= fetchJson<QuranIndex>(`${base}quran/index.json`));
+  return (indexCache ??= fetchJson<QuranIndex>(indexUrl));
 }

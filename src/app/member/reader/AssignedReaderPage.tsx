@@ -15,6 +15,7 @@ import { personAvatar } from '@/domain/personAppearance';
 import { isRoundDone, latestReadableChunk } from '@/domain/progress';
 import { activeKhatmaIdsInSeries, seriesTitle } from '@/domain/series';
 import type { RoundChunk } from '@/domain/types';
+import { startMushafPrefetch } from '../install/mushafPrefetch';
 import { useMemberIdentity } from '../memberIdentityContext';
 import {
   QuranPageContent,
@@ -108,6 +109,13 @@ function AssignedReaderCore({
   useEffect(() => {
     prefetchNeighbors(pages, index);
   }, [pages, index]);
+
+  // The member's own chunk jumps the queue of the background mushaf sweep, so
+  // the pages they were actually assigned are the first ones to survive a
+  // lost connection.
+  useEffect(() => {
+    startMushafPrefetch(pages);
+  }, [pages]);
 
   const indicator = `${strings.reader.page} ${toWesternDigits(page)}`;
   const progressIndicator = `${toWesternDigits(index + 1)} ${strings.reader.of} ${toWesternDigits(pages.length)}`;

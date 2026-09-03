@@ -78,6 +78,15 @@ Hard rules:
   only: its HTML, manifest, hashed JS/CSS/fonts, and icons. The mushaf under
   `quran/` is not precached. The worker never calls `skipWaiting`, so a new
   build takes over the next time the app is opened fresh.
+- The mushaf is cached at runtime rather than precached: the worker serves
+  `quran/**.json` cache-first out of `quran-mushaf-v1`, and
+  `src/app/member/install/mushafPrefetch.ts` sweeps the whole dataset in after
+  first paint — 604 pages plus `surahs.json` and `index.json`, ~320 kB gzipped.
+  The dataset is immutable, so nothing revalidates. Rewriting it with
+  `npm run build:quran` means bumping `QURAN_CACHE_NAME` in
+  `scripts/sw-routes.ts` and deleting the superseded cache by hand —
+  `cleanupOutdatedCaches` prunes precaches, not this one.
+  `npm run check:service-worker` fails the build if the route goes missing.
 - The precache manifest is world-readable, so it must never name the hidden
   admin entry or the chunks only that entry reaches.
   `scripts/pwa-precache.ts` removes them from the graph in

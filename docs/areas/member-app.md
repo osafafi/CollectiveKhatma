@@ -25,6 +25,10 @@ Hard rules:
   so `workbox-window` stays out of the member bundle budget. Registration is a
   no-op in development and tests. See `docs/areas/operations.md` for what the
   worker precaches.
+- The same entry starts the background mushaf sweep. It is a no-op until a
+  worker controls the page, so it never runs on a first visit, in development,
+  or in tests, and it stands down for Data Saver and while offline. The
+  assigned reader pushes the member's own chunk to the front of it.
 - Persistent member listeners subscribe only to the selected member's active
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then

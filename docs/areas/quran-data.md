@@ -16,6 +16,12 @@ Hard rules:
 
 - Assignment unit is mushaf page 1..604.
 - App reads committed data. No runtime Quran API.
+- The dataset is offline-first. The service worker holds `public/quran/` in a
+  cache-first runtime cache and the app sweeps every page into it in the
+  background, so a reader that has been opened once survives a lost
+  connection. `src/content/quran/loader.ts` owns the URLs both paths use; the
+  sweep fetches them raw so the loader's in-memory `Map` stays a per-session
+  read cache instead of 604 parsed pages.
 - Generator rewrites the dataset and needs network. Do not run casually.
 - Keep text attribution and bundled Quran font license.
 - Reader page, juz, surah, progress, and ayah-marker numbers use Western digits

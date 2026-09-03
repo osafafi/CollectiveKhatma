@@ -11,7 +11,7 @@ independently and in order — each is a usable improvement on its own.
 | Layer                         | State | Session    |
 | ----------------------------- | ----- | ---------- |
 | 1. Service worker + app shell | done  | 2026-09-03 |
-| 2. Quran text offline         | todo  | —          |
+| 2. Quran text offline         | done  | 2026-09-03 |
 | 3. Assignment data offline    | todo  | —          |
 | 4. "Finished" while offline   | todo  | —          |
 
@@ -20,23 +20,27 @@ session, then commit. That table is the resume point.
 
 ### Where this stands
 
-**Done.** The member app now boots with no network. `vite-plugin-pwa` generates
-`dist/sw.js`, which precaches the shell — HTML, manifest, hashed JS/CSS, both
-Quran fonts, icons — 21 entries. Verified for real: with the preview server
-stopped (`curl` refused), a reload still rendered the app. The hidden admin entry
-and its exclusive chunk are excluded from the precache, proven by unit tests and
-by `npm run check:service-worker`, which fails the build if either reaches
-`sw.js`. Member bundle stayed at 363.25 kB gz against a 367 kB budget, because
-registration is hand-written instead of pulling in `workbox-window`.
+**Done.** The member app boots with no network (Layer 1) and now keeps the
+whole mushaf (Layer 2). The worker precaches the shell — HTML, manifest,
+hashed JS/CSS, both Quran fonts, icons — 21 entries, and serves
+`quran/**.json` cache-first from a separate `quran-mushaf-v1` runtime cache.
+The hidden admin entry and its exclusive chunk stay out of the precache,
+proven by unit tests and by `npm run check:service-worker`, which now also
+fails the build if the mushaf route goes missing.
+
+Verified for real, not inferred: on a second visit the background sweep filled
+the cache with all 606 files (604 pages + `surahs.json` + `index.json`) in
+about six seconds; with the preview server then stopped and `curl` refused,
+pages 1, 42, 300 and 604 plus the surah metadata still resolved, page 300
+returning its real `{page, juz, surahIds, ayat}` shape.
 
 **Not done, and expected.** Offline the app still shows an empty roster —
-Firestore has no local cache yet, so nothing knows which member is which. That is
-Layer 3, and it is what makes the shell actually useful rather than merely
-present.
+Firestore has no local cache yet, so nothing knows which member is which, and
+the identity gate blocks every reader route. That is Layer 3, and it is what
+turns cached text into something a member can actually reach.
 
-**Next step: Layer 2.** Cache the mushaf text so an opened page survives a dead
-connection. It is the smallest remaining layer (~320 kB gz for all 604 pages) and
-independent of Layers 3 and 4 — start there.
+**Next step: Layer 3.** It is now the only thing standing between a member and
+offline reading — the bytes are already on their phone.
 
 ### Files Layer 1 touched
 
@@ -52,6 +56,24 @@ independent of Layers 3 and 4 — start there.
 - `package.json`, both workflows — wire `check:service-worker` into `check` and CI.
 - `.claude/launch.json` — added a `preview` config, since the worker is
   production-only and `npm run dev` will never exercise it.
+
+### Files Layer 2 touched
+
+- `scripts/sw-routes.ts` — new. `QURAN_CACHE_NAME` and the base-relative route
+  patterns, shared by `vite.config.ts` and the post-build gate so they cannot
+  drift. `escapeRegExp` and the navigate-fallback pattern moved here from
+  `vite.config.ts`.
+- `vite.config.ts` — `runtimeCaching` route for the mushaf.
+- `scripts/check-service-worker.ts` — also fails if the route is absent.
+- `src/content/quran/loader.ts` — exports `quranPageUrl` and
+  `quranMetadataUrls` so the sweep warms exactly the URLs the loader asks for.
+  No behaviour change; the in-memory `Map` is untouched.
+- `src/app/member/install/mushafPrefetch.ts` — new. The idle background sweep.
+- `src/app/entries/member.tsx` — starts it.
+- `src/app/member/reader/AssignedReaderPage.tsx` — pushes the assigned chunk to
+  the front of the queue.
+- `tests/tooling/sw-routes.test.ts` — new, 4 tests.
+- `tests/app/member-mushaf-prefetch.test.ts` — new, 7 tests.
 
 ## Measured facts
 
@@ -187,17 +209,28 @@ the member app downloads a file that names the admin URL. Assert this in a test.
 
 ## Layer 2 — Quran text offline
 
-- [ ] Cache-first for `quran/**`. The dataset is immutable and committed, so no
-      revalidation — a versioned cache name means it downloads once, ever.
-- [ ] Background prefetch of all 604 pages when idle, after first paint. Seed the
-      member's assigned pages first so their own chunk is warm immediately.
-- [ ] Decide: automatic, or behind a Settings toggle
-      ("احفظ المصحف للقراءة بدون إنترنت"). Automatic is defensible at 320 KB gz.
-- [ ] `src/content/quran/loader.ts` keeps its in-memory `Map`; the SW backs it.
-      No loader API change expected.
+- [x] Cache-first for `quran/**`, out of `quran-mushaf-v1`. No revalidation:
+      the dataset is immutable, so a page downloads once per device, ever.
+      Bumping the version after `build:quran` means deleting the old cache by
+      hand — `cleanupOutdatedCaches` only prunes precaches.
+- [x] Background sweep of all 604 pages plus both metadata files, idle-paced in
+      batches of 6. The assigned reader pushes the member’s own chunk to the
+      front of the queue.
+- [x] **Automatic**, no Settings toggle — 320 kB gz is less than the app bundle
+      a member already downloaded, so a toggle would be a question not worth
+      asking. It is guarded instead: it does nothing until a worker controls the
+      page (so never on a first visit, and never in dev or tests), stands down
+      for Data Saver, and parks the queue when the connection drops rather than
+      draining it against a dead network.
+- [x] `src/content/quran/loader.ts` keeps its in-memory `Map`. The sweep fetches
+      raw URLs rather than calling `getPage`, so the worker cache fills without
+      the Map ending up holding 604 parsed pages. No loader API change beyond
+      exporting the URLs.
 
-Hook for prefetch shape already exists: `prefetchNeighbors` in
-`src/app/member/reader/readerPaging.ts`.
+**Trap found the hard way.** `requestIdleCallback` without a `timeout` never
+fired in the preview pane, visible or hidden, so the sweep never started and the
+cache stayed empty. It now passes `{ timeout: 2000 }`, which guarantees progress
+on a browser that never reports an idle moment. Do not drop that option.
 
 ## Layer 3 — Assignment data offline
 
@@ -267,3 +300,7 @@ Append one line per session: date, layer, what actually changed.
   Vite 8, so the hand-rolled fallback was not needed). Shell precaches and boots
   offline; admin entry excluded and gated in CI. Full `npm run check` passes
   except `format:check`, which already failed on `main` — see the note below.
+- 2026-09-03 — Layer 2 done. Mushaf cached cache-first at runtime plus an idle
+  background sweep; automatic, no toggle. Needed `requestIdleCallback` to carry
+  a timeout. Member bundle 363.70 kB gz against a 367 kB budget. Verified
+  offline against a stopped preview server.

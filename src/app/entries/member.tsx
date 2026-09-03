@@ -2,6 +2,7 @@ import { resolveIconOverrides } from '@/components/icons';
 import { strings } from '@/content/strings.ar';
 import { MemberApp } from '@/app/member/MemberApp';
 import { initializeMemberInstall } from '@/app/member/install/memberInstall';
+import { startMushafPrefetch } from '@/app/member/install/mushafPrefetch';
 import { registerServiceWorker } from '@/app/member/install/serviceWorkerRegistration';
 import { mountReactApp } from '@/app/bootstrap';
 
@@ -9,4 +10,5 @@ document.title = strings.member.title;
 resolveIconOverrides();
 initializeMemberInstall();
 registerServiceWorker();
+startMushafPrefetch();
 mountReactApp(<MemberApp />);

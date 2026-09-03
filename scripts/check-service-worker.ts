@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { adminOnlyOutputFiles, readViteManifest } from './pwa-precache';
+import { QURAN_CACHE_NAME } from './sw-routes';
 
 /**
  * Post-build gate for the generated member service worker.
@@ -36,6 +37,13 @@ const manifest = readViteManifest(outputDirectory);
 if (!serviceWorker.includes(MEMBER_ENTRY)) {
   failures.push(
     `sw.js does not precache ${MEMBER_ENTRY} — the app would not open offline.`,
+  );
+}
+
+if (!serviceWorker.includes(QURAN_CACHE_NAME)) {
+  failures.push(
+    `sw.js has no "${QURAN_CACHE_NAME}" runtime route — mushaf pages would be ` +
+      `fetched from the network every time and vanish the moment it is gone.`,
   );
 }
 
