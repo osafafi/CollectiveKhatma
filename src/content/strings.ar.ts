@@ -50,6 +50,12 @@ export const strings = {
     emptyRoster: 'لا يوجد أعضاء بعد',
     connecting: 'جارٍ الاتصال بقاعدة البيانات…',
     connectionError: 'تعذّر الاتصال بقاعدة البيانات. تأكّد من تشغيل المحاكي (emulator).',
+    // Connection state. `offlineNotice` rides above every member route while the
+    // browser reports no network; `offlineNoData` is the honest answer when
+    // there is also nothing saved on this device yet.
+    offlineNotice: 'لا يوجد اتصال بالإنترنت — تُعرض آخر البيانات المحفوظة على جهازك.',
+    offlineNoData:
+      'لا يوجد اتصال، ولا توجد بيانات محفوظة على هذا الجهاز. افتح التطبيق مرة واحدة متصلًا بالإنترنت.',
     // Identity gate
     choosePrompt: 'اختر اسمك للمتابعة',
     switchPerson: 'لست أنت؟',
@@ -124,6 +130,9 @@ export const strings = {
     bismillah: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
     readMyPages: 'اقرأ صفحاتي',
     noPagesToday: 'لا توجد صفحات مطلوبة منك حاليًا',
+    // Shown instead of an endless spinner when the assigned pages never arrive:
+    // offline with an empty cache, or a failed subscription.
+    loadFailed: 'تعذّر تحميل صفحاتك. تأكّد من الاتصال بالإنترنت وأعد المحاولة.',
     finishedReading: 'أتممت قراءة صفحاتي',
     sajda: '۩ سجدة',
   },

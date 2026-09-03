@@ -3,6 +3,7 @@ import { AppShell, type ShellTab } from '@/components/navigation';
 import { memberRoutePath, type MemberRoute } from '@/app/routing/routes';
 import { useMemberRoute } from '@/app/routing/hooks';
 import { strings } from '@/content/strings.ar';
+import { OfflineBanner } from './OfflineBanner';
 
 /**
  * Member tab list with the established hashes, labels, and order.
@@ -39,18 +40,24 @@ const MEMBER_TABS: ReadonlyArray<ShellTab<MemberRoute>> = [
 /** Legacy content column: `max-w-xl md:max-w-2xl lg:max-w-3xl` (576/672/768). */
 const MEMBER_CONTENT_MAX_WIDTH = { xs: 576, md: 672, lg: 768 };
 
-/** Responsive member shell: frames route content with the member navigation. */
+/**
+ * Responsive member shell: frames route content with the member navigation, and
+ * carries the offline banner above the frame so every member route inherits it.
+ */
 export function MemberShell({ children }: { children: ReactNode }) {
   const route = useMemberRoute();
   return (
-    <AppShell
-      tabs={MEMBER_TABS}
-      route={route}
-      toPath={memberRoutePath}
-      navLabel={strings.common.appName}
-      contentMaxWidth={MEMBER_CONTENT_MAX_WIDTH}
-    >
-      {children}
-    </AppShell>
+    <>
+      <OfflineBanner />
+      <AppShell
+        tabs={MEMBER_TABS}
+        route={route}
+        toPath={memberRoutePath}
+        navLabel={strings.common.appName}
+        contentMaxWidth={MEMBER_CONTENT_MAX_WIDTH}
+      >
+        {children}
+      </AppShell>
+    </>
   );
 }

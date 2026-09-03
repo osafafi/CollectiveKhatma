@@ -16,7 +16,8 @@ Start files:
 Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
-`member-completion`, `member-personal-settings`, `member-integration`.
+`member-completion`, `member-personal-settings`, `member-integration`,
+`member-offline`.
 
 Hard rules:
 
@@ -29,6 +30,20 @@ Hard rules:
   worker controls the page, so it never runs on a first visit, in development,
   or in tests, and it stands down for Data Saver and while offline. The
   assigned reader pushes the member's own chunk to the front of it.
+- `MemberShell` renders the offline banner above the shell frame rather than
+  inside the content column, because routed heroes cancel that column's padding
+  to bleed to the top edge and would ride up over it. `useOnlineStatus` owns the
+  signal (`navigator.onLine` plus the `online`/`offline` events) and the same
+  hook drives the gate and the assigned reader.
+- Offline the app runs on Firestore's persistent cache, so the roster, khatmas,
+  and assignments are last-known rather than absent. An empty cache arrives as a
+  ready-but-empty snapshot (see `docs/areas/operations.md`), so the identity gate
+  and the assigned reader key their offline dead end on having nothing to show,
+  not on listener status: the gate says nothing is saved on this device instead
+  of "no members yet", and the assigned reader says it could not load your pages
+  instead of claiming none are due. Online, an empty roster or khatma list is
+  still reported as the real answer it is, and a failed khatma subscription
+  reads as could-not-load rather than spinning.
 - Persistent member listeners subscribe only to the selected member's active
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then

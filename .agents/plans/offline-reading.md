@@ -12,7 +12,7 @@ independently and in order — each is a usable improvement on its own.
 | ----------------------------- | ----- | ---------- |
 | 1. Service worker + app shell | done  | 2026-09-03 |
 | 2. Quran text offline         | done  | 2026-09-03 |
-| 3. Assignment data offline    | todo  | —          |
+| 3. Assignment data offline    | done  | 2026-09-03 |
 | 4. "Finished" while offline   | todo  | —          |
 
 Update the row (`todo` / `wip` / `done`) and the session date at the end of every
@@ -20,9 +20,10 @@ session, then commit. That table is the resume point.
 
 ### Where this stands
 
-**Done.** The member app boots with no network (Layer 1) and now keeps the
-whole mushaf (Layer 2). The worker precaches the shell — HTML, manifest,
-hashed JS/CSS, both Quran fonts, icons — 21 entries, and serves
+**Done.** The member app boots with no network (Layer 1), keeps the whole
+mushaf (Layer 2), and now keeps its own data too (Layer 3). The worker
+precaches the shell — HTML, manifest, hashed JS/CSS, both Quran fonts, icons —
+21 entries, and serves
 `quran/**.json` cache-first from a separate `quran-mushaf-v1` runtime cache.
 The hidden admin entry and its exclusive chunk stay out of the precache,
 proven by unit tests and by `npm run check:service-worker`, which now also
@@ -34,13 +35,24 @@ about six seconds; with the preview server then stopped and `curl` refused,
 pages 1, 42, 300 and 604 plus the surah metadata still resolved, page 300
 returning its real `{page, juz, surahIds, ayat}` shape.
 
-**Not done, and expected.** Offline the app still shows an empty roster —
-Firestore has no local cache yet, so nothing knows which member is which, and
-the identity gate blocks every reader route. That is Layer 3, and it is what
-turns cached text into something a member can actually reach.
+Layer 3 closed the last gap: Firestore keeps its documents in IndexedDB, so
+offline the roster, khatmas, and assignments come back from disk. Verified for
+real, not inferred: with the emulator killed and port 8080 refusing connections,
+a reload still resolved `MemberWithPendingPages`, their khatma, and their
+2-page chunk, and rendered 1,396 characters of page 10 — group progress bars
+included (51%, 99%). 28 documents across 6 listeners sat in
+`firestore/[DEFAULT]/collectivekhatma/main`.
 
-**Next step: Layer 3.** It is now the only thing standing between a member and
-offline reading — the bytes are already on their phone.
+**The trap that cost the most.** A stale service worker served the _previous_
+build's bundle, so the first round of "verification" was measuring Layer 2's
+code. The worker never calls `skipWaiting`, so a new build only takes over on a
+fresh open — a reload is not enough. Check `navigator.serviceWorker.controller`
+and the loaded `assets/member-*.js` hash before believing any offline result.
+
+**Not done, and expected.** Marking a round done still needs the network:
+`runTransaction` never works offline. That is Layer 4.
+
+**Next step: Layer 4.**
 
 ### Files Layer 1 touched
 
@@ -84,9 +96,15 @@ Established 2026-09-03 on `main` @ d44915e. Do not re-derive.
   overhead across 604 tiny files, not payload.)
 - Built shell `dist/assets` = 1.4 MB raw, incl. 164 KB of woff2
   (`AmiriQuran` 45 KB, `ScheherazadeNew` 118 KB).
-- Member initial JS budget 367 KB gz, admin 373 KB gz, enforced in CI by
-  `scripts/check-bundle-budgets.mjs`. It walks `dist/.vite/manifest.json` from
-  the entry, so a service worker file is not counted against it.
+- Member initial JS budget **388 KB gz, admin 394 KB gz** (raised from 367/373
+  in Layer 3), enforced in CI by `scripts/check-bundle-budgets.mjs`. It walks
+  `dist/.vite/manifest.json` from the entry, so a service worker file is not
+  counted against it.
+- Firestore's persistent cache costs **+21.9 kB gzip on each entry** — measured,
+  by building both ways: 364.2/370.4 kB with `memoryLocalCache`, 386.1/392.3 kB
+  with `persistentLocalCache`. `initializeFirestore` itself is free. Both entries
+  pay it because `src/data/firebase.ts` is shared, though only the member app
+  reads offline.
 - Vite **8.1.4 with rolldown**. `@vitejs/plugin-react` 6.
 - Deploy: GitHub Pages, static, `BASE_PATH=/CollectiveKhatma/`.
 
@@ -237,15 +255,57 @@ on a browser that never reports an idle moment. Do not drop that option.
 Quran text alone is not enough — the assigned reader needs to know which pages
 are mine.
 
-- [ ] `src/data/firebase.ts`: `getFirestore(app)` →
+- [x] `src/data/firebase.ts`: `getFirestore(app)` →
       `initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })`.
-      Keep the emulator branch working.
-- [ ] `onSnapshot` then serves from IndexedDB offline; the store hydrates with
+      The emulator branch is untouched and still works — `connectFirestoreEmulator`
+      does not care how the cache is configured.
+- [x] The choice is guarded, in `src/data/localCache.ts`, on IndexedDB actually
+      existing. Firestore's own typings say the persistent cache "cannot be used
+      in a Node.js environment", and the opt-in emulator smoke test runs under
+      the node project — forcing persistence there, or in a private-browsing
+      mode that withholds IndexedDB, stops the client from starting at all,
+      which would break the app online as well as off.
+- [x] `onSnapshot` serves from IndexedDB offline; the store hydrates with
       last-known khatmas / assignments / roster.
-- [ ] Fix the spinner-forever bug: `AssignedReaderPage.tsx` treats an empty
-      khatma list as "loading" (`if (khatmas.length === 0) return <LoadingCard />`).
-      Offline with no cache that never resolves. Needs a real offline state.
-- [ ] Offline banner in the member shell, driven by connection state.
+- [x] Fix the spinner-forever bug in `AssignedReaderPage.tsx`.
+- [x] Offline banner in the member shell, driven by connection state. It renders
+      _above_ the shell frame, not inside the content column: routed heroes
+      cancel that column's padding to bleed to the top edge (`heroBleedSx`) and
+      ride up over anything placed in front of them.
+
+**The finding that changed the fix.** The plan assumed offline-with-no-cache
+leaves a listener pending, so both dead ends were first keyed on listener
+status. It does not. Firestore delivers an empty persistent cache as a **ready
+empty snapshot**, so `status === 'ready'` with nothing in it — and the app
+cheerfully told a member "لا يوجد أعضاء بعد" (no members yet) and "لا توجد
+صفحات مطلوبة منك" (no pages are due from you). Both are false statements about
+the group, not about the connection. Seen live against the emulator with the
+backend stopped; the conditions are now keyed on _having nothing to show_
+(`roster.length === 0`, `khatmas.length === 0`) rather than on listener status.
+Online, an empty list is still reported as the real answer it is.
+
+**Not solved, and cannot be here.** A first visit made offline still has nothing
+to show — no cache exists yet. The gate now says so
+(`strings.member.offlineNoData`) instead of spinning.
+
+### Files Layer 3 touched
+
+- `src/data/localCache.ts` — new. The persistent-vs-memory decision, kept out of
+  `firebase.ts` so it can be unit-tested without that module's import-time
+  `initializeApp`.
+- `src/data/firebase.ts` — `initializeFirestore` with that cache.
+- `src/app/member/useOnlineStatus.ts` — new. `useSyncExternalStore` over
+  `navigator.onLine` plus the `online`/`offline` events.
+- `src/app/member/OfflineBanner.tsx` — new.
+- `src/app/member/MemberShell.tsx` — renders it above the frame.
+- `src/app/member/MemberIdentityGate.tsx` — offline-with-no-cache state.
+- `src/app/member/reader/AssignedReaderPage.tsx` — real offline/failed states;
+  `NoPagesView` generalized to `ReaderNoticeView`.
+- `src/content/strings.ar.ts` — `member.offlineNotice`, `member.offlineNoData`,
+  `reader.loadFailed`.
+- `scripts/check-bundle-budgets.mjs` — budgets raised for the persistence layer.
+- `tests/data/local-cache.test.ts` — new, 3 tests.
+- `tests/app/member-offline.test.tsx` — new, 11 tests.
 
 ## Layer 4 — "Finished" while offline
 
@@ -304,3 +364,10 @@ Append one line per session: date, layer, what actually changed.
   background sweep; automatic, no toggle. Needed `requestIdleCallback` to carry
   a timeout. Member bundle 363.70 kB gz against a 367 kB budget. Verified
   offline against a stopped preview server.
+- 2026-09-03 — Layer 3 done. Firestore persistent cache (multi-tab), guarded on
+  IndexedDB; offline banner; gate and assigned reader given real offline states.
+  Found that an empty cache arrives as a _ready_ empty snapshot, which made the
+  first version of both fixes unreachable — see the Layer 3 note. Bundle budgets
+  raised 367→388 (member) and 373→394 (admin) kB gz for the +21.9 kB persistence
+  layer. Verified with the emulator killed: the assigned reader still rendered
+  its chunk. 349 tests pass; `format:check` still fails on 32 untouched files.

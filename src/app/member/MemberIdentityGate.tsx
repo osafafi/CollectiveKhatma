@@ -2,6 +2,7 @@ import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { AppButton, NoticeBanner, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { selectRoster, selectRosterListener, useAppSelector } from '@/app/store';
+import { useOnlineStatus } from './useOnlineStatus';
 
 interface MemberIdentityGateProps {
   onSelectMember: (memberId: string) => void;
@@ -11,6 +12,7 @@ interface MemberIdentityGateProps {
 export function MemberIdentityGate({ onSelectMember }: MemberIdentityGateProps) {
   const roster = useAppSelector(selectRoster);
   const listener = useAppSelector(selectRosterListener);
+  const online = useOnlineStatus();
 
   return (
     <Box component="main" sx={{ mx: 'auto', width: '100%', maxWidth: 576, p: 4 }}>
@@ -26,6 +28,7 @@ export function MemberIdentityGate({ onSelectMember }: MemberIdentityGateProps) 
           <RosterGateState
             roster={roster}
             status={listener.status}
+            online={online}
             onSelectMember={onSelectMember}
           />
         </SurfaceCard>
@@ -37,10 +40,30 @@ export function MemberIdentityGate({ onSelectMember }: MemberIdentityGateProps) 
 interface RosterGateStateProps {
   roster: ReturnType<typeof selectRoster>;
   status: ReturnType<typeof selectRosterListener>['status'];
+  online: boolean;
   onSelectMember: (memberId: string) => void;
 }
 
-function RosterGateState({ roster, status, onSelectMember }: RosterGateStateProps) {
+function RosterGateState({
+  roster,
+  status,
+  online,
+  onSelectMember,
+}: RosterGateStateProps) {
+  // The gate sits outside the shell, so it carries its own offline word. No
+  // roster while offline means nothing is cached on this device — the one case
+  // Firestore's persistence cannot rescue. It is keyed on the empty roster
+  // rather than on listener status because an empty cache arrives as a *ready*
+  // empty snapshot, which would otherwise read to a member as "this group has
+  // no members yet" — a guess dressed as an answer.
+  if (!online && roster.length === 0) {
+    return (
+      <NoticeBanner tone="warning" role="status">
+        {strings.member.offlineNoData}
+      </NoticeBanner>
+    );
+  }
+
   if (status === 'error') {
     return (
       <NoticeBanner tone="danger" role="alert">

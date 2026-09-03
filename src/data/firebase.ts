@@ -1,9 +1,10 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import {
   connectFirestoreEmulator,
-  getFirestore,
+  initializeFirestore,
   type Firestore,
 } from 'firebase/firestore';
+import { firestoreLocalCache } from './localCache';
 
 /**
  * Firebase initialization — the single entry point to Firestore for the whole
@@ -23,7 +24,14 @@ const firebaseConfig = {
 };
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
-export const db: Firestore = getFirestore(app);
+
+// `initializeFirestore` rather than `getFirestore` so the local cache can be
+// configured: with the persistent cache every listener's documents are mirrored
+// to IndexedDB, which is what keeps the app usable with no connection. See
+// `localCache.ts` for why it is not unconditional.
+export const db: Firestore = initializeFirestore(app, {
+  localCache: firestoreLocalCache(),
+});
 
 // Whether to talk to the local Firestore emulator instead of the real project.
 // - VITE_USE_EMULATOR=true  -> always emulator (default for dev, see .env)

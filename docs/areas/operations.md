@@ -67,6 +67,19 @@ roster page-history shape.
 Hard rules:
 
 - Only `src/data` imports Firebase.
+- `firebase.ts` builds Firestore with `initializeFirestore`, not `getFirestore`,
+  so it can set a local cache. `localCache.ts` picks the persistent IndexedDB
+  cache when IndexedDB exists and the memory cache when it does not — Node (the
+  emulator smoke test) and private-browsing modes, where forcing persistence
+  stops the client from starting at all. The tab manager is the multi-tab one
+  because member and admin share an origin and may be open together. This is
+  what lets `onSnapshot` answer with no network; it costs ~21.9 kB gzip on both
+  entries, which is why the bundle budgets moved in 2026-09.
+- An empty persistent cache arrives as a **ready** empty snapshot, not as a
+  pending one. Listener status alone therefore cannot tell "nothing is cached
+  on this device" apart from "nothing exists"; UI that must distinguish them
+  has to look at whether it has anything to show. Verified against the emulator
+  with the backend stopped.
 - Firestore rules validate path and shape. They do not prove identity.
 - App is static. No server or Cloud Functions.
 - Never touch live Firebase or deploy unless user gives explicit authority.
