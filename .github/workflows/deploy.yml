@@ -34,10 +34,13 @@ jobs:
         run: npm run format:check && npm run check:agent-docs
       - name: Test application
         run: npm test
+      # This step runs the production `vite build`, so the deployed artifact's
+      # base path and Firebase config come from HERE. Adding a step between this
+      # `run` and its `env` silently moves the configuration off the build and
+      # ships a bundle with base '/' and no project id — which still passes
+      # every check below, because nothing here executes the bundle.
       - name: Build and check bundle budgets
         run: npm run check:bundle-budgets
-      - name: Check the member service worker
-        run: npm run check:service-worker
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).
           # Change to match your repo name, or delete for a user/custom-domain site.
@@ -50,6 +53,11 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      # Reads the artifact the step above produced; it does not rebuild.
+      - name: Check the member service worker
+        run: npm run check:service-worker
+        env:
+          BASE_PATH: /CollectiveKhatma/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
