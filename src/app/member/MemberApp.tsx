@@ -3,6 +3,7 @@ import { AppProviders } from '@/app/providers/AppProviders';
 import { useFinishQueueReplay } from '@/app/operations';
 import { useReadingScale } from '@/app/persistence';
 import { MemberCompletionInterrupt } from '@/app/member/MemberCompletionInterrupt';
+import { DailyDuaProvider } from './DailyDuaProvider';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberShell } from '@/app/member/MemberShell';
 import { useMemberRoute } from '@/app/routing/hooks';
@@ -34,11 +35,13 @@ export function MemberExperience() {
   return (
     <>
       <MemberAssignmentsSubscriptions />
-      <MemberCompletionInterrupt>
-        <MemberShell>
-          <MemberRouteContent />
-        </MemberShell>
-      </MemberCompletionInterrupt>
+      <DailyDuaProvider>
+        <MemberCompletionInterrupt>
+          <MemberShell>
+            <MemberRouteContent />
+          </MemberShell>
+        </MemberCompletionInterrupt>
+      </DailyDuaProvider>
     </>
   );
 }

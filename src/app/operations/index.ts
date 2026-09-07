@@ -32,6 +32,7 @@ export {
 } from './useWriteOperation';
 export {
   DuplicatePersonNameError,
+  DailyDuasConflictError,
   ReleasedChunkError,
   writeOperations,
   type DistributionOutcome,

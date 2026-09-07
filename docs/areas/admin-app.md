@@ -67,6 +67,14 @@ Hard rules:
   bell in its action slot.
 - Admin Settings includes the shared appearance (light/dark) card; the choice
   persists in `khatma.themeMode`, shared with the member entry.
+- Settings also has a collapsed `DailyDuasEditor` section, separate from the
+  khatma prayer editor. It shows the published Firestore list, with compact
+  previews, one active text editor, confirmed deletion,
+  addition, and an explicit save button outside the scrolling list. Saving an
+  empty list disables daily popups. Drafts survive live snapshots and failures;
+  transaction conflicts preserve the draft and offer confirmed reload. Publishing
+  merges only `dailyDu3as` into global content. See
+  [daily dua setup](../daily-duas.md) for persistence and production details.
 - Admin URL is obscure, not secure. No auth.
 
 Update this doc when admin route, page ownership, draft, or subscription scope changes.

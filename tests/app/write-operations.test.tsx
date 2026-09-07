@@ -9,7 +9,7 @@ import {
   type WriteOperations,
 } from '@/app/operations';
 import { clearRoundDone, clearWarning, markRoundDone } from '@/data/assignments';
-import { setDu3aText } from '@/data/content';
+import { setDu3aText, setDailyDu3as } from '@/data/content';
 import {
   deleteFeedback,
   setFeedbackRead,
@@ -49,6 +49,7 @@ describe('write operations', () => {
       disableSelfAndReleasePages,
       removePerson,
       setDu3aText,
+      setDailyDu3as,
       submitFeedback,
       setFeedbackRead,
       deleteFeedback,

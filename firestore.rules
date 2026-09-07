@@ -51,15 +51,21 @@ service cloud.firestore {
       allow delete: if true;
     }
 
-    // Global admin-editable content (du3a text).
+    // Global admin-editable content. Existing khatma text stays independent.
     match /content/{docId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if docId != 'global' || isValidGlobalContent(request.resource.data);
+      allow delete: if true;
     }
 
     // Deny any path not explicitly matched above.
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    function isValidGlobalContent(d) {
+      return (!('du3aText' in d) || d.du3aText is string)
+        && (!('dailyDu3as' in d) || (d.dailyDu3as is list && d.dailyDu3as.size() <= 100));
     }
 
     function isValidPerson(d) {

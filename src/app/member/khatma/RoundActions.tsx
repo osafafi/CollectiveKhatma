@@ -1,6 +1,7 @@
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { Stack, Typography } from '@mui/material';
-import { ReleasedChunkError, useFinishRound } from '@/app/operations';
+import { ReleasedChunkError } from '@/app/operations';
+import { useFinishWithDailyDua } from '../useFinishWithDailyDua';
 import { memberHash } from '@/app/routing/routes';
 import { AppButton, NoticeBanner } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
@@ -21,7 +22,7 @@ export function RoundActions({
   storedDone,
   activeSeriesKhatmaIds,
 }: RoundActionsProps) {
-  const finish = useFinishRound({
+  const finish = useFinishWithDailyDua({
     khatmaId,
     memberId,
     round: chunk.round,

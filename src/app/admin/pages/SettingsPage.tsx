@@ -11,6 +11,7 @@ import {
 } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import type { ReadingScale } from '@/theme/reading';
+import { DailyDuasEditor } from '../DailyDuasEditor';
 
 interface AdminSettingsPageProps {
   readingScale: ReadingScale;
@@ -51,6 +52,7 @@ export function AdminSettingsPage({
       {/* Deliberate addition over admin mock 5i: admins get the same theme
           toggle so the admin entry is not locked to light mode. */}
       <AppearanceSettingsCard />
+      <DailyDuasEditor />
     </Stack>
   );
 }

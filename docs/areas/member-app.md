@@ -60,6 +60,21 @@ Hard rules:
   nothing has reached the group yet. A tap whose pages were released while the
   member was away is dropped rather than retried.
 - Released chunk cannot be marked done.
+- Both completion buttons use `useFinishWithDailyDua`, which delegates to
+  `useFinishRound`. An accepted or locally queued tap opens `DailyDuaProvider`'s
+  gradient, scrollable `دعاء اليوم` dialog with one `تم` button and a fade in/out
+  (reduced-motion aware). Failures and background replay do not open it.
+- The daily prayer is independent of du3a2 al-khatma. Its provider sits above
+  `MemberCompletionInterrupt`, so the final reader still sees it when the khatma
+  screen replaces the reader. Dismissal does not acknowledge khatma completion.
+- Daily selection uses the earliest valid assignment date among all chunks in
+  that khatma-local round, including released history, so later adjustments and
+  different completion days/timezones agree. Accumulated pages use the latest
+  pending round. Calendar days advance a looping index from 2026-09-07; rounds
+  on the same date share a prayer. Admin saves apply immediately to future taps;
+  the open popup retains the text captured by its tap. The list comes only from
+  Firestore (or its persistent offline cache); missing, invalid, or empty content
+  disables the daily dialog. No daily prayer text is bundled with the app.
 - Completion interrupt hides normal nav until acknowledged.
 - Other members' warning levels are never shown.
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread

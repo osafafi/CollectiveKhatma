@@ -217,7 +217,9 @@ export type WarningLevel = 'none' | 'yellow' | 'red';
 /** Global, admin-editable content. Firestore: `content/global` */
 export interface GlobalContent {
   /** du3a2 al-khatma shown on completion (REQUIREMENTS §7). */
-  du3aText: string;
+  du3aText?: string;
+  /** Ordered daily rotation stored only in Firestore. Missing or [] disables it. */
+  dailyDu3as?: string[];
 }
 
 /** One append-only feedback message. Firestore: `content/feedback/messages/{feedbackId}` */

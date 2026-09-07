@@ -6,7 +6,8 @@ import {
   selectKhatmasListener,
   useAppSelector,
 } from '@/app/store';
-import { ReleasedChunkError, useFinishRound } from '@/app/operations';
+import { ReleasedChunkError } from '@/app/operations';
+import { useFinishWithDailyDua } from '../useFinishWithDailyDua';
 import { memberHash } from '@/app/routing/routes';
 import {
   AppButton,
@@ -335,7 +336,12 @@ function FinishFooter({
   storedDone: boolean;
   activeSeriesKhatmaIds: readonly string[];
 }) {
-  const finish = useFinishRound({ khatmaId, memberId, round, activeSeriesKhatmaIds });
+  const finish = useFinishWithDailyDua({
+    khatmaId,
+    memberId,
+    round,
+    activeSeriesKhatmaIds,
+  });
   const done = storedDone || finish.isDone;
 
   if (done) {

@@ -38,6 +38,8 @@ export interface FinishRoundTarget {
   memberId: string;
   round: number;
   activeSeriesKhatmaIds: readonly string[];
+  /** This tap landed or was durably queued. Never called by background replay. */
+  onAccepted?: () => void;
 }
 
 export interface FinishRoundResult {
@@ -61,7 +63,7 @@ export interface FinishRoundResult {
  * yet, and saying otherwise would be a lie the member acts on.
  */
 export function useFinishRound(target: FinishRoundTarget): FinishRoundResult {
-  const { khatmaId, memberId, round, activeSeriesKhatmaIds } = target;
+  const { khatmaId, memberId, round, activeSeriesKhatmaIds, onAccepted } = target;
   const markDone = useWriteOperationRaw();
   const operation = useOperation(markDone);
   const queue = useFinishQueue();
@@ -74,15 +76,19 @@ export function useFinishRound(target: FinishRoundTarget): FinishRoundResult {
     // that belongs to the member feature.
     if (!isOnline()) {
       queueFinish(entry);
+      onAccepted?.();
       return;
     }
     void Promise.race([
       execute(khatmaId, memberId, round, activeSeriesKhatmaIds),
       timeout(UNREACHABLE_AFTER_MS),
     ]).then((settled) => {
-      if (settled === TIMED_OUT) queueFinish(entry);
+      if (settled === TIMED_OUT) {
+        queueFinish(entry);
+        onAccepted?.();
+      } else if (settled.status === 'success') onAccepted?.();
     });
-  }, [execute, khatmaId, memberId, round, activeSeriesKhatmaIds]);
+  }, [execute, khatmaId, memberId, round, activeSeriesKhatmaIds, onAccepted]);
 
   const isQueued = isFinishQueued(queue, khatmaId, memberId, round);
 

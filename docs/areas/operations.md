@@ -51,6 +51,21 @@ messages; updates may change only `isRead`; deletes remove one message document.
 The admin retains its listener on demand, so member clients do not subscribe to
 the inbox.
 
+Daily prayer schema: optional `content/global.dailyDu3as` is an ordered string
+array independent of optional `du3aText`. Missing, invalid, or empty means
+disabled. `setDailyDu3as` validates and trims entries and compares
+the original array inside a transaction before merging, rejecting stale admin
+drafts. Rules allow optional text and at most 100 list entries; the adapter also
+enforces nonblank strings, 12000 characters per entry, and 100000 total characters.
+The existing global content subscription carries edits to both apps and caches
+the list for offline use. Prayers are stored only in Firestore; neither the source
+PDF nor a transcription is bundled or maintained in the repository. Production setup is
+documented in [daily dua setup](../daily-duas.md). `daily-dua-emulator` tests
+round-trip persistence, stale edits, field independence, and rule rejection.
+
+The daily prayer UI uses the existing Firestore content listener rather than a
+bundled list. Bundle limits are measured by `scripts/check-bundle-budgets.mjs`.
+
 Roster schema: `roster/{memberId}.holdPages` is an optional boolean for backward
 compatibility with existing documents. New members start with `false`; member
 and admin controls may update it, and completing assigned pages resets it.

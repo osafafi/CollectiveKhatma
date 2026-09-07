@@ -121,7 +121,11 @@ Represents a member's reading assignment history for a specific khatma.
 
 The single admin-editable content document.
 
-- `du3aText`: string (du3a2 al-khatma shown on completion — REQUIREMENTS §7)
+- `du3aText`: optional string (du3a2 al-khatma shown on completion — REQUIREMENTS §7)
+- `dailyDu3as`: optional ordered string array for daily completion popups. Missing
+  or empty disables the popup; prayers are stored only in Firestore. The admin
+  editor saves with a compare-and-merge transaction, preserving `du3aText`. See
+  [daily prayer behavior and setup](docs/daily-duas.md).
 
 ### 5. `content/feedback/messages/{feedbackId}` (MemberFeedback)
 

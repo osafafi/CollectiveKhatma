@@ -17,16 +17,19 @@ const manifestPath = resolve(outputDirectory, '.vite/manifest.json');
 // offline finish queue on top, now member 387.1/552.0 kB and admin
 // 393.2/558.1 kB — under 1 kB of headroom, so the next addition here has to
 // re-measure rather than assume.
+// Daily prayer UI reads its content from Firestore; no prayer list is bundled.
+// Measured member 389.3/554.3 kB, admin 395.4/560.3 kB;
+// keep ~2.7 kB headroom so future features still require measurement.
 const budgets = {
   member: {
     entry: 'index.html',
-    initialJavaScriptGzipBytes: 388_000,
-    initialTransferBytes: 553_000,
+    initialJavaScriptGzipBytes: 392_000,
+    initialTransferBytes: 557_000,
   },
   admin: {
     entry: 'admin-nano.html',
-    initialJavaScriptGzipBytes: 394_000,
-    initialTransferBytes: 559_000,
+    initialJavaScriptGzipBytes: 398_000,
+    initialTransferBytes: 563_000,
   },
 };
 

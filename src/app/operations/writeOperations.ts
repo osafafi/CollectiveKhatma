@@ -4,7 +4,7 @@ import {
   markRoundDone,
   ReleasedChunkError,
 } from '@/data/assignments';
-import { setDu3aText } from '@/data/content';
+import { setDu3aText, setDailyDu3as, DailyDuasConflictError } from '@/data/content';
 import {
   deleteFeedback,
   setFeedbackRead,
@@ -38,6 +38,7 @@ import { disableSelfAndReleasePages } from '@/data/personStatus';
 
 /** Feature-facing errors and results exposed without leaking the data layer. */
 export { DuplicatePersonNameError, ReleasedChunkError };
+export { DailyDuasConflictError };
 export type { DistributionOutcome };
 
 type RunDistribution = (params: RunDistributionParams) => Promise<DistributionOutcome>;
@@ -60,6 +61,7 @@ export interface WriteOperations {
   disableSelfAndReleasePages: typeof disableSelfAndReleasePages;
   removePerson: typeof removePerson;
   setDu3aText: typeof setDu3aText;
+  setDailyDu3as: typeof setDailyDu3as;
   submitFeedback: typeof submitFeedback;
   setFeedbackRead: typeof setFeedbackRead;
   deleteFeedback: typeof deleteFeedback;
@@ -88,6 +90,7 @@ export const writeOperations: WriteOperations = Object.freeze({
   disableSelfAndReleasePages,
   removePerson,
   setDu3aText,
+  setDailyDu3as,
   submitFeedback,
   setFeedbackRead,
   deleteFeedback,
