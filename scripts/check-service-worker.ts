@@ -47,6 +47,13 @@ if (!serviceWorker.includes(QURAN_CACHE_NAME)) {
   );
 }
 
+if (
+  !serviceWorker.includes('self.skipWaiting()') ||
+  !serviceWorker.includes('clientsClaim()')
+) {
+  failures.push('sw.js must activate and claim clients automatically for app updates.');
+}
+
 for (const hiddenEntry of hiddenEntryNames()) {
   const slug = hiddenEntry.replace(/\.html$/, '');
   if (serviceWorker.includes(slug)) {

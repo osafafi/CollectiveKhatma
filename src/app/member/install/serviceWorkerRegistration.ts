@@ -12,6 +12,8 @@
  */
 
 const SERVICE_WORKER_FILE = 'sw.js';
+const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
+const UPDATE_THROTTLE_MS = 60 * 1000;
 
 /**
  * Register the worker once the page has loaded, so its install and precache
@@ -26,11 +28,51 @@ export function registerServiceWorker(): void {
 
   const url = `${import.meta.env.BASE_URL}${SERVICE_WORKER_FILE}`;
 
-  window.addEventListener('load', () => {
+  const workers = navigator.serviceWorker;
+  let controller = workers.controller;
+  let reloading = false;
+  // A newly installed worker claiming its first page is not an app update.
+  // On replacement, reload once so the running JS matches the new precache.
+  workers.addEventListener('controllerchange', () => {
+    const next = workers.controller;
+    if (controller && next && next !== controller && !reloading) {
+      reloading = true;
+      window.location.reload();
+    }
+    controller = next;
+  });
+
+  const register = (): void => {
     // A failed registration must never take the app down with it — an
     // unregistered worker just means no offline shell.
-    navigator.serviceWorker
-      .register(url, { scope: import.meta.env.BASE_URL })
+    workers
+      .register(url, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' })
+      .then((registration) => {
+        let lastCheck = -Infinity;
+        let checking = false;
+        const check = (): void => {
+          if (!navigator.onLine || document.visibilityState !== 'visible') return;
+          if (checking || Date.now() - lastCheck < UPDATE_THROTTLE_MS) return;
+          lastCheck = Date.now();
+          checking = true;
+          void registration
+            .update()
+            .catch(() => undefined)
+            .finally(() => {
+              checking = false;
+            });
+        };
+
+        // Installed apps can remain alive for days. Check on ordinary returns,
+        // reconnects, and during long foreground sessions without a user prompt.
+        document.addEventListener('visibilitychange', check);
+        window.addEventListener('pageshow', check);
+        window.addEventListener('online', check);
+        window.setInterval(check, UPDATE_INTERVAL_MS);
+      })
       .catch(() => undefined);
-  });
+  };
+
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register, { once: true });
 }

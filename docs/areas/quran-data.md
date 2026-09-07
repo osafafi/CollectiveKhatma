@@ -28,6 +28,9 @@ Hard rules:
   surah/ayah locations, independently of the existing sajda icons/flags. Both
   readers overline only these phrases, preserving the bundled text and symbols;
   no dataset regeneration is needed. The full-dataset sajda test guards the map.
+- Sajda overline fixes ship in the versioned app shell, not the cached page JSON.
+  Automatic service-worker shell updates deliver rendering changes while keeping
+  the existing `quran-mushaf-v1` offline dataset intact.
 - Reader page, juz, surah, progress, and ayah-marker numbers use Western digits
   (`0–9`).
 - Both mushaf readers place previous on the right and next on the left, with

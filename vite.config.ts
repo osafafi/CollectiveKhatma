@@ -70,10 +70,12 @@ export default defineConfig({
       // index.html; the plugin must not emit a competing one.
       manifest: false,
       filename: 'sw.js',
-      // No `skipWaiting`: a new worker waits rather than reloading a member
-      // mid-page. It takes over the next time the app is opened fresh.
-      registerType: 'prompt',
+      // Activate a fully downloaded shell without waiting for every member tab
+      // to close. Our manual registration reloads on controller replacement.
+      registerType: 'autoUpdate',
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         // The mushaf under `quran/` stays out of the precache — 604 files
         // would stall the first install. The runtime route below caches it
         // instead, page by page as it is actually read.

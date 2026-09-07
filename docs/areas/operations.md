@@ -112,8 +112,13 @@ Hard rules:
   under Vite's configured base path.
 - `vite-plugin-pwa` generates `dist/sw.js`, which precaches the member shell
   only: its HTML, manifest, hashed JS/CSS/fonts, and icons. The mushaf under
-  `quran/` is not precached. The worker never calls `skipWaiting`, so a new
-  build takes over the next time the app is opened fresh.
+  `quran/` is not precached. A fully installed update calls `skipWaiting` and
+  claims clients automatically. Manual registration reloads once on controller
+  replacement (not first install) and checks for updates on foreground return,
+  reconnect, and hourly while visible/online, with a one-minute throttle.
+  Worker scripts bypass the HTTP cache during update checks. Existing clients
+  running the old registration code get the new shell on their next normal
+  navigation/open after activation; later updates reload automatically.
 - The mushaf is cached at runtime rather than precached: the worker serves
   `quran/**.json` cache-first out of `quran-mushaf-v1`, and
   `src/app/member/install/mushafPrefetch.ts` sweeps the whole dataset in after
