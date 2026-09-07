@@ -24,6 +24,10 @@ Hard rules:
   read cache instead of 604 parsed pages.
 - Generator rewrites the dataset and needs network. Do not run casually.
 - Keep text attribution and bundled Quran font license.
+- `src/content/quran/sajda.ts` maps the 15 exact sajda phrases to their own
+  surah/ayah locations, independently of the existing sajda icons/flags. Both
+  readers overline only these phrases, preserving the bundled text and symbols;
+  no dataset regeneration is needed. The full-dataset sajda test guards the map.
 - Reader page, juz, surah, progress, and ayah-marker numbers use Western digits
   (`0–9`).
 - Both mushaf readers place previous on the right and next on the left, with

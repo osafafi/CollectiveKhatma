@@ -6,6 +6,7 @@ import { writeOperations, type WriteOperations } from '@/app/operations';
 import { strings } from '@/content/strings.ar';
 import type { QuranIndex, QuranPage, Surah } from '@/content/quran/types';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
+import sajdaPage from '../../public/quran/pages/480.json';
 import {
   renderWithAppProviders,
   type RenderWithAppProvidersOptions,
@@ -137,6 +138,31 @@ beforeEach(() => {
 });
 
 describe('member browse reader', () => {
+  it.each(['browse', 'assigned'])(
+    'overlines the earlier phrase in the %s reader and preserves icons and text',
+    async (mode) => {
+      loader.getPage.mockResolvedValue(sajdaPage);
+      const khatma = makeKhatma('k1');
+      const { container } = renderMember({
+        route: mode === 'browse' ? '/quran/480' : '/khatma/k1/read',
+        data: {
+          roster: [amina],
+          khatmas: [khatma],
+          assignments: { [khatma.id]: [makeAssignment(amina.id, [round(1, [480])])] },
+        },
+      });
+
+      const phrase = await screen.findByText('وَٱسْجُدُوا۟ لِلَّهِ');
+      expect(phrase).toHaveClass('sajda-overline');
+      expect(container.querySelectorAll('.sajda-overline')).toHaveLength(1);
+      expect(phrase.closest('p')?.textContent).toBe(
+        sajdaPage.ayat.map((ayah) => `${ayah.text} ۝${ayah.ayah} `).join(''),
+      );
+      expect(phrase.textContent).not.toContain('۩');
+      expect(phrase.closest('p')?.textContent).toContain('۩');
+    },
+  );
+
   it('resumes from the remembered page and renders the mushaf body', async () => {
     localStorage.setItem('khatma.lastReadPage', '5');
     renderMember({ route: '/quran', data: { roster: [amina] } });

@@ -70,6 +70,14 @@ export function retainedGlobalStyles(theme: Theme) {
       textAlignLast: 'center',
     },
 
+    // Inline decoration follows each wrapped fragment of the phrase, inherits
+    // the reading color, and scales with the Quran font without altering text.
+    '.sajda-overline': {
+      textDecorationLine: 'overline',
+      textDecorationThickness: '0.045em',
+      textDecorationSkipInk: 'none',
+    },
+
     // Ayah-end medallion: the Quran font glyph `۝` + Western-digit number in
     // the design's gold, kept on one line with its ayah.
     '.ayah-marker': {

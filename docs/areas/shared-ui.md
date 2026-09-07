@@ -59,6 +59,8 @@ Hard rules:
 - RTL theme and Emotion cache cover portals.
 - Keep visible focus, semantic status contrast, mobile nav clearance, desktop RTL rail.
 - Reading scale is shared and persisted.
+- `.sajda-overline` decorates exact Quran phrases with a thin, text-colored upper
+  line that scales with the reading font and follows natural line wrapping.
 
 Update this doc when shared component API, theme contract, global copy ownership,
 icon rule, or accessibility changes.

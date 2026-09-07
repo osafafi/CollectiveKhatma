@@ -4,6 +4,7 @@ import { AppButton } from '@/components/primitives';
 import { getPage, getSurahs } from '@/content/quran/loader';
 import type { QuranPage, Surah } from '@/content/quran/types';
 import { ayahEndMarker, toWesternDigits } from '@/content/quran/symbols';
+import { splitSajdaPhrase } from '@/content/quran/sajda';
 import { strings } from '@/content/strings.ar';
 
 /**
@@ -270,8 +271,20 @@ function composePageBlocks(page: QuranPage, surahs: Map<number, Surah>): ReactNo
     }
     // The ayah-end medallion is the font glyph `۝` + Western-digit number, colored gold via
     // the retained `.ayah-marker` rule — never an SVG (design decision).
+    const sajda = splitSajdaPhrase(ayah);
+    if (sajda) {
+      run.push(
+        sajda.before,
+        <span key={`sajda-${ayah.surah}-${ayah.ayah}`} className="sajda-overline">
+          {sajda.phrase}
+        </span>,
+        sajda.after,
+      );
+    } else {
+      run.push(ayah.text);
+    }
     run.push(
-      `${ayah.text} `,
+      ' ',
       <span key={`marker-${ayah.surah}-${ayah.ayah}`} className="ayah-marker">
         {ayahEndMarker(ayah.ayah)}
       </span>,
