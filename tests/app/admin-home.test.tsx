@@ -274,6 +274,46 @@ describe('admin Home dashboard', () => {
     ).toBeNull();
   });
 
+  it('lets the admin target a new khatma while N has pages and requires rollover acknowledgment', async () => {
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
+      .mockResolvedValue({ completedKhatmaIds: [], chunkCount: 1 });
+    const harness = renderAdmin({
+      data: { roster: [amina], khatmas: [makeKhatma('k1')], assignments: { k1: [] } },
+      operations: { ...writeOperations, commitDistributionRun },
+    });
+    await harness.user.click(
+      await screen.findByRole('button', { name: strings.admin.prepareNextRound }),
+    );
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.admin.optionalRoundAdjustments }),
+    );
+    await harness.user.click(
+      screen.getByRole('combobox', {
+        name: `${strings.admin.roundTargetKhatma} · ${amina.name}`,
+      }),
+    );
+    await harness.user.click(
+      screen.getByRole('option', { name: `${makeKhatma('k1').seriesName} 2` }),
+    );
+    const confirm = screen.getByRole('button', {
+      name: strings.admin.confirmAndStartRound,
+    });
+    expect(confirm).toBeDisabled();
+    await harness.user.click(
+      screen.getByRole('checkbox', { name: strings.admin.confirmRolloverBoundary }),
+    );
+    await harness.user.click(confirm);
+    expect(commitDistributionRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        historyKhatmaIds: ['k1'],
+        adjustments: expect.objectContaining({
+          members: { [amina.id]: { targetKhatmaId: null } },
+        }),
+      }),
+    );
+  });
+
   it('does not commit when the preview is dismissed', async () => {
     const commitDistributionRun = vi.fn<WriteOperations['commitDistributionRun']>();
     const harness = renderAdmin({
@@ -472,7 +512,7 @@ describe('admin Home dashboard', () => {
     ).toBeDisabled();
   });
 
-  it('subscribes to every active khatma plus the open detail khatma (P9)', () => {
+  it('subscribes to global reading history on Home and active plus open khatmas on detail', () => {
     const active = makeKhatma('active');
     const completed = makeKhatma('completed', { status: 'completed' });
 
@@ -480,7 +520,7 @@ describe('admin Home dashboard', () => {
       data: { roster: [amina], khatmas: [active, completed] },
     });
     expect(onHome.subscriptions.assignment('active').counts().active).toBe(1);
-    expect(onHome.subscriptions.assignment('completed').counts().active).toBe(0);
+    expect(onHome.subscriptions.assignment('completed').counts().active).toBe(1);
     onHome.unmount();
 
     // The open detail khatma is subscribed even though it is completed.

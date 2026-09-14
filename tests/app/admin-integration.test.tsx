@@ -260,10 +260,12 @@ describe('admin application integration', () => {
       active: 1,
     });
 
-    // Navigating to Home drops the completed khatma from the wanted set.
-    await harness.user.click(screen.getByRole('link', { name: strings.admin.navHome }));
+    // Navigating to the khatma list drops the completed khatma from the wanted set.
+    await harness.user.click(
+      screen.getByRole('link', { name: strings.admin.navKhatmas }),
+    );
     expect(
-      await screen.findByRole('heading', { name: strings.admin.homeHeading }),
+      await screen.findByRole('heading', { name: strings.admin.khatmasHeading }),
     ).toBeVisible();
 
     // Only the departing (completed) listener is released; the active khatma's

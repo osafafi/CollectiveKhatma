@@ -45,6 +45,11 @@ Hard rules:
   from every khatma, returning their non-released pages and deleting their
   capacity and assignment. Removing the designated reciter selects the first
   remaining member or clears the reciter when the khatma becomes empty.
+- Automatic rollover excludes the latest khatma's designated reciter in that
+  series when another participant is available, including after manual reciter
+  changes. Among alternatives, global least-used/longest-ago rotation still applies.
+  A sole participant may repeat. The transaction recomputes the designation before
+  creating the rollover and rejects a stale preview.
 - Completed khatmas stay for series history.
 - The admin Khatmas list shows all active rounds. For a series with no active
   round, it shows only the latest completed round as the history entry point.

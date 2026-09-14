@@ -36,10 +36,14 @@ Hard rules:
 - Loose-page distribution advances from the oldest remaining pages as a front
   block. It does not skip a page inside the block just because the selected
   reader completed that page in an earlier khatma.
-- Ready readers are tiered clean before flagged. Within a tier, the planner first
-  chooses the capacity that creates the fewest internal gaps in the next front
-  block, then the reader with the lowest lifetime completed-page overlap;
-  rotated roster order breaks ties.
+- New-round previews prioritize ready readers by the existing admin reliability
+  grade (70% reading streak, 30% pages per reading day), using completed history
+  across all khatmas. Higher grades receive older khatma pools first; lower grades
+  receive the following pools as the older ones drain. Equal grades prefer fewer
+  front-block gaps, then rotated roster order. Previously read pages have zero
+  weight in this mode. Pending-page blocking and warning updates still apply.
+- Current-round adjustment retains clean-before-flagged priority, front-block
+  gap minimization, lifetime overlap, and rotated roster tie-breaking.
 - `capacities.surahs` is a Surah id and `capacities.juz` is a Juz number; each
   selected whole unit is pulled from wherever it remains in the pool, so an
   explicit whole-unit addition may make the final combined chunk non-consecutive.
@@ -60,7 +64,12 @@ Hard rules:
   allocations, retained pending pages, releases, skips, and rollover. The admin
   sees proposed assignments first; optional collapsed controls allow including
   or excluding a reader, changing that round's loose-page capacity, and choosing
-  keep/release/add for pending pages.
+  keep/release/add for pending pages. New-round controls also show each reader's
+  reliability grade and let the admin target any active khatma or the new rollover.
+  An exact target overrides automatic placement, never spills to another khatma,
+  and skips the reader when its pool is empty. A new target can start N+1 while N
+  still has pages; creation still requires rollover acknowledgment. Targets do not
+  bypass pending-page decisions and are not available in current-round adjustment.
 - Proposed chunks can swap recipients only within the same khatma. Compatible
   recipients have exactly equal loose-page capacities and matching Surah/Juz
   capacity settings. The swap moves the whole proposed chunk and never exposes
@@ -71,6 +80,9 @@ Hard rules:
   boundary, so unused next-khatma metadata cannot block an ordinary round. The
   revision canonicalizes Firestore map keys and lifetime-page set order, so
   semantically identical listener and transaction snapshots compare equally.
+  The transaction rereads the preview's global history scope to recompute grades;
+  changed grades invalidate the preview. Before rollover writes, it also recomputes
+  the reciter and rejects changed rotation metadata.
 - Current-round adjustment recalls and reassigns unread loose pages only among readers whose
   loose-page chunk was fully recalled. Finished readers receive nothing new;
   preserved Surah and Juz pages stay held. The reshuffle stays in the current

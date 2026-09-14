@@ -6,7 +6,6 @@ import {
   selectAssignmentsForKhatma,
   selectContent,
   selectKhatmas,
-  selectPersonById,
   useAppSelector,
 } from '@/app/store';
 import { AppButton } from '@/components/primitives';
@@ -20,7 +19,7 @@ interface MemberCompletionInterruptProps {
 }
 
 /**
- * Replace every member route with the first unacknowledged completion.
+ * Replace the designated reciter’s route with the first unacknowledged completion.
  * Assignment subscriptions remain mounted above this boundary, while the shell
  * (including any reader and all navigation) is torn down until acknowledgement.
  */
@@ -31,6 +30,7 @@ export function MemberCompletionInterrupt({ children }: MemberCompletionInterrup
       selectKhatmas(state).filter(
         (khatma) =>
           khatma.status === 'active' &&
+          khatma.duaReciterId === memberId &&
           khatma.memberIds.includes(memberId) &&
           khatmaProgress(khatma, selectAssignmentsForKhatma(state, khatma.id)).complete,
       ),
@@ -91,14 +91,8 @@ function CompletionCandidate({
 }) {
   const [acknowledged, acknowledge] = useDu3aAcknowledgement(khatma.id);
   const content = useAppSelector(selectContent);
-  const reciterId = khatma.duaReciterId;
-  const reciter = useAppSelector((state) =>
-    reciterId ? selectPersonById(state, reciterId) : undefined,
-  );
+  if (acknowledged || khatma.duaReciterId !== memberId) return next;
 
-  if (acknowledged) return next;
-
-  const showsDu3a = !reciterId || reciterId === memberId;
   return (
     <Box
       component="main"
@@ -120,23 +114,12 @@ function CompletionCandidate({
           {strings.member.khatmaComplete}
         </Typography>
 
-        {showsDu3a ? (
-          <>
-            <Typography component="h2" variant="h3">
-              {strings.member.du3aHeading}
-            </Typography>
-            <Box component="p" className="quran-text" sx={{ m: 0 }}>
-              {content?.du3aText ?? DEFAULT_DU3A_TEXT}
-            </Box>
-          </>
-        ) : (
-          <Typography component="p" variant="subtitle1">
-            {strings.member.reciterLead}:{' '}
-            <Typography component="span" sx={{ fontWeight: 600 }}>
-              {reciter?.emoji || ''} {reciter?.name ?? ''}
-            </Typography>
-          </Typography>
-        )}
+        <Typography component="h2" variant="h3">
+          {strings.member.du3aHeading}
+        </Typography>
+        <Box component="p" className="quran-text" sx={{ m: 0 }}>
+          {content?.du3aText ?? DEFAULT_DU3A_TEXT}
+        </Box>
 
         <AppButton onClick={acknowledge} sx={{ alignSelf: 'center' }}>
           {strings.common.done}

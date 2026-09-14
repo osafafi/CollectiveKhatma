@@ -53,3 +53,19 @@ export function pickDuaReciter(
   }
   return winner;
 }
+
+/** Rotate within a series without repeating its latest designation when possible. */
+export function pickRolloverDuaReciter(
+  candidateIds: readonly string[],
+  priorKhatmas: readonly Khatma[],
+  seriesId: string,
+): string {
+  const latest = priorKhatmas
+    .filter((khatma) => khatma.seriesId === seriesId)
+    .sort((left, right) => right.seriesNumber - left.seriesNumber)[0];
+  const alternatives = candidateIds.filter((id) => id !== latest?.duaReciterId);
+  return pickDuaReciter(
+    alternatives.length > 0 ? alternatives : candidateIds,
+    priorKhatmas,
+  );
+}

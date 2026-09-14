@@ -38,6 +38,12 @@ optional rollover pair. Khatmas mirror `currentDistributionRunId` and
 timestamps; readers remain backward-compatible with legacy `released` and
 `doneByRound` data.
 
+Distribution confirmation rereads the preview's supplied `historyKhatmaIds`
+(global khatma metadata and participating readers' historical assignments) inside
+the transaction. Reliability grades are derived, never persisted. Member khatma
+targets exist only in the draft; existing chunk ownership and khatma schema carry
+the result. Rollover reciters are recomputed from that history before writing.
+
 Khatma create and update rules require full scope and 604 total pages. The data
 adapter requires an ordinary new khatma to start with the exact 1–604 pool; an
 atomic rollover may create N+1 with its first round already assigned, so its

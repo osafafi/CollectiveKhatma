@@ -75,7 +75,9 @@ Hard rules:
   the open popup retains the text captured by its tap. The list comes only from
   Firestore (or its persistent offline cache); missing, invalid, or empty content
   disables the daily dialog. No daily prayer text is bundled with the app.
-- Completion interrupt hides normal nav until acknowledged.
+- Completion interrupts only the designated duaa reader and hides their normal
+  nav until acknowledged. Other members, and khatmas without a designated reader,
+  do not show the completion popup. The separate daily prayer is unchanged.
 - Other members' warning levels are never shown.
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread
   document with the selected member id and current name on every submission.

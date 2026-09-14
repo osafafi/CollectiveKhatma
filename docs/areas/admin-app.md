@@ -27,7 +27,8 @@ Hard rules:
   write happens before confirmation.
 - The preview stays frozen across live snapshots. Its main surface lists exact
   page ranges, recipients, target khatma, and rollover. Participation,
-  per-round page capacity, pending-page policy, and skipped-reader details live
+  per-round page capacity, per-reader target khatma, reliability grade,
+  pending-page policy, and skipped-reader details live
   in collapsed optional sections so the common path remains short.
 - The round-control dialog has no flat visual sections: its shell, title,
   summary, optional controls, proposed assignments and rows, skipped/release
@@ -43,7 +44,7 @@ Hard rules:
   rollover-metadata mismatch is distinguished from a changed live snapshot.
 - Busy distribution blocks double press. Success closes the dialog and is
   announced on the dashboard; failure remains in the dialog for review/retry.
-- Round controls stay disabled until every active khatma's assignment listener
+- Round controls stay disabled until every khatma's assignment history listener
   is ready; an unloaded collection is never previewed as an empty one.
 - Dashboard warnings are grouped per khatma in a count-labelled accordion that
   is collapsed by default.
@@ -53,9 +54,9 @@ Hard rules:
   that assignment belongs to an older round. Both show the actual round, member
   avatar/name, and exact page ranges. Released chunks appear in neither list.
 - Admin assignment subscriptions cover active khatmas plus open detail. While
-  the roster route is mounted, it additionally retains completed-khatma
-  histories to derive reliability grades, then releases those listeners on
-  navigation.
+  the roster route or a Home dashboard with active series is mounted, it additionally
+  retains completed-khatma histories to derive the same reliability grades for the
+  roster and distribution preview, then releases those listeners on navigation.
 - The feedback listener is retained only by the mounted admin shell. Its header
   badge counts unread messages; the top drawer lists every message and supports
   read/unread, clipboard copy, and confirmed deletion. Drawer height is controlled

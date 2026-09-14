@@ -9,8 +9,8 @@
  * return to the pool only when the admin explicitly calls it in (see
  * `releaseChunk`). Each member's chunk is their additive {@link MemberCapacity}
  * (pages + a selected Surah + a selected Juz) taken from the oldest pool. Loose
- * pages advance from the front, preferring the member capacity that keeps the
- * next block consecutive; lifetime history then breaks coverage differences.
+ * pages advance from the front. New-round previews prioritize reliability with
+ * no lifetime overlap penalty; legacy/current-round plans retain coverage matching.
  * The data layer applies the resulting plan in one Firestore transaction.
  */
 
@@ -29,6 +29,10 @@ export interface DistributionMember {
   enabled: boolean;
   /** Pending chunks keep warning normally but do not block the next assignment. */
   holdPages?: boolean;
+  /** Existing admin reliability grade; higher grades finish older pools first. */
+  reliabilityScore?: number;
+  /** Undefined = automatic, null = new rollover, string = exact active khatma. */
+  targetKhatmaId?: string | null;
 }
 
 /** One active khatma of the series, as read inside the transaction. */
@@ -60,6 +64,8 @@ export interface DistributionInput {
    * it neither advances the round counter nor rolls over to a new khatma.
    */
   mode?: 'new-round' | 'redistribution';
+  /** New-round admin policy: reliability first, completed-page overlap has zero weight. */
+  prioritizeReliability?: boolean;
 }
 
 /** A chunk to append to `khatmas/{khatmaId}/assignments/{memberId}`. */
@@ -213,8 +219,9 @@ function frontBlockScore(
 }
 
 /**
- * Match the next front loose block to the member whose capacity introduces the
- * fewest gaps, then the lowest completed-page overlap. `members` is already in
+ * With reliability enabled, highest grade wins, then fewest front-block gaps;
+ * completed-page overlap has zero weight. Otherwise match the fewest gaps and
+ * then lowest completed-page overlap. `members` is already in
  * warning/rotation order, which breaks equal scores. Unit-only members keep
  * their existing relative priority because a zero-page loose block cannot be
  * scored.
@@ -222,18 +229,29 @@ function frontBlockScore(
 function pickFrontBlockMatch(
   members: readonly DistributionMember[],
   pool: readonly number[],
+  prioritizeReliability = false,
 ): DistributionMember {
   let best = members[0]!;
   let bestScore = frontBlockScore(best, pool);
   for (let i = 1; i < members.length; i++) {
     const candidate = members[i]!;
     const candidateScore = frontBlockScore(candidate, pool);
+    if (prioritizeReliability) {
+      const difference = (candidate.reliabilityScore ?? 0) - (best.reliabilityScore ?? 0);
+      if (difference > 0) {
+        best = candidate;
+        bestScore = candidateScore;
+      }
+      if (difference !== 0) continue;
+    }
     if (!bestScore || !candidateScore) continue;
     const candidateWeighted = candidateScore.completed * bestScore.total;
     const bestWeighted = bestScore.completed * candidateScore.total;
     if (
       candidateScore.gaps < bestScore.gaps ||
-      (candidateScore.gaps === bestScore.gaps && candidateWeighted < bestWeighted)
+      (!prioritizeReliability &&
+        candidateScore.gaps === bestScore.gaps &&
+        candidateWeighted < bestWeighted)
     ) {
       best = candidate;
       bestScore = candidateScore;
@@ -312,14 +330,17 @@ function currentStreak(
  * 2. ORDER the *ready* members (enabled and not holding a pending chunk): clean
  *    members first, then flagged. Within each tier, match the oldest front pages
  *    to the capacity that introduces the fewest gaps, then to the member with
- *    the least lifetime overlap; rotated roster order breaks ties.
+ *    the least lifetime overlap; rotated roster order breaks ties. With the
+ *    new-round reliability policy, grade takes priority over these tiers and
+ *    overlap has no weight. Explicit targets constrain which pool can serve a reader.
  * 3. SERVE each matched member their additive {@link MemberCapacity} from the
  *    oldest khatma's pool (via `takeChunk`). Loose pages come from the front so
  *    normal chunks stay consecutive and old holes do not linger. A chunk never
  *    spans two khatmas: when a pool can only partially fill it, that member gets
  *    the short chunk and the next member draws from the next pool. When every
  *    existing pool is empty, the round ROLLS OVER: khatma N+1 is minted from
- *    `newKhatmaPool` and serving continues from it.
+ *    `newKhatmaPool` and serving continues from it. An explicit rollover target
+ *    can also start the next khatma while an older pool remains unassigned.
  * 4. COMPLETE: any khatma whose pool is empty and whose chunks are all done or
  *    released (and that served nothing this round) is fully read. A pending
  *    chunk therefore blocks completion until it is done or the admin releases it.
@@ -361,26 +382,38 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
 
   const streakOf = (id: string): number => streaks[id] ?? currentStreak(khatmas, id);
 
-  // 2. Ready members only: rotate first-choice priority, clean before flagged.
+  // 2. Ready members only: rotate ties; reliability policy spans warning tiers.
   const ready = members.filter((m) => m.enabled && !blocked.has(m.id));
   const servingSeriesNumber =
     pools.find((p) => p.pages.length > 0)?.seriesNumber ?? newKhatmaSeriesNumber;
   const rotatedReady = rotate(ready, Math.max(0, servingSeriesNumber - 1));
-  const serveTiers = [
-    rotatedReady.filter((m) => streakOf(m.id) === 0),
-    rotatedReady.filter((m) => streakOf(m.id) > 0),
-  ];
+  const serveTiers = input.prioritizeReliability
+    ? [rotatedReady]
+    : [
+        rotatedReady.filter((m) => streakOf(m.id) === 0),
+        rotatedReady.filter((m) => streakOf(m.id) > 0),
+      ];
 
-  // 3. Serve consecutive front chunks, matching history within each priority tier.
+  // 3. Serve front chunks from the oldest pool accepted by a waiting reader.
   const chunks: PlannedChunk[] = [];
   let rolloverPool: number[] | undefined;
   let rolloverServed = false;
   for (const tier of serveTiers) {
     const waiting = [...tier];
     while (waiting.length > 0) {
-      const source = pools.find((p) => p.pages.length > 0);
+      const accepts = (member: DistributionMember, id: string | null) =>
+        member.targetKhatmaId === undefined || member.targetKhatmaId === id;
+      const source = pools.find(
+        (p) => p.pages.length > 0 && waiting.some((member) => accepts(member, p.id)),
+      );
       if (!source) rolloverPool ??= advancesRound ? [...newKhatmaPool] : [];
-      const member = pickFrontBlockMatch(waiting, source?.pages ?? rolloverPool ?? []);
+      const candidates = waiting.filter((member) => accepts(member, source?.id ?? null));
+      if (candidates.length === 0) break;
+      const member = pickFrontBlockMatch(
+        candidates,
+        source?.pages ?? rolloverPool ?? [],
+        input.prioritizeReliability,
+      );
       waiting.splice(waiting.indexOf(member), 1);
 
       let khatmaId: string | null;
@@ -393,7 +426,7 @@ export function planDistribution(input: DistributionInput): DistributionPlan {
         khatmaId = source.id;
         round = Math.max(1, (khatma?.roundCount ?? 0) + (advancesRound ? 1 : 0));
       } else {
-        // Rollover: every existing pool is empty — mint khatma N+1.
+        // Rollover: no waiting reader accepts a nonempty existing pool.
         parts = takeChunkParts(rolloverPool!, member.capacity, unitOfPage);
         khatmaId = null;
         round = 1;

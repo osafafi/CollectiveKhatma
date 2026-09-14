@@ -645,6 +645,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           completedPages: [],
           enabled: true,
           holdPages: false,
+          reliabilityScore: 0,
         },
         {
           id: nextMemberId,
@@ -652,6 +653,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           completedPages: [],
           enabled: true,
           holdPages: false,
+          reliabilityScore: 0,
         },
       ];
       const adjustments = defaultDistributionAdjustments();
@@ -680,6 +682,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
 
       const outcome = await commitDistributionRun({
         khatmaIds: [khatmaId],
+        historyKhatmaIds: [khatmaId],
         mode: 'new-round',
         expectedSourceRevision: preview.sourceRevision,
         adjustments,
@@ -692,7 +695,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
           scope: { kind: 'full' },
           memberIds,
           capacities,
-          duaReciterId: finishingMemberId,
+          duaReciterId: nextMemberId,
           pool: FULL_QURAN_PAGES,
         },
       });
@@ -708,6 +711,7 @@ emulatorDescribe('Firestore emulator cross-client validation', () => {
         totalPages: 604,
         scope: { kind: 'full' },
         roundCount: 1,
+        duaReciterId: nextMemberId,
       });
       expect(rollover?.remainingPages).toHaveLength(600);
     } finally {

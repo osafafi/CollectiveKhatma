@@ -35,8 +35,8 @@ import {
   type DistributionDraftMode,
   type PendingPageDecision,
 } from '@/domain/distributionDraft';
-import { pendingChunks } from '@/domain/progress';
-import { pickDuaReciter } from '@/domain/rotation';
+import { memberReliabilityScores, pendingChunks } from '@/domain/progress';
+import { pickRolloverDuaReciter } from '@/domain/rotation';
 import { nextSeriesNumber, seriesTitle, type SeriesGroup } from '@/domain/series';
 import type { Assignment, Khatma, MemberCapacity, Person } from '@/domain/types';
 import { todayIso } from '../todayIso';
@@ -44,6 +44,7 @@ import type { QuranScopeMaps } from '../useQuranScopeMaps';
 
 interface PlannerSnapshot {
   mode: DistributionDraftMode;
+  historyKhatmaIds: string[];
   khatmas: DistributionKhatmaState[];
   members: DistributionMember[];
   newKhatmaPool: number[];
@@ -196,7 +197,14 @@ export function DistributionPlannerDialog({
     setScopeError(false);
     commit.reset();
     const seriesNumber = nextSeriesNumber(allKhatmas, group.seriesId);
-    const plannerMembers = membersForPlanner(group.active, roster);
+    const scores = memberReliabilityScores(
+      roster,
+      Object.values(assignmentsByKhatma).flat(),
+    );
+    const plannerMembers = membersForPlanner(group.active, roster).map((member) => ({
+      ...member,
+      reliabilityScore: scores[member.id]?.grade ?? 0,
+    }));
     const states = group.active.map((khatma) => ({
       id: khatma.id,
       seriesNumber: khatma.seriesNumber,
@@ -220,6 +228,7 @@ export function DistributionPlannerDialog({
     );
     setSnapshot({
       mode,
+      historyKhatmaIds: allKhatmas.map((khatma) => khatma.id),
       khatmas: states,
       members: plannerMembers,
       newKhatmaPool: pool,
@@ -232,7 +241,11 @@ export function DistributionPlannerDialog({
         totalPages: pool.length,
         scope: rolloverScope,
         memberIds: rolloverMemberIds,
-        duaReciterId: pickDuaReciter(rolloverMemberIds, allKhatmas),
+        duaReciterId: pickRolloverDuaReciter(
+          rolloverMemberIds,
+          allKhatmas,
+          group.seriesId,
+        ),
         capacities: rolloverCapacities,
         pool,
       },
@@ -253,6 +266,7 @@ export function DistributionPlannerDialog({
       include: boolean;
       capacity: MemberCapacity;
       pendingDecision: PendingPageDecision;
+      targetKhatmaId: string | null | undefined;
     }>,
   ) => {
     setAdjustments((current) => ({
@@ -281,6 +295,7 @@ export function DistributionPlannerDialog({
     if (!snapshot || !draft) return;
     const result = await commit.execute({
       khatmaIds: snapshot.khatmas.map((khatma) => khatma.id),
+      historyKhatmaIds: snapshot.historyKhatmaIds,
       mode: snapshot.mode,
       expectedSourceRevision: draft.sourceRevision,
       adjustments,
@@ -472,6 +487,11 @@ export function DistributionPlannerDialog({
                   })}
                 >
                   <Stack spacing={2}>
+                    {snapshot.mode === 'new-round' ? (
+                      <Typography color="text.secondary">
+                        {strings.admin.roundReliabilityPolicy}
+                      </Typography>
+                    ) : null}
                     {snapshot.members.map((member, memberIndex) => {
                       const adjustment = adjustments.members[member.id];
                       const capacity = adjustment?.capacity ?? member.capacity;
@@ -493,7 +513,7 @@ export function DistributionPlannerDialog({
                             display: 'grid',
                             gridTemplateColumns: {
                               xs: '1fr',
-                              md: 'minmax(180px, 1fr) 150px 220px',
+                              md: 'repeat(2, minmax(0, 1fr))',
                             },
                             gap: 2,
                             alignItems: 'center',
@@ -512,8 +532,44 @@ export function DistributionPlannerDialog({
                                 }
                               />
                             }
-                            label={memberName(roster, member.id)}
+                            label={`${memberName(roster, member.id)} · ${strings.admin.reliabilityScore}: ${toWesternDigits(member.reliabilityScore ?? 0)} / 10`}
                           />
+                          {snapshot.mode === 'new-round' ? (
+                            <TextField
+                              select
+                              size="small"
+                              label={`${strings.admin.roundTargetKhatma} · ${memberName(roster, member.id)}`}
+                              value={
+                                adjustment?.targetKhatmaId === null
+                                  ? 'rollover'
+                                  : (adjustment?.targetKhatmaId ?? 'auto')
+                              }
+                              onChange={(event) =>
+                                updateMember(member.id, {
+                                  targetKhatmaId:
+                                    event.target.value === 'auto'
+                                      ? undefined
+                                      : event.target.value === 'rollover'
+                                        ? null
+                                        : event.target.value,
+                                })
+                              }
+                            >
+                              <MenuItem value="auto">
+                                {strings.admin.roundTargetAuto}
+                              </MenuItem>
+                              {snapshot.khatmas.map((khatma) => (
+                                <MenuItem key={khatma.id} value={khatma.id}>
+                                  {group.seriesName}{' '}
+                                  {toWesternDigits(khatma.seriesNumber)}
+                                </MenuItem>
+                              ))}
+                              <MenuItem value="rollover">
+                                {group.seriesName}{' '}
+                                {toWesternDigits(snapshot.newKhatmaSeriesNumber)}
+                              </MenuItem>
+                            </TextField>
+                          ) : null}
                           <TextField
                             size="small"
                             type="number"

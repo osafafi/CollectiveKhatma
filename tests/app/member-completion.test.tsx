@@ -113,7 +113,7 @@ describe('member completion/du3a interrupt', () => {
     ).toBeVisible();
   });
 
-  it('uses the default du3a when no reciter or live content is set', () => {
+  it('uses the default du3a for the designated reciter when no live content is set', () => {
     const khatma = completedKhatma();
     renderMember({
       route: '/personal',
@@ -128,30 +128,34 @@ describe('member completion/du3a interrupt', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('names the designated reciter without showing the du3a to another member', () => {
-    const khatma = completedKhatma({ duaReciterId: maryam.id });
-    renderMember({
-      route: '/khatmas',
-      data: {
-        roster: [amina, maryam],
-        content: { du3aText: 'لا ينبغي عرض هذا النص' },
-        khatmas: [khatma],
-        assignments: { [khatma.id]: [completedAssignment] },
-      },
-    });
+  it.each([maryam.id, ''])(
+    'does not interrupt another member or an unset reciter (%s)',
+    (duaReciterId) => {
+      const khatma = completedKhatma({ duaReciterId });
+      renderMember({
+        route: '/khatmas',
+        data: {
+          roster: [amina, maryam],
+          content: { du3aText: 'لا ينبغي عرض هذا النص' },
+          khatmas: [khatma],
+          assignments: { [khatma.id]: [completedAssignment] },
+        },
+      });
 
-    expect(screen.getByText(maryam.name)).toBeVisible();
-    expect(screen.getByText(strings.member.reciterLead, { exact: false })).toBeVisible();
-    expect(
-      screen.queryByRole('heading', { name: strings.member.du3aHeading }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText('لا ينبغي عرض هذا النص')).not.toBeInTheDocument();
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-  });
+      expect(
+        screen.queryByRole('heading', { name: strings.member.khatmaComplete }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: strings.member.du3aHeading }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('لا ينبغي عرض هذا النص')).not.toBeInTheDocument();
+      expect(screen.getByRole('navigation')).toBeVisible();
+    },
+  );
 
   it('presents multiple unacknowledged completions one at a time', async () => {
     const first = completedKhatma({ id: 'khatma-first', duaReciterId: amina.id });
-    const second = completedKhatma({ id: 'khatma-second', duaReciterId: maryam.id });
+    const second = completedKhatma({ id: 'khatma-second', duaReciterId: amina.id });
     const harness = renderMember({
       route: '/khatmas',
       data: {
@@ -169,7 +173,7 @@ describe('member completion/du3a interrupt', () => {
     await harness.user.click(screen.getByRole('button', { name: strings.common.done }));
 
     expect(localStorage.getItem(`khatma.du3aAck.${first.id}`)).toBe('1');
-    expect(screen.getByText(maryam.name)).toBeVisible();
+    expect(screen.getByText('دعاء الختمة الأولى')).toBeVisible();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
     await harness.user.click(screen.getByRole('button', { name: strings.common.done }));

@@ -20,6 +20,7 @@ import {
   selectKhatmas,
   selectRoster,
   useAppSelector,
+  useAssignmentsSubscription,
 } from '@/app/store';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
@@ -52,6 +53,11 @@ export function AdminHomePage() {
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="home">
+      {(groups.length > 0 ? khatmas : [])
+        .filter((khatma) => khatma.status === 'completed')
+        .map((khatma) => (
+          <HistorySubscription key={khatma.id} khatmaId={khatma.id} />
+        ))}
       {groups.length === 0 ? (
         // Before the first khatmas snapshot this empty card also shows transiently
         // (no dedicated loading state), matching the legacy dashboard.
@@ -85,7 +91,7 @@ function SeriesBlock({
   const assignmentsByKhatma = useAppSelector(
     (state) =>
       Object.fromEntries(
-        group.active.map((khatma) => [
+        allKhatmas.map((khatma) => [
           khatma.id,
           selectAssignmentsForKhatma(state, khatma.id),
         ]),
@@ -93,7 +99,7 @@ function SeriesBlock({
     shallowEqual,
   );
   const assignmentsReady = useAppSelector((state) =>
-    group.active.every(
+    allKhatmas.every(
       (khatma) => selectAssignmentsListener(state, khatma.id)?.status === 'ready',
     ),
   );
@@ -410,4 +416,9 @@ function pageRanges(pages: readonly number[]): string {
     i++;
   }
   return ranges.join('، ');
+}
+
+function HistorySubscription({ khatmaId }: { khatmaId: string }) {
+  useAssignmentsSubscription(khatmaId);
+  return null;
 }

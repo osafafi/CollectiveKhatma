@@ -220,3 +220,101 @@ describe('distribution draft', () => {
     );
   });
 });
+
+describe('new-round reliability and khatma targeting', () => {
+  it('gives the remainder to the highest score despite prior-page overlap, and rollover to the lower score', () => {
+    const input = draftInput(
+      [khatma('old', 1, [604], [])],
+      [
+        { ...member('low'), reliabilityScore: 1 },
+        { ...member('high'), reliabilityScore: 9, completedPages: [604] },
+      ],
+    );
+    const draft = buildDistributionDraft(input);
+    expect(
+      draft.allocations.map(({ memberId, khatmaId, pages }) => ({
+        memberId,
+        khatmaId,
+        pages,
+      })),
+    ).toEqual([
+      { memberId: 'high', khatmaId: 'old', pages: [604] },
+      { memberId: 'low', khatmaId: null, pages: [101] },
+    ]);
+    const equalScores = buildDistributionDraft({
+      ...input,
+      members: input.members.map((m) => ({ ...m, reliabilityScore: 1 })),
+    });
+    expect(equalScores.allocations[0]?.memberId).toBe('low');
+    const reversedHistory = buildDistributionDraft({
+      ...input,
+      members: input.members.map((m) => ({
+        ...m,
+        completedPages: m.id === 'low' ? [604] : [],
+      })),
+    });
+    expect(reversedHistory.allocations).toEqual(draft.allocations);
+  });
+
+  it('honors per-member targets across active N/N+1 and does not spill an exhausted target', () => {
+    const input = draftInput(
+      [khatma('n', 1, [603, 604], []), khatma('next', 2, [3], [])],
+      [member('a'), member('b'), member('c')],
+    );
+    input.adjustments.members = {
+      a: { targetKhatmaId: 'next' },
+      b: { targetKhatmaId: 'n' },
+      c: { targetKhatmaId: 'next' },
+    };
+    const draft = buildDistributionDraft(input);
+    expect(draft.allocations).toEqual([
+      expect.objectContaining({ memberId: 'b', khatmaId: 'n', pages: [603] }),
+      expect.objectContaining({ memberId: 'a', khatmaId: 'next', pages: [3] }),
+    ]);
+    expect(draft.skipped).toContainEqual({ memberId: 'c', reason: 'no-pages-available' });
+    expect(draft.plan.rollover).toBeUndefined();
+  });
+
+  it('can explicitly start N+1 while N still has a pool, preserving pending-page decisions', () => {
+    const input = draftInput(
+      [khatma('n', 1, [603, 604], [assignment('held', [chunk(1, [602])])])],
+      [member('a'), member('held')],
+    );
+    input.adjustments.members = {
+      a: { targetKhatmaId: null },
+      held: { targetKhatmaId: null },
+    };
+    const draft = buildDistributionDraft(input);
+    expect(draft.allocations).toEqual([
+      expect.objectContaining({ memberId: 'a', khatmaId: null }),
+    ]);
+    expect(draft.plan.khatmaUpdates[0]?.remainingPages).toEqual([603, 604]);
+    expect(draft.skipped).toContainEqual({ memberId: 'held', reason: 'pending-kept' });
+    expect(
+      buildDistributionDraft({
+        ...input,
+        adjustments: { ...input.adjustments, allowRollover: false },
+      }).allocations,
+    ).toEqual([]);
+  });
+
+  it('rejects foreign targets and targets during current-round adjustment', () => {
+    const input = draftInput([khatma('n', 1, [604], [])], [member('a')]);
+    input.adjustments.members = { a: { targetKhatmaId: 'foreign' } };
+    expect(() => buildDistributionDraft(input)).toThrow(InvalidDistributionDraftError);
+    input.adjustments.members.a = { targetKhatmaId: null };
+    expect(() => buildDistributionDraft({ ...input, mode: 'adjust-current' })).toThrow(
+      InvalidDistributionDraftError,
+    );
+  });
+
+  it('invalidates a frozen preview when reliability changes', () => {
+    const input = draftInput([khatma('n', 1, [604], [])], [member('a')]);
+    expect(
+      buildDistributionDraft({
+        ...input,
+        members: [{ ...member('a'), reliabilityScore: 8 }],
+      }).sourceRevision,
+    ).not.toBe(buildDistributionDraft(input).sourceRevision);
+  });
+});

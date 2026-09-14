@@ -16,6 +16,8 @@ export interface DistributionMemberAdjustment {
   include?: boolean;
   capacity?: MemberCapacity;
   pendingDecision?: PendingPageDecision;
+  /** Exact round target; undefined lets the reliability planner choose. */
+  targetKhatmaId?: string | null;
 }
 
 export interface DistributionDraftAdjustments {
@@ -297,6 +299,16 @@ export function buildDistributionDraft(
   );
   const adjustedMembers = input.members.map((member) => {
     const adjustment = input.adjustments.members[member.id];
+    if (
+      adjustment?.targetKhatmaId !== undefined &&
+      (input.mode !== 'new-round' ||
+        (adjustment.targetKhatmaId !== null &&
+          !input.khatmas.some((khatma) => khatma.id === adjustment.targetKhatmaId)))
+    ) {
+      throw new InvalidDistributionDraftError(
+        'Target must be an active khatma or the new rollover in a new round.',
+      );
+    }
     const included = adjustment?.include !== false;
     const eligibleForAdjustment =
       input.mode !== 'adjust-current' ||
@@ -304,6 +316,7 @@ export function buildDistributionDraft(
     return {
       ...member,
       capacity: adjustment?.capacity ?? member.capacity,
+      targetKhatmaId: adjustment?.targetKhatmaId,
       enabled: member.enabled && included && eligibleForAdjustment,
       holdPages:
         adjustment?.pendingDecision === 'add'
@@ -320,6 +333,7 @@ export function buildDistributionDraft(
     newKhatmaSeriesNumber: input.newKhatmaSeriesNumber,
     unitOfPage: input.unitOfPage,
     mode: input.mode === 'adjust-current' ? 'redistribution' : 'new-round',
+    prioritizeReliability: input.mode === 'new-round',
   });
   const allocations = applyRecipientOrder(
     plan,

@@ -10,6 +10,8 @@ import {
   type DistributionKhatmaState,
   type DistributionMember,
 } from '@/domain/distribution';
+import { memberReliabilityScores } from '@/domain/progress';
+import { pickRolloverDuaReciter } from '@/domain/rotation';
 import type { PageUnitMaps } from '@/domain/assignment';
 import type {
   Assignment,
@@ -98,6 +100,8 @@ export class NoDistributionChangesError extends Error {
 
 export interface CommitDistributionRunParams {
   khatmaIds: string[];
+  /** Frozen global history scope used for reliability and reciter rotation. */
+  historyKhatmaIds?: string[];
   mode: DistributionDraftMode;
   expectedSourceRevision: string;
   adjustments: DistributionDraftAdjustments;
@@ -395,6 +399,28 @@ export function commitDistributionRun(
       });
     }
 
+    // Read the same history scope as the preview before any writes. Active
+    // histories are already in the transaction; old rounds also earn score credit.
+    const historyKhatmas: Khatma[] = [...khatmas];
+    const historyAssignments = khatmas.flatMap((khatma) => khatma.assignments);
+    if (params.historyKhatmaIds) {
+      for (const id of new Set(params.historyKhatmaIds)) {
+        if (khatmas.some((khatma) => khatma.id === id)) continue;
+        const snap = await tx.get(doc(khatmasCol, id));
+        if (!snap.exists()) throw new StaleDistributionDraftError();
+        const historical = { id, ...(snap.data() as Omit<Khatma, 'id'>) };
+        historyKhatmas.push(historical);
+        for (const member of members) {
+          const assignmentSnap = await tx.get(assignmentDoc(id, member.id));
+          if (assignmentSnap.exists())
+            historyAssignments.push(assignmentSnap.data() as Assignment);
+        }
+      }
+      const scores = memberReliabilityScores(members, historyAssignments);
+      for (const member of members)
+        member.reliabilityScore = scores[member.id]?.grade ?? 0;
+    }
+
     const currentRunIds = [
       ...new Set(
         khatmas.flatMap((khatma) =>
@@ -464,6 +490,21 @@ export function commitDistributionRun(
       draft.plan.completions.length === 0
     ) {
       throw new NoDistributionChangesError();
+    }
+
+    const rolloverReciterId = draft.plan.rollover
+      ? pickRolloverDuaReciter(
+          members.map((member) => member.id),
+          historyKhatmas,
+          latest.seriesId,
+        )
+      : rolloverSeed.duaReciterId;
+    if (
+      draft.plan.rollover &&
+      params.historyKhatmaIds &&
+      rolloverReciterId !== rolloverSeed.duaReciterId
+    ) {
+      throw new StaleDistributionDraftError('rollover-metadata');
     }
 
     const existingRunId = latest.currentDistributionRunId;
@@ -592,7 +633,7 @@ export function commitDistributionRun(
         lastDistributionDate: today,
         currentDistributionRunId: runId,
         distributionRevision: revision,
-        duaReciterId: rolloverSeed.duaReciterId,
+        duaReciterId: rolloverReciterId,
         capacities: rolloverSeed.capacities,
         status: 'active',
         createdAt: committedAt,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickDuaReciter } from '@/domain/rotation';
+import { pickDuaReciter, pickRolloverDuaReciter } from '@/domain/rotation';
 import type { Khatma } from '@/domain/types';
 
 /** Minimal prior-khatma stub carrying just what the rotation reads. */
@@ -50,5 +50,38 @@ describe('pickDuaReciter', () => {
     // a is the reciter of an active khatma (createdAt only). b/c are fresh → b (order).
     const history = [prior('a', 500, false)];
     expect(pickDuaReciter(['a', 'b', 'c'], history)).toBe('b');
+  });
+});
+
+describe('rollover reciter rotation', () => {
+  const khatma = (reciter: string, number: number, seriesId = 'series') =>
+    ({
+      ...prior(reciter, number * 100),
+      seriesId,
+      seriesNumber: number,
+    }) as Khatma;
+
+  it('does not repeat the latest reciter even when their lifetime count is lowest', () => {
+    const history = [khatma('a', 1), khatma('a', 2), khatma('a', 3), khatma('b', 4)];
+    expect(pickDuaReciter(['a', 'b'], history)).toBe('b');
+    expect(pickRolloverDuaReciter(['a', 'b'], history, 'series')).toBe('a');
+  });
+
+  it('uses series number and respects manual changes across consecutive rollovers', () => {
+    const history = [khatma('b', 2), khatma('a', 1)];
+    expect(pickRolloverDuaReciter(['a', 'b'], history, 'series')).toBe('a');
+    history.push(khatma('a', 3));
+    expect(pickRolloverDuaReciter(['a', 'b'], history, 'series')).toBe('b');
+  });
+
+  it('allows a single candidate and ignores other series for the no-repeat rule', () => {
+    expect(pickRolloverDuaReciter(['a'], [khatma('a', 1)], 'series')).toBe('a');
+    expect(
+      pickRolloverDuaReciter(
+        ['a', 'b'],
+        [khatma('a', 1), khatma('b', 9, 'other')],
+        'series',
+      ),
+    ).toBe('b');
   });
 });
