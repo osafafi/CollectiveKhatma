@@ -254,10 +254,25 @@ describe('member personal and settings routes', () => {
     expect(
       within(firstLink).getByText(`${toWesternDigits(2)} ${strings.member.pagesWord}`),
     ).toBeVisible();
+    // Each page is its own tile link into the reader, beside — never inside —
+    // the card link.
+    const firstEntry = firstLink.closest('section')!;
+    const firstTiles = within(firstEntry).getByRole('list', {
+      name: strings.reader.assignedPages,
+    });
+    expect(firstLink).not.toContainElement(firstTiles);
     expect(
-      within(firstLink).getByText(
-        `${strings.personal.assignedPages}: ${toWesternDigits(1)}، ${toWesternDigits(2)}`,
-      ),
+      within(firstTiles)
+        .getAllByRole('link')
+        .map((tile) => [tile.textContent, tile.getAttribute('href')]),
+    ).toEqual([
+      [toWesternDigits(1), '#/khatma/first/read/1'],
+      [toWesternDigits(2), '#/khatma/first/read/2'],
+    ]);
+    expect(
+      within(firstTiles).getByRole('link', {
+        name: `${strings.reader.readPage} ${toWesternDigits(2)}`,
+      }),
     ).toBeVisible();
 
     const secondTitle = `رفقة النور ${toWesternDigits(2)}`;
@@ -298,7 +313,11 @@ describe('member personal and settings routes', () => {
     expect(
       within(link).getByText(`${toWesternDigits(4)} ${strings.member.pagesWord}`),
     ).toBeVisible();
-    expect(within(link).getByText(/1، 2، 3، 4/)).toBeVisible();
+    expect(
+      within(screen.getByRole('list', { name: strings.reader.assignedPages }))
+        .getAllByRole('link')
+        .map((tile) => tile.getAttribute('href')),
+    ).toEqual([1, 2, 3, 4].map((page) => `#/khatma/held/read/${page}`));
   });
 
   it('restores, live-applies, and persists the five-level reading scale', async () => {

@@ -8,6 +8,7 @@ import { toWesternDigits } from '@/content/quran/symbols';
 import { currentChunk } from '@/domain/progress';
 import { seriesTitle } from '@/domain/series';
 import type { Khatma, RoundChunk } from '@/domain/types';
+import { AssignedPageTiles } from './khatma/AssignedPageTiles';
 import { pagesCount } from './khatma/formatting';
 import { useMemberIdentity } from './memberIdentityContext';
 
@@ -48,6 +49,10 @@ export function PendingAssignmentsCard() {
   );
 }
 
+/**
+ * The card opens the reader where the member left off; each page tile below it
+ * opens the reader on that page instead.
+ */
 function PendingAssignmentEntry({
   khatma,
   chunk,
@@ -56,12 +61,12 @@ function PendingAssignmentEntry({
   chunk: RoundChunk;
 }) {
   const title = seriesTitle(khatma, toWesternDigits);
-  const pageNumbers = chunk.pages.map(toWesternDigits).join('، ');
 
   return (
     <SurfaceCard
       href={memberHash.khatmaRead(khatma.id)}
       linkLabel={`${strings.reader.readMyPages}: ${title}`}
+      actions={<AssignedPageTiles khatmaId={khatma.id} pages={chunk.pages} />}
       sx={{ height: '100%' }}
     >
       <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
@@ -71,20 +76,20 @@ function PendingAssignmentEntry({
           alt={`${strings.admin.seriesImageAlt}: ${title}`}
           size={62}
         />
-        <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 800 }}>
-              {title}
-            </Typography>
-            <StatusChip tone="accent" label={pagesCount(chunk.pages.length)} />
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {strings.personal.assignedPages}: {pageNumbers}
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 800 }}>
+            {title}
           </Typography>
+          <StatusChip tone="accent" label={pagesCount(chunk.pages.length)} />
         </Stack>
       </Stack>
     </SurfaceCard>

@@ -32,6 +32,9 @@ function MemberRouteProbe() {
         Open Quran
       </button>
       <MemberRouteLink to={{ name: 'settings' }}>Member settings</MemberRouteLink>
+      <MemberRouteLink to={{ name: 'khatmaRead', id: 'k1', page: 7 }}>
+        Page 7
+      </MemberRouteLink>
     </>
   );
 }
@@ -78,6 +81,44 @@ describe('typed React hash routing', () => {
         JSON.stringify({ name: 'quran', page: 50 }),
       );
     });
+  });
+
+  it('carries an optional page on the assigned-reader route', async () => {
+    setHash('#/khatma/k1/read/12');
+    const user = userEvent.setup();
+
+    const paged = render(
+      <AppHashRouter>
+        <MemberRouteProbe />
+      </AppHashRouter>,
+    );
+
+    expect(screen.getByTestId('member-route')).toHaveTextContent(
+      JSON.stringify({ name: 'khatmaRead', id: 'k1', page: 12 }),
+    );
+    expect(screen.getByRole('link', { name: 'Page 7' })).toHaveAttribute(
+      'href',
+      '#/khatma/k1/read/7',
+    );
+
+    await user.click(screen.getByRole('link', { name: 'Page 7' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('member-route')).toHaveTextContent(
+        JSON.stringify({ name: 'khatmaRead', id: 'k1', page: 7 }),
+      ),
+    );
+    paged.unmount();
+
+    // A page segment that is not a whole number is dropped, like `#/quran/x`.
+    setHash('#/khatma/k1/read/seven');
+    render(
+      <AppHashRouter>
+        <MemberRouteProbe />
+      </AppHashRouter>,
+    );
+    expect(screen.getByTestId('member-route')).toHaveTextContent(
+      JSON.stringify({ name: 'khatmaRead', id: 'k1' }),
+    );
   });
 
   it('reads admin deep links and navigates with typed route objects', async () => {

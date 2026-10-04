@@ -127,7 +127,6 @@ export const strings = {
       'ستُضاف صفحات كل جولة إلى صفحاتك السابقة. لا تؤخّر إتمامها طويلًا حتى لا تتراكم عليك كمية كبيرة.',
     holdPagesSaveError: 'تعذّر تحديث خيار الاحتفاظ بالصفحات، حاول مرة أخرى.',
     pendingAssignmentsHeading: 'صفحات بانتظار القراءة',
-    assignedPages: 'الصفحات المعيّنة',
     noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',
     quranCompletionHeading: 'إجمالي ما أتممت',
     quranPageTotal: 'من 604 صفحة',
@@ -152,6 +151,10 @@ export const strings = {
     goToPage: 'انتقال إلى صفحة',
     bismillah: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
     readMyPages: 'اقرأ صفحاتي',
+    // The gold page tiles: the list's name, and each tile's link name before
+    // its page number.
+    assignedPages: 'الصفحات المعيّنة',
+    readPage: 'اقرأ صفحة',
     noPagesToday: 'لا توجد صفحات مطلوبة منك حاليًا',
     // Shown instead of an endless spinner when the assigned pages never arrive:
     // offline with an empty cache, or a failed subscription.

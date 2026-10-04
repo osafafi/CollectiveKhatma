@@ -8,6 +8,7 @@ const LAST_READ_PAGE_KEY = 'khatma.lastReadPage';
 const THEME_MODE_KEY = 'khatma.themeMode';
 const REMAINDER_ASSIGNEE_KEY = 'khatma.admin.remainderAssigneeId';
 const DU3A_ACK_PREFIX = 'khatma.du3aAck.';
+const ASSIGNED_READER_PAGE_PREFIX = 'khatma.assignedReaderPage.';
 
 export const TOTAL_QURAN_PAGES = 604;
 
@@ -90,6 +91,32 @@ export function useLastReadPage(): PersistentValue<number> {
   return [page, setPage];
 }
 
+/**
+ * The page a member last had open in one khatma's assigned reader on this
+ * browser, or null. Plain reads and writes rather than a hook: the reader
+ * consults it once when it opens and only writes it afterwards.
+ */
+export function readAssignedReaderPage(
+  khatmaId: string,
+  memberId: string,
+): number | null {
+  const page = Number(read(assignedReaderPageKey(khatmaId, memberId)));
+  return validLastReadPage(page) ? page : null;
+}
+
+export function rememberAssignedReaderPage(
+  khatmaId: string,
+  memberId: string,
+  page: number,
+): void {
+  if (!validLastReadPage(page)) return;
+  write(assignedReaderPageKey(khatmaId, memberId), String(page));
+}
+
+export function forgetAssignedReaderPage(khatmaId: string, memberId: string): void {
+  remove(assignedReaderPageKey(khatmaId, memberId));
+}
+
 /** Read and acknowledge the completion overlay for one khatma. */
 export function useDu3aAcknowledgement(
   khatmaId: string,
@@ -124,6 +151,10 @@ function parseLastReadPage(value: string | null): number {
 
 function validLastReadPage(page: number): boolean {
   return Number.isInteger(page) && page >= 1 && page <= TOTAL_QURAN_PAGES;
+}
+
+function assignedReaderPageKey(khatmaId: string, memberId: string): string {
+  return `${ASSIGNED_READER_PAGE_PREFIX}${khatmaId}.${memberId}`;
 }
 
 function applyReadingScale(scale: ReadingScale): void {

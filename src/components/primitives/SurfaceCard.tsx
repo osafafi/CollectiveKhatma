@@ -15,6 +15,10 @@ import { mergeSx } from './mergeSx';
 export interface SurfaceCardProps {
   children: ReactNode;
   title?: ReactNode;
+  /**
+   * Footer row of buttons or links. A link card renders it below its link area
+   * rather than inside it, so each action stays its own control.
+   */
   actions?: ReactNode;
   /** Optional media rendered edge-to-edge above the card content. */
   media?: ReactNode;
@@ -45,6 +49,11 @@ export function SurfaceCard({
 }: SurfaceCardProps) {
   const generatedId = useId();
   const titleId = title ? `surface-card-${generatedId.replace(/:/g, '')}` : undefined;
+  const actionRow = actions ? (
+    <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+      {actions}
+    </Stack>
+  ) : null;
   const content = (
     <>
       {media}
@@ -56,11 +65,7 @@ export function SurfaceCard({
             </Typography>
           ) : null}
           {children}
-          {actions ? (
-            <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-              {actions}
-            </Stack>
-          ) : null}
+          {href ? null : actionRow}
         </Stack>
       </CardContent>
     </>
@@ -73,9 +78,16 @@ export function SurfaceCard({
       sx={mergeSx(mergeSx({ overflow: 'hidden' }, appearSx(appear)), sx)}
     >
       {href ? (
-        <CardActionArea href={href} aria-label={linkLabel}>
-          {content}
-        </CardActionArea>
+        <>
+          <CardActionArea href={href} aria-label={linkLabel}>
+            {content}
+          </CardActionArea>
+          {actionRow ? (
+            <CardContent sx={{ px: 4, pt: 0, '&:last-child': { pb: 4 } }}>
+              {actionRow}
+            </CardContent>
+          ) : null}
+        </>
       ) : (
         content
       )}

@@ -39,7 +39,9 @@ Component recipes:
   (eyebrow/title/avatar/action/children); `heroBleedSx` cancels the shell
   padding. `CollapsibleCard`: native details/summary card with rotating
   chevron, lifted open state, optional `summaryEnd` and heading level.
-- `SurfaceCard` takes `appear` for the staggered fadeUp entry; `StatusChip`
+- `SurfaceCard` takes `appear` for the staggered fadeUp entry; a link card
+  (`href`) renders its `actions` row below the link area, never inside it, so
+  the actions can be links of their own; `StatusChip`
   adds the gold `accent` tone; `DonutChart` = the progress ring (ringIn,
   cellRem track) and accepts an optional short center caption; `SegmentBar`
   neutral tone = cellRem; `AppNav` renders the 56×32 active pill on the bottom

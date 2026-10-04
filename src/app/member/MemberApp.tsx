@@ -54,7 +54,9 @@ export function MemberRouteContent() {
 
   if (route.name === 'khatmas') return <KhatmasListPage />;
   if (route.name === 'khatma') return <KhatmaLandingPage khatmaId={route.id} />;
-  if (route.name === 'khatmaRead') return <AssignedReaderPage khatmaId={route.id} />;
+  if (route.name === 'khatmaRead') {
+    return <AssignedReaderPage khatmaId={route.id} page={route.page} />;
+  }
   if (route.name === 'quran') return <BrowseReaderPage page={route.page} />;
   if (route.name === 'personal') return <PersonalPage />;
   if (route.name === 'settings') {

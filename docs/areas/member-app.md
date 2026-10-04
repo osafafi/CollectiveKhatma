@@ -48,8 +48,18 @@ Hard rules:
   khatmas. While the personal route is mounted, it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then
   releases those historical listeners when the route unmounts.
-- Reader position survives unrelated live snapshots, but resets to the first
-  page when a new round or same-round redistribution changes the assigned pages.
+- The assigned reader opens on the page its link names
+  (`#/khatma/{id}/read/{page}`), else on the page this member last had open in
+  that khatma on this device, else on the first page — each only while that page
+  is still assigned, so a redistribution that drops it opens the first page.
+  Each page turn replaces (never pushes) the hash with the open page and saves
+  it under `khatma.assignedReaderPage.${khatmaId}.${memberId}`, so a tab switch,
+  a reload, or a closed app comes back to it. A finished round — recorded,
+  finished on this screen, or queued offline — ignores and clears the saved page.
+- Reader position survives unrelated live snapshots. A new round or a
+  redistribution remounts the reader, which reopens by the rule above.
+- Gold page tiles on the khatma landing card and on each personal-page entry are
+  links that open the assigned reader on that page.
 - Finishing a round goes through `useFinishRound`, never
   `useWriteOperation('markRoundDone')` directly. A transaction cannot run
   offline (see `docs/areas/operations.md`), so the tap is kept on the device and
@@ -81,7 +91,8 @@ Hard rules:
 - Other members' warning levels are never shown.
 - Feedback is trimmed, must contain 10–500 characters, and creates a fresh unread
   document with the selected member id and current name on every submission.
-- Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage`,
+- Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage` (browse
+  reader), `khatma.assignedReaderPage.${khatmaId}.${memberId}` (assigned reader),
   `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`,
   `khatma.pendingFinishes` (the offline finish queue, owned by
   `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
@@ -93,9 +104,10 @@ Hard rules:
   completion date, and duaa reader.
 - The personal page groups every pending assignment from the selected member's
   active khatmas into its own linked gradient card. Each entry shows khatma
-  artwork, the numbered series title, assigned page count/numbers, and opens
-  that khatma's assigned reader directly; an empty message replaces the list
-  when every current chunk is done.
+  artwork, the numbered series title, and the assigned page count, and opens
+  that khatma's assigned reader where the member left off; its page tiles sit
+  below the card link, never inside it. An empty message replaces the list when
+  every current chunk is done.
 - The personal page has a standalone gradient `احتفظ بصفحاتي` switch card.
   While enabled it shows an orange accumulation warning, and unread rounds are
   combined into one pending card and one assigned-reader page set. Finishing

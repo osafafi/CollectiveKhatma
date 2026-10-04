@@ -72,6 +72,24 @@ describe('Shared action and surface primitives', () => {
       '#/khatma/k1',
     );
   });
+
+  it('keeps a link card’s actions out of its link area', () => {
+    renderThemed(
+      <SurfaceCard
+        href="#/khatma/k1/read"
+        linkLabel="Read my pages"
+        actions={<a href="#/khatma/k1/read/7">7</a>}
+      >
+        <p>Series title</p>
+      </SurfaceCard>,
+    );
+
+    const card = screen.getByRole('link', { name: 'Read my pages' });
+    const action = screen.getByRole('link', { name: '7' });
+    expect(card).toHaveTextContent('Series title');
+    expect(card).not.toContainElement(action);
+    expect(card.closest('section')).toContainElement(action);
+  });
 });
 
 describe('Shared form primitives', () => {

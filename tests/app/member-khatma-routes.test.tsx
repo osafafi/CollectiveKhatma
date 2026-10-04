@@ -328,6 +328,10 @@ describe('member khatma routes', () => {
     expect(screen.getByText('2 صفحات')).toBeVisible();
     expect(screen.getByText('3')).toBeVisible();
     expect(screen.getByText('4')).toBeVisible();
+    // Each page tile opens the reader directly on its page.
+    expect(
+      screen.getByRole('link', { name: `${strings.reader.readPage} 4` }),
+    ).toHaveAttribute('href', '#/khatma/active/read/4');
     expect(
       screen.getByRole('link', { name: strings.reader.readMyPages }),
     ).toHaveAttribute('href', '#/khatma/active/read');

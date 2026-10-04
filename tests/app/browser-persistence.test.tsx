@@ -1,6 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  forgetAssignedReaderPage,
+  readAssignedReaderPage,
+  rememberAssignedReaderPage,
   useDu3aAcknowledgement,
   useLastReadPage,
   useReadingScale,
@@ -72,6 +75,30 @@ describe('React browser-persistence hooks', () => {
     expect(invalid.result.current[0]).toBe(1);
   });
 
+  it('remembers the assigned-reader page per khatma and member until forgotten', () => {
+    expect(readAssignedReaderPage('khatma-1', 'member-1')).toBeNull();
+
+    rememberAssignedReaderPage('khatma-1', 'member-1', 12);
+    rememberAssignedReaderPage('khatma-2', 'member-1', 300);
+    rememberAssignedReaderPage('khatma-1', 'member-2', 40);
+    expect(localStorage.getItem('khatma.assignedReaderPage.khatma-1.member-1')).toBe(
+      '12',
+    );
+    expect(readAssignedReaderPage('khatma-1', 'member-1')).toBe(12);
+    expect(readAssignedReaderPage('khatma-2', 'member-1')).toBe(300);
+    expect(readAssignedReaderPage('khatma-1', 'member-2')).toBe(40);
+
+    // Out-of-range pages are never written; junk stored values read as nothing.
+    rememberAssignedReaderPage('khatma-1', 'member-1', 605);
+    expect(readAssignedReaderPage('khatma-1', 'member-1')).toBe(12);
+    localStorage.setItem('khatma.assignedReaderPage.khatma-2.member-1', '3.5');
+    expect(readAssignedReaderPage('khatma-2', 'member-1')).toBeNull();
+
+    forgetAssignedReaderPage('khatma-1', 'member-1');
+    expect(readAssignedReaderPage('khatma-1', 'member-1')).toBeNull();
+    expect(readAssignedReaderPage('khatma-1', 'member-2')).toBe(40);
+  });
+
   it('defaults the theme mode to light, persists changes, and rejects junk values', () => {
     localStorage.setItem('khatma.themeMode', 'sepia');
     const { result } = renderHook(() => useThemeMode());
@@ -137,5 +164,9 @@ describe('React browser-persistence hooks', () => {
     expect(result.current.scale[0]).toBe(4);
     expect(result.current.page[0]).toBe(100);
     expect(result.current.acknowledgement[0]).toBe(true);
+
+    expect(() => rememberAssignedReaderPage('blocked-khatma', 'member', 7)).not.toThrow();
+    expect(() => forgetAssignedReaderPage('blocked-khatma', 'member')).not.toThrow();
+    expect(readAssignedReaderPage('blocked-khatma', 'member')).toBeNull();
   });
 });

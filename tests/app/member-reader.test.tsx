@@ -360,7 +360,7 @@ describe('member assigned reader', () => {
     expect(screen.getByText('سورة آل عمران')).toBeVisible();
   });
 
-  it('keeps the page across unrelated ticks and resets when assigned pages change', async () => {
+  it('keeps the open page across live ticks while it stays assigned, else opens the first page', async () => {
     const khatma = makeKhatma('k1');
     const harness = renderMember({
       route: `/khatma/${khatma.id}/read`,
@@ -382,6 +382,13 @@ describe('member assigned reader', () => {
       .assignment(khatma.id)
       .emit([makeAssignment(amina.id, [round(1, [10, 11, 12])], {}, 4)]);
     expect(screen.getByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
+
+    // Held rounds grow the page set; the page being read is still assigned.
+    harness.subscriptions
+      .assignment(khatma.id)
+      .emit([makeAssignment(amina.id, [round(1, [10, 11, 12]), round(2, [13, 14])])]);
+    expect(await screen.findByText('2 من 5')).toBeVisible();
     expect(screen.getByText('صفحة 11')).toBeVisible();
 
     // A same-round redistribution replaces the page set and remounts at page one.
@@ -412,6 +419,131 @@ describe('member assigned reader', () => {
       ]);
     expect(await screen.findByText('1 من 2')).toBeVisible();
     expect(screen.getByText('صفحة 30')).toBeVisible();
+  });
+
+  it('reopens where the member stopped after a tab switch or a relaunch, until they finish', async () => {
+    const khatma = makeKhatma('k1');
+    const storedPageKey = `khatma.assignedReaderPage.${khatma.id}.${amina.id}`;
+    const markRoundDone = vi
+      .fn<WriteOperations['markRoundDone']>()
+      .mockResolvedValue(undefined);
+    const data = {
+      roster: [amina],
+      khatmas: [khatma],
+      assignments: {
+        [khatma.id]: [makeAssignment(amina.id, [round(1, [10, 11, 12])])],
+      },
+    };
+    const first = renderMember({ route: `/khatma/${khatma.id}/read`, data });
+    const historyLength = window.history.length;
+
+    await first.user.click(await screen.findByRole('button', { name: /التالية/ }));
+    expect(screen.getByText('2 من 3')).toBeVisible();
+    // The hash names the open page without stacking a history entry per page,
+    // and the place is kept on this device.
+    expect(window.location.hash).toBe(`#/khatma/${khatma.id}/read/11`);
+    expect(window.history.length).toBe(historyLength);
+    expect(localStorage.getItem(storedPageKey)).toBe('11');
+
+    // Switch tabs, then come back through a link that names no page.
+    await first.user.click(screen.getByRole('link', { name: strings.nav.personal }));
+    await first.user.click(
+      await screen.findByRole('link', {
+        name: `${strings.reader.readMyPages}: سلسلة k1 1`,
+      }),
+    );
+    expect(await screen.findByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
+    first.unmount();
+
+    // Close the app entirely and launch it again.
+    const relaunched = renderMember({
+      route: `/khatma/${khatma.id}/read`,
+      data,
+      operations: { ...writeOperations, markRoundDone },
+    });
+    expect(await screen.findByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
+
+    // Finishing the pages forgets the place.
+    await relaunched.user.click(
+      screen.getByRole('button', { name: strings.member.finishedToday }),
+    );
+    expect(
+      await screen.findByText((content) => content.includes(strings.member.doneToday)),
+    ).toBeVisible();
+    expect(markRoundDone).toHaveBeenCalledWith(khatma.id, amina.id, 1, [khatma.id]);
+    expect(localStorage.getItem(storedPageKey)).toBeNull();
+    relaunched.unmount();
+
+    // A round finished on another device ignores, and clears, a stale place.
+    localStorage.setItem(storedPageKey, '11');
+    renderMember({
+      route: `/khatma/${khatma.id}/read`,
+      data: {
+        ...data,
+        assignments: {
+          [khatma.id]: [makeAssignment(amina.id, [round(1, [10, 11, 12])], { 1: 100 })],
+        },
+      },
+    });
+    expect(await screen.findByText('1 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 10')).toBeVisible();
+    expect(localStorage.getItem(storedPageKey)).toBeNull();
+  });
+
+  it('opens on the page a link names, else the remembered page, else the first page', async () => {
+    const khatma = makeKhatma('k1');
+    const storedPageKey = `khatma.assignedReaderPage.${khatma.id}.${amina.id}`;
+    const data = {
+      roster: [amina],
+      khatmas: [khatma],
+      assignments: {
+        [khatma.id]: [makeAssignment(amina.id, [round(1, [10, 11, 12])])],
+      },
+    };
+
+    localStorage.setItem(storedPageKey, '11');
+    const linked = renderMember({ route: `/khatma/${khatma.id}/read/12`, data });
+    expect(await screen.findByText('3 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 12')).toBeVisible();
+    // Opening a linked page makes it the member's place.
+    expect(localStorage.getItem(storedPageKey)).toBe('12');
+    linked.unmount();
+
+    // A link to a page that is not assigned falls back to the remembered page.
+    const unassigned = renderMember({ route: `/khatma/${khatma.id}/read/99`, data });
+    expect(await screen.findByText('3 من 3')).toBeVisible();
+    unassigned.unmount();
+
+    // A page remembered from an older round is not one of today's pages.
+    localStorage.setItem(storedPageKey, '50');
+    renderMember({ route: `/khatma/${khatma.id}/read`, data });
+    expect(await screen.findByText('1 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 10')).toBeVisible();
+  });
+
+  it('opens the reader on the page tile picked from the personal page', async () => {
+    const khatma = makeKhatma('k1');
+    const harness = renderMember({
+      route: '/personal',
+      data: {
+        roster: [amina],
+        khatmas: [khatma],
+        assignments: {
+          [khatma.id]: [makeAssignment(amina.id, [round(1, [10, 11, 12])])],
+        },
+      },
+    });
+
+    await harness.user.click(
+      screen.getByRole('link', { name: `${strings.reader.readPage} 11` }),
+    );
+
+    expect(await screen.findByText('2 من 3')).toBeVisible();
+    expect(screen.getByText('صفحة 11')).toBeVisible();
+    expect(window.location.hash).toBe(`#/khatma/${khatma.id}/read/11`);
+    expect(await screen.findByText(/page-body-11/)).toBeVisible();
   });
 
   it('shows loading, no-pages, and paused states', () => {

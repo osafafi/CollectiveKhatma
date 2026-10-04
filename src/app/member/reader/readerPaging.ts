@@ -23,6 +23,21 @@ export function clampIndex(index: number, length: number): number {
   return Math.max(0, Math.min(length - 1, index));
 }
 
+/**
+ * Where a page list opens: the first candidate page that is still in the list,
+ * else its first page. A page that is no longer assigned never wins.
+ */
+export function openingIndex(
+  pages: readonly number[],
+  candidates: readonly (number | null | undefined)[],
+): number {
+  for (const candidate of candidates) {
+    const index = candidate == null ? -1 : pages.indexOf(candidate);
+    if (index !== -1) return index;
+  }
+  return 0;
+}
+
 /** Warm the neighbouring pages so prev/next feels instant (loader caches). */
 export function prefetchNeighbors(pages: readonly number[], index: number): void {
   const current = pages[index] ?? 1;

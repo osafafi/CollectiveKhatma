@@ -270,7 +270,7 @@ State ownership follows the plan's model:
 | ---------------------------------------------------------------------------- | ----------------------- |
 | Roster, khatmas, assignments, global content, feedback, listener status      | **Redux**               |
 | Form drafts, open dialogs/menus/tabs, reader navigation, per-button pending  | **Local React state**   |
-| Remembered member, reading scale, last-read page, du3a acknowledgement       | **Browser persistence** |
+| Remembered member, reading scale, last-read pages, du3a acknowledgement      | **Browser persistence** |
 | Snapshots, refs, unsubscribe fns, `Error` objects, DOM nodes, derived values | **Never in Redux**      |
 
 ### Firestore → Redux subscription bridge
@@ -320,7 +320,7 @@ single owner of listener lifecycle for React:
   builders. Both production entries use these functions, so URLs stay aligned.
 - React uses `AppHashRouter` (React Router `HashRouter`) with typed hooks
   (`useMemberRoute` / `useAdminRoute`) and typed links (`RouteLink`).
-- All established hashes (`#/home`, `#/roster`, `#/khatma/:id`, `#/khatma/:id/read`,
+- All established hashes (`#/home`, `#/roster`, `#/khatma/:id`, `#/khatma/:id/read[/:page]`,
   `#/quran/:page`, …) are preserved, and an unknown hash resolves to the surface's
   default **without rewriting history** — GitHub Pages has no SPA fallback (AD-03).
 

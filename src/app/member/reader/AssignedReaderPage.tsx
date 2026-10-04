@@ -6,8 +6,14 @@ import {
   selectKhatmasListener,
   useAppSelector,
 } from '@/app/store';
-import { ReleasedChunkError } from '@/app/operations';
+import { ReleasedChunkError, type FinishRoundResult } from '@/app/operations';
+import {
+  forgetAssignedReaderPage,
+  readAssignedReaderPage,
+  rememberAssignedReaderPage,
+} from '@/app/persistence';
 import { useFinishWithDailyDua } from '../useFinishWithDailyDua';
+import { useMemberNavigate } from '@/app/routing/hooks';
 import { memberHash } from '@/app/routing/routes';
 import {
   AppButton,
@@ -30,16 +36,22 @@ import {
   ReaderNav,
   StickyChrome,
 } from './readerParts';
-import { clampIndex, prefetchNeighbors } from './readerPaging';
+import { clampIndex, openingIndex, prefetchNeighbors } from './readerPaging';
 
 /**
- * Member assigned reader (`#/khatma/{id}/read`) — the current-round chunk with a
- * one-tap finish action. A khatma list that has not arrived yet reads as
- * loading while one still can, as "could not load" once it cannot, and
- * everything else that is not a readable chunk of mine shows the back +
- * "no pages" view.
+ * Member assigned reader (`#/khatma/{id}/read`, `#/khatma/{id}/read/{page}`) —
+ * the current-round chunk with a one-tap finish action. A khatma list that has
+ * not arrived yet reads as loading while one still can, as "could not load"
+ * once it cannot, and everything else that is not a readable chunk of mine
+ * shows the back + "no pages" view.
  */
-export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
+export function AssignedReaderPage({
+  khatmaId,
+  page,
+}: {
+  khatmaId: string;
+  page?: number | undefined;
+}) {
   const { memberId, member } = useMemberIdentity();
   const khatmas = useAppSelector(selectKhatmas);
   const khatmasListener = useAppSelector(selectKhatmasListener);
@@ -78,10 +90,12 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
   return (
     // Key on the round and page set so a new distribution or same-round
     // redistribution remounts fresh, while unrelated realtime ticks keep this
-    // instance — and its page/scroll — alive.
+    // instance — and its page/scroll — alive. Not on the route page: the reader
+    // writes that itself on every turn.
     <AssignedReaderCore
       key={`${khatmaId}:${chunk.round}:${chunk.pages.join(',')}`}
       khatmaId={khatmaId}
+      routePage={page}
       memberId={memberId}
       memberName={member?.name ?? ''}
       memberAvatar={member ? personAvatar(member) : ''}
@@ -96,6 +110,7 @@ export function AssignedReaderPage({ khatmaId }: { khatmaId: string }) {
 
 function AssignedReaderCore({
   khatmaId,
+  routePage,
   memberId,
   memberName,
   memberAvatar,
@@ -106,6 +121,7 @@ function AssignedReaderCore({
   activeSeriesKhatmaIds,
 }: {
   khatmaId: string;
+  routePage: number | undefined;
   memberId: string;
   memberName: string;
   memberAvatar: string;
@@ -115,16 +131,45 @@ function AssignedReaderCore({
   storedDone: boolean;
   activeSeriesKhatmaIds: readonly string[];
 }) {
+  const navigate = useMemberNavigate();
   const pages = chunk.pages;
-  const [index, setIndex] = useState(0);
+  const finish = useFinishWithDailyDua({
+    khatmaId,
+    memberId,
+    round: chunk.round,
+    activeSeriesKhatmaIds,
+  });
+  // Recorded for the group, sent from this screen, or queued on this device.
+  const finished = storedDone || finish.isDone || finish.isQueued;
+  // Open on the page the link named, else where the member stopped last time.
+  // A finished round has no place to resume, so it opens on its first page.
+  const [index, setIndex] = useState(() =>
+    openingIndex(pages, [
+      routePage,
+      finished ? null : readAssignedReaderPage(khatmaId, memberId),
+    ]),
+  );
   const page = pages[index] ?? 1;
 
   const go = (nextIndex: number): void => {
     const clamped = clampIndex(nextIndex, pages.length);
     if (clamped === index) return;
     setIndex(clamped);
+    // Replace rather than push: the hash keeps naming the open page for a
+    // reload, while Back still leaves the reader in one step.
+    navigate(
+      { name: 'khatmaRead', id: khatmaId, page: pages[clamped] },
+      { replace: true },
+    );
     window.scrollTo({ top: 0 });
   };
+
+  // Keep the member's place on this device until the round is finished, so a
+  // tab switch or a closed app does not send them back to the first page.
+  useEffect(() => {
+    if (finished) forgetAssignedReaderPage(khatmaId, memberId);
+    else rememberAssignedReaderPage(khatmaId, memberId, page);
+  }, [finished, khatmaId, memberId, page]);
 
   useEffect(() => {
     prefetchNeighbors(pages, index);
@@ -164,13 +209,7 @@ function AssignedReaderCore({
         />
       </StickyChrome>
 
-      <FinishFooter
-        khatmaId={khatmaId}
-        memberId={memberId}
-        round={chunk.round}
-        storedDone={storedDone}
-        activeSeriesKhatmaIds={activeSeriesKhatmaIds}
-      />
+      <FinishFooter finish={finish} storedDone={storedDone} />
     </Stack>
   );
 }
@@ -324,24 +363,12 @@ function pageCountLabel(count: number): string {
 }
 
 function FinishFooter({
-  khatmaId,
-  memberId,
-  round,
+  finish,
   storedDone,
-  activeSeriesKhatmaIds,
 }: {
-  khatmaId: string;
-  memberId: string;
-  round: number;
+  finish: FinishRoundResult;
   storedDone: boolean;
-  activeSeriesKhatmaIds: readonly string[];
 }) {
-  const finish = useFinishWithDailyDua({
-    khatmaId,
-    memberId,
-    round,
-    activeSeriesKhatmaIds,
-  });
   const done = storedDone || finish.isDone;
 
   if (done) {

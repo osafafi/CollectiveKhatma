@@ -9,7 +9,7 @@
 export type MemberRoute =
   | { name: 'khatmas' }
   | { name: 'khatma'; id: string }
-  | { name: 'khatmaRead'; id: string }
+  | { name: 'khatmaRead'; id: string; page?: number }
   | { name: 'quran'; page?: number }
   | { name: 'personal' }
   | { name: 'settings' };
@@ -31,7 +31,7 @@ function routeParts(hashOrPath: string): string[] {
 
 /** Parse the established member hashes, including their legacy fallbacks. */
 export function parseMemberRoute(hashOrPath: string): MemberRoute {
-  const [head, second, third] = routeParts(hashOrPath);
+  const [head, second, third, fourth] = routeParts(hashOrPath);
 
   switch (head) {
     case undefined:
@@ -41,11 +41,14 @@ export function parseMemberRoute(hashOrPath: string): MemberRoute {
       const page = second !== undefined ? Number(second) : NaN;
       return Number.isInteger(page) ? { name: 'quran', page } : { name: 'quran' };
     }
-    case 'khatma':
+    case 'khatma': {
       if (!second) return DEFAULT_MEMBER_ROUTE;
-      return third === 'read'
-        ? { name: 'khatmaRead', id: second }
-        : { name: 'khatma', id: second };
+      if (third !== 'read') return { name: 'khatma', id: second };
+      const page = fourth !== undefined ? Number(fourth) : NaN;
+      return Number.isInteger(page)
+        ? { name: 'khatmaRead', id: second, page }
+        : { name: 'khatmaRead', id: second };
+    }
     case 'personal':
       return { name: 'personal' };
     case 'settings':
@@ -78,7 +81,8 @@ export function parseAdminRoute(hashOrPath: string): AdminRoute {
 export const memberPath = {
   khatmas: (): string => '/khatmas',
   khatma: (id: string): string => `/khatma/${id}`,
-  khatmaRead: (id: string): string => `/khatma/${id}/read`,
+  khatmaRead: (id: string, page?: number): string =>
+    page ? `/khatma/${id}/read/${page}` : `/khatma/${id}/read`,
   quran: (page?: number): string => (page ? `/quran/${page}` : '/quran'),
   personal: (): string => '/personal',
   settings: (): string => '/settings',
@@ -100,7 +104,7 @@ export function memberRoutePath(route: MemberRoute): string {
     case 'khatma':
       return memberPath.khatma(route.id);
     case 'khatmaRead':
-      return memberPath.khatmaRead(route.id);
+      return memberPath.khatmaRead(route.id, route.page);
     case 'quran':
       return memberPath.quran(route.page);
     case 'personal':
@@ -131,7 +135,8 @@ const toHash = (path: string): string => `#${path}`;
 export const memberHash = {
   khatmas: (): string => toHash(memberPath.khatmas()),
   khatma: (id: string): string => toHash(memberPath.khatma(id)),
-  khatmaRead: (id: string): string => toHash(memberPath.khatmaRead(id)),
+  khatmaRead: (id: string, page?: number): string =>
+    toHash(memberPath.khatmaRead(id, page)),
   quran: (page?: number): string => toHash(memberPath.quran(page)),
   personal: (): string => toHash(memberPath.personal()),
   settings: (): string => toHash(memberPath.settings()),
