@@ -20,10 +20,18 @@ export function lifetimePercent(
 }
 
 export interface MemberReadingInsights {
-  /** Unique Quran pages present in the roster's lifetime completion set. */
-  completedPageCount: number;
-  /** Whole-Quran completion percentage derived from that lifetime set. */
-  quranPercent: number;
+  /**
+   * Every credited page, repeats included. Never below the roster's unique
+   * lifetime set, which still holds pages from khatmas that no longer list the
+   * member and so are absent from the visible history.
+   */
+  lifetimePagesRead: number;
+  /** Whole Qurans read: lifetime pages over 604, rounded down. */
+  fullKhatmas: number;
+  /** Pages read toward the next full khatma (0–603). */
+  nextKhatmaPages: number;
+  /** Those pages as a whole percent of 604, rounded down so 603 never reads 100%. */
+  nextKhatmaPercent: number;
   /** Best-rank percentile among the current roster (ties share the better rank). */
   topReaderPercent: number;
   /** Completed khatmas in which the selected member still appears as a participant. */
@@ -124,6 +132,7 @@ export function memberReadingInsights({
   const referenceMonth = referenceDate.getMonth();
   const readingDays = new Set<number>();
   let pagesReadThisMonth = 0;
+  let historyPages = 0;
 
   for (const record of completedReadingRecords(memberId, assignments)) {
     if (
@@ -132,19 +141,63 @@ export function memberReadingInsights({
     ) {
       pagesReadThisMonth += record.pages;
     }
+    historyPages += record.pages;
     readingDays.add(record.day);
   }
   const longestDailyStreak = longestStreak(readingDays);
+  const lifetimePagesRead = Math.max(historyPages, completedPageCount);
+  const nextKhatmaPages = lifetimePagesRead % QURAN_TOTAL_PAGES;
 
   return {
-    completedPageCount,
-    quranPercent: lifetimePercent(completedPageCount),
+    lifetimePagesRead,
+    fullKhatmas: Math.floor(lifetimePagesRead / QURAN_TOTAL_PAGES),
+    nextKhatmaPages,
+    nextKhatmaPercent: Math.floor((nextKhatmaPages / QURAN_TOTAL_PAGES) * 100),
     topReaderPercent,
     completedKhatmas: khatmas.filter(
       (khatma) => khatma.status === 'completed' && khatma.memberIds.includes(memberId),
     ).length,
     pagesReadThisMonth,
     longestDailyStreak,
+  };
+}
+
+export type KhatmaShieldTier = 'bronze' | 'silver' | 'gold';
+
+/** Personal achievement shields, lowest first, keyed by full khatmas needed. */
+export const KHATMA_SHIELDS: readonly { tier: KhatmaShieldTier; khatmas: number }[] = [
+  { tier: 'bronze', khatmas: 1 },
+  { tier: 'silver', khatmas: 5 },
+  { tier: 'gold', khatmas: 10 },
+];
+
+export interface KhatmaShieldProgress {
+  /** Highest shield earned, if any. */
+  current?: KhatmaShieldTier;
+  /** Next shield and the whole khatmas still to finish; absent once gold is earned. */
+  next?: { tier: KhatmaShieldTier; remainingKhatmas: number };
+  /**
+   * Fill (0–1) of each step between neighbouring shields, lowest step first.
+   * Partial khatmas count, so the path moves with every page read.
+   */
+  steps: number[];
+}
+
+/** Shield standing from lifetime pages read (see {@link MemberReadingInsights}). */
+export function khatmaShieldProgress(lifetimePagesRead: number): KhatmaShieldProgress {
+  const khatmasRead = Math.max(0, lifetimePagesRead) / QURAN_TOTAL_PAGES;
+  const fullKhatmas = Math.floor(khatmasRead);
+  const earned = KHATMA_SHIELDS.filter((shield) => fullKhatmas >= shield.khatmas);
+  const upcoming = KHATMA_SHIELDS.find((shield) => fullKhatmas < shield.khatmas);
+  return {
+    current: earned[earned.length - 1]?.tier,
+    next: upcoming
+      ? { tier: upcoming.tier, remainingKhatmas: upcoming.khatmas - fullKhatmas }
+      : undefined,
+    steps: KHATMA_SHIELDS.slice(1).map((shield, index) => {
+      const from = KHATMA_SHIELDS[index]!.khatmas;
+      return Math.min(1, Math.max(0, (khatmasRead - from) / (shield.khatmas - from)));
+    }),
   };
 }
 

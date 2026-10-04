@@ -112,13 +112,24 @@ Hard rules:
   While enabled it shows an orange accumulation warning, and unread rounds are
   combined into one pending card and one assigned-reader page set. Finishing
   that accumulated set switches the preference off automatically.
-- The personal page's Quran summary mirrors the reference donut layout and
-  keeps its three gradient statistic tiles inside the same completion card. It
-  derives every value from existing snapshots: unique lifetime Quran pages and
-  roster-relative top-reader percentage, completed khatmas still listing the
-  member, pages credited in the current local calendar month, and the longest
-  run of local calendar days with a completed round. Released/empty rounds do
-  not count, and multiple completions on one date count as one streak day.
+- The personal page's Quran summary (`PersonalReadingInsights`) mirrors the
+  reference donut layout and keeps its three gradient statistic tiles inside
+  the same completion card. It derives every value from existing snapshots, with
+  no persisted counters. Lifetime pages read count every credited page, repeats
+  included, and never fall below the roster's unique `completedPages` (which
+  still holds pages from khatmas that no longer list the member). Full khatmas =
+  lifetime pages ÷ 604, rounded down, shown as the counter at the title row's
+  far end. The ring and big number show progress toward the next khatma (rounded
+  down, so 603 pages never reads 100%). The top-reader percentage still ranks
+  the roster by unique pages. The tiles show completed group khatmas still
+  listing the member, pages credited in the current local calendar month, and
+  the longest run of local calendar days with a completed round. Released/empty
+  rounds do not count, and multiple completions on one date count as one streak
+  day.
+- Achievement shields (`KhatmaShields.tsx`, rule `khatmaShieldProgress`): bronze
+  at 1 full khatma, silver at 5, gold at 10. The track between shields fills
+  with partial khatmas; the line below names the next shield and the whole
+  khatmas left. Earned shields glint periodically (reduced motion: none).
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
   together with admin Settings) → reading size → avatar → app install →
   feedback. The install card invokes Chromium's retained native install prompt

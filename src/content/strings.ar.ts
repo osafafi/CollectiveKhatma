@@ -130,10 +130,30 @@ export const strings = {
     noPendingAssignments: 'لا توجد صفحات بانتظار القراءة حاليًا.',
     quranCompletionHeading: 'إجمالي ما أتممت',
     quranPageTotal: 'من 604 صفحة',
-    quranDonutCaption: 'من المصحف',
+    // Ring caption: the khatma the member is reading toward now.
+    quranDonutCaption: 'من الختمة {count}',
+    lifetimePagesRead: 'مجموع ما قرأت: {count} صفحة',
+    // Counter in the card corner: whole Qurans read (lifetime pages ÷ 604).
+    fullKhatmas: 'ختمات كاملة',
+    // Counted noun after a Western digit: plural for 3–10, singular otherwise.
+    khatmaUnit: 'ختمة',
+    khatmaUnitFew: 'ختمات',
+    shieldsHeading: 'أوسمة الختمات',
+    shieldNames: {
+      bronze: 'الدرع البرونزي',
+      silver: 'الدرع الفضي',
+      gold: 'الدرع الذهبي',
+    },
+    // Short labels under each shield on the narrow track.
+    shieldTiers: { bronze: 'برونزي', silver: 'فضي', gold: 'ذهبي' },
+    shieldEarned: 'حصلت عليه',
+    shieldLocked: 'لم تحصل عليه بعد',
+    shieldNext: 'باقي {count} على {shield}',
+    shieldAllEarned: 'نلت الدرع الذهبي، بارك الله في قراءتك',
     topReadersLead: 'أنت ضمن أفضل',
     topReadersTail: 'من القرّاء',
-    completedKhatmas: 'ختمات مكتملة',
+    // Group khatmas the member took part in, distinct from the personal counter.
+    completedKhatmas: 'ختمات شاركت فيها',
     pagesThisMonth: 'صفحات هذا الشهر',
     longestDailyStreak: 'أطول تتابع (يوم)',
   },

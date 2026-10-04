@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { alpha } from '@mui/material/styles';
 import { createKhatmaTheme } from '@/theme/muiTheme';
 import { retainedGlobalStyles } from '@/theme/globalStyles';
-import { TOKENS, cardGradient, primaryBtnGradient, type ThemeMode } from '@/theme/tokens';
+import {
+  MEDALS,
+  TOKENS,
+  cardGradient,
+  primaryBtnGradient,
+  type ThemeMode,
+} from '@/theme/tokens';
 
 type Rgb = readonly [number, number, number];
 
@@ -187,6 +193,7 @@ describe('MUI theme — token mapping', () => {
       expect(theme.custom.btnShadow).toBe(t.btnShadow);
       expect(theme.custom.primaryBtnGradient).toBe(primaryBtnGradient(mode));
       expect(theme.custom.cardBg).toBe(cardGradient(mode, 'subtle', 160));
+      expect(theme.custom.medals).toEqual(MEDALS[mode]);
       expect(theme.custom.radii.card).toBe(20);
       expect(theme.custom.radii.tabPill).toBe(16);
       expect(theme.custom.motion.base).toBe('0.5s');
