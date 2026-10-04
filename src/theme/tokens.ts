@@ -122,6 +122,32 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
   },
 };
 
+export type MedalTier = 'bronze' | 'silver' | 'gold';
+
+/** Highlight → body → shadow stops for one metallic achievement finish. */
+export interface MedalStops {
+  hi: string;
+  mid: string;
+  lo: string;
+}
+
+/**
+ * Achievement-shield metals. Decorative fills only — text on or beside a
+ * shield uses the regular ink tokens, so these carry no contrast floor.
+ */
+export const MEDALS: Record<ThemeMode, Record<MedalTier, MedalStops>> = {
+  light: {
+    bronze: { hi: '#f2c9a1', mid: '#b8733a', lo: '#7a4520' },
+    silver: { hi: '#f7f9fb', mid: '#a7b1ba', lo: '#66717c' },
+    gold: { hi: '#f7e4a8', mid: '#c9a24a', lo: '#86651c' },
+  },
+  dark: {
+    bronze: { hi: '#efc39a', mid: '#c4834a', lo: '#7d4a25' },
+    silver: { hi: '#f2f5f7', mid: '#b4bec7', lo: '#6c7782' },
+    gold: { hi: '#f6e0a0', mid: '#d9b45f', lo: '#8f6c26' },
+  },
+};
+
 export const RADII = {
   phone: 38,
   hero: 28,

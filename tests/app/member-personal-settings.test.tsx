@@ -74,6 +74,10 @@ function topReaderInsight(percent: number): string {
   return `${strings.personal.topReadersLead} ${formatPercent(percent)} ${strings.personal.topReadersTail}`;
 }
 
+function lifetimePages(count: number): string {
+  return strings.personal.lifetimePagesRead.replace('{count}', toWesternDigits(count));
+}
+
 describe('member personal and settings routes', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -91,12 +95,20 @@ describe('member personal and settings routes', () => {
       name: strings.personal.quranCompletionHeading,
     });
     expect(
-      within(completion).getByText(toWesternDigits(0), {
-        selector: 'span.MuiTypography-root',
-      }),
+      within(
+        within(completion).getByRole('group', { name: strings.personal.fullKhatmas }),
+      ).getByText(toWesternDigits(0)),
     ).toBeVisible();
+    expect(within(completion).getByText(lifetimePages(0))).toBeVisible();
     expect(within(completion).getByRole('img', { name: formatPercent(0) })).toBeVisible();
     expect(within(completion).getByText(topReaderInsight(100))).toBeVisible();
+    expect(
+      within(
+        within(completion).getByRole('region', { name: strings.personal.shieldsHeading }),
+      ).getByRole('img', {
+        name: `${strings.personal.shieldNames.bronze}، ${strings.personal.shieldLocked}`,
+      }),
+    ).toBeVisible();
 
     const completedPages = Array.from({ length: 151 }, (_, index) => index + 1);
     harness.subscriptions.roster.emit([
@@ -121,6 +133,72 @@ describe('member personal and settings routes', () => {
       within(completion).getByRole('img', { name: formatPercent(25) }),
     ).toBeVisible();
     expect(within(completion).getByText(topReaderInsight(50))).toBeVisible();
+  });
+
+  it('keeps counting full khatmas past the first and shows the shields earned', () => {
+    const quran = Array.from({ length: 604 }, (_, index) => index + 1);
+    const completed = makeKhatma('completed-full', {
+      status: 'completed',
+      remainingPages: [],
+    });
+    renderMember({
+      route: '/personal',
+      data: {
+        roster: [{ ...amina, completedPages: quran }],
+        khatmas: [completed],
+        assignments: {
+          [completed.id]: [
+            assignment(
+              [
+                ...[1, 2, 3, 4, 5].map((roundNumber) => round(roundNumber, quran)),
+                round(6, quran.slice(0, 151)),
+              ],
+              { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 },
+            ),
+          ],
+        },
+      },
+    });
+    const completion = screen.getByRole('region', {
+      name: strings.personal.quranCompletionHeading,
+    });
+
+    const counter = within(completion).getByRole('group', {
+      name: strings.personal.fullKhatmas,
+    });
+    expect(within(counter).getByText(toWesternDigits(5))).toBeVisible();
+    expect(within(counter).getByText(strings.personal.khatmaUnitFew)).toBeVisible();
+    expect(
+      within(completion).getByRole('img', { name: formatPercent(25) }),
+    ).toBeVisible();
+    expect(
+      within(completion).getByText(
+        strings.personal.quranDonutCaption.replace('{count}', toWesternDigits(6)),
+      ),
+    ).toBeVisible();
+    expect(within(completion).getByText(lifetimePages(3_171))).toBeVisible();
+
+    const shields = within(completion).getByRole('region', {
+      name: strings.personal.shieldsHeading,
+    });
+    for (const [tier, state] of [
+      ['bronze', strings.personal.shieldEarned],
+      ['silver', strings.personal.shieldEarned],
+      ['gold', strings.personal.shieldLocked],
+    ] as const) {
+      expect(
+        within(shields).getByRole('img', {
+          name: `${strings.personal.shieldNames[tier]}، ${state}`,
+        }),
+      ).toBeVisible();
+    }
+    expect(
+      within(shields).getByText(
+        strings.personal.shieldNext
+          .replace('{count}', `${toWesternDigits(5)} ${strings.personal.khatmaUnitFew}`)
+          .replace('{shield}', strings.personal.shieldNames.gold),
+      ),
+    ).toBeVisible();
   });
 
   it('lets the member enable page holding and clearly explains accumulation', async () => {

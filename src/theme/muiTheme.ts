@@ -1,11 +1,14 @@
 import { createTheme, type Theme } from '@mui/material/styles';
 import {
+  MEDALS,
   MOTION,
   RADII,
   TOKENS,
   cardGradient,
   primaryBtnGradient,
   type GradientStrength,
+  type MedalStops,
+  type MedalTier,
   type ThemeMode,
 } from '@/theme/tokens';
 
@@ -43,6 +46,8 @@ export interface CustomThemeTokens {
   /** Resolved card background — a gradient string, or a solid color for strength "none". */
   cardBg: string;
   primaryBtnGradient: string;
+  /** Achievement-shield metals for the current mode. */
+  medals: Record<MedalTier, MedalStops>;
   radii: typeof RADII;
   motion: typeof MOTION;
 }
@@ -95,6 +100,7 @@ export function createKhatmaTheme(
     btnShadow: t.btnShadow,
     cardBg: cardGradient(mode, opts.cardStrength ?? 'subtle', opts.cardAngle ?? 160),
     primaryBtnGradient: primaryBtnGradient(mode),
+    medals: MEDALS[mode],
     radii: RADII,
     motion: MOTION,
   };

@@ -130,6 +130,12 @@ export function retainedGlobalStyles(theme: Theme) {
       from: { opacity: 0, transform: 'scale(.88)' },
       to: { opacity: 1, transform: 'none' },
     },
+    // A light band crossing a metal face, then a long rest. Users of it keep
+    // the band parked off-face at rest, so reduced motion shows no band.
+    '@keyframes glint': {
+      '0%, 60%': { transform: 'translateX(-100%)' },
+      '90%, 100%': { transform: 'translateX(100%)' },
+    },
 
     // Reduced-motion users get the final state of everything immediately.
     '@media (prefers-reduced-motion: reduce)': {

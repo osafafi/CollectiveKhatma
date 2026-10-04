@@ -5,6 +5,7 @@ import {
   hasPendingChunk,
   isRoundDone,
   khatmaProgress,
+  khatmaShieldProgress,
   latestChunkForRound,
   memberReadingInsights,
   memberReliabilityScores,
@@ -249,8 +250,10 @@ describe('memberReadingInsights', () => {
         referenceTime: atLocalNoon(2026, 7, 22),
       }),
     ).toEqual({
-      completedPageCount: 3,
-      quranPercent: 0,
+      lifetimePagesRead: 8,
+      fullKhatmas: 0,
+      nextKhatmaPages: 8,
+      nextKhatmaPercent: 1,
       topReaderPercent: 50,
       completedKhatmas: 2,
       pagesReadThisMonth: 7,
@@ -289,9 +292,104 @@ describe('memberReadingInsights', () => {
         referenceTime: atLocalNoon(2026, 7, 22),
       }),
     ).toMatchObject({
+      lifetimePagesRead: 0,
       topReaderPercent: 100,
       pagesReadThisMonth: 0,
       longestDailyStreak: 0,
+    });
+  });
+
+  const quran = Array.from({ length: 604 }, (_, index) => index + 1);
+  const readRounds = (...rounds: number[][]): Assignment => ({
+    memberId: 'selected',
+    rounds: rounds.map((pages, index) => chunk(index + 1, '2026-07-20', pages)),
+    doneByRound: Object.fromEntries(
+      rounds.map((_, index) => [index + 1, atLocalNoon(2026, 7, 20)]),
+    ),
+    missedStreak: 0,
+  });
+
+  it('counts re-read pages toward full khatmas past the first', () => {
+    expect(
+      memberReadingInsights({
+        memberId: 'selected',
+        roster: [member('selected', quran)],
+        khatmas: [],
+        assignments: [
+          readRounds(quran, quran.slice(0, 600)),
+          readRounds(quran.slice(0, 10)),
+        ],
+      }),
+    ).toMatchObject({
+      lifetimePagesRead: 1_214,
+      fullKhatmas: 2,
+      nextKhatmaPages: 6,
+      nextKhatmaPercent: 0,
+    });
+  });
+
+  it('never reports 603 pages as a finished khatma', () => {
+    expect(
+      memberReadingInsights({
+        memberId: 'selected',
+        roster: [member('selected', [])],
+        khatmas: [],
+        assignments: [readRounds(quran.slice(0, 603))],
+      }),
+    ).toMatchObject({ fullKhatmas: 0, nextKhatmaPages: 603, nextKhatmaPercent: 99 });
+  });
+
+  it('keeps the unique lifetime set as a floor when history is out of view', () => {
+    expect(
+      memberReadingInsights({
+        memberId: 'selected',
+        roster: [member('selected', quran)],
+        khatmas: [],
+        assignments: [readRounds(quran.slice(0, 100))],
+      }),
+    ).toMatchObject({ lifetimePagesRead: 604, fullKhatmas: 1, nextKhatmaPages: 0 });
+  });
+});
+
+describe('khatmaShieldProgress', () => {
+  const khatmas = (count: number): number => Math.round(count * 604);
+
+  it('starts with no shield and bronze one khatma away', () => {
+    expect(khatmaShieldProgress(0)).toEqual({
+      current: undefined,
+      next: { tier: 'bronze', remainingKhatmas: 1 },
+      steps: [0, 0],
+    });
+    expect(khatmaShieldProgress(-5)).toEqual(khatmaShieldProgress(0));
+  });
+
+  it('earns bronze at 1, silver at 5, and gold at 10 full khatmas', () => {
+    expect(khatmaShieldProgress(khatmas(1) - 1).current).toBeUndefined();
+    expect(khatmaShieldProgress(khatmas(1)).current).toBe('bronze');
+    expect(khatmaShieldProgress(khatmas(4.99)).current).toBe('bronze');
+    expect(khatmaShieldProgress(khatmas(5)).current).toBe('silver');
+    expect(khatmaShieldProgress(khatmas(9.99)).current).toBe('silver');
+    expect(khatmaShieldProgress(khatmas(10)).current).toBe('gold');
+  });
+
+  it('fills each step with partial khatmas and names the next shield', () => {
+    expect(khatmaShieldProgress(khatmas(3.5))).toEqual({
+      current: 'bronze',
+      next: { tier: 'silver', remainingKhatmas: 2 },
+      steps: [0.625, 0],
+    });
+    expect(khatmaShieldProgress(khatmas(6))).toEqual({
+      current: 'silver',
+      next: { tier: 'gold', remainingKhatmas: 4 },
+      steps: [1, 0.2],
+    });
+  });
+
+  it('keeps gold with a full path and no next shield beyond ten', () => {
+    expect(khatmaShieldProgress(khatmas(23))).toEqual({
+      current: 'gold',
+      next: undefined,
+      steps: [1, 1],
     });
   });
 });

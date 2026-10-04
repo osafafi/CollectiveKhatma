@@ -17,8 +17,10 @@ Theme contract (redesign):
 
 - `src/theme/tokens.ts` is the single source of style values: light + dark
   `TOKENS` maps, `RADII`, `MOTION`, `cardGradient(mode, strength, angle)`,
-  `primaryBtnGradient(mode)`. No literal colors/radii/shadows/durations in
-  component code — components read `theme.palette` and `theme.custom` only.
+  `primaryBtnGradient(mode)`, and the per-mode `MEDALS` bronze/silver/gold
+  hi/mid/lo stops (`theme.custom.medals`; decorative fills only, so no
+  contrast floor). No literal colors/radii/shadows/durations in component code —
+  components read `theme.palette` and `theme.custom` only.
 - `createKhatmaTheme(mode, { cardStrength?, cardAngle? })` builds the theme per
   mode; there is no theme singleton. `AppThemeProvider` owns the persisted mode
   (`khatma.themeMode`, light default), exposes `useThemeSettings()`
@@ -27,8 +29,9 @@ Theme contract (redesign):
 - `retainedGlobalStyles(theme)` is a function of the theme: fonts (UNCHANGED —
   local Amiri Quran/Scheherazade, `--font-ui` Tajawal stack), mode-aware focus
   ring and `color-scheme`, `.quran-text`, `.ayah-marker` (gold Quran-font ayah
-  glyph), the redesign keyframes (fadeUp/shimmer/floaty/ringIn), and a
-  `prefers-reduced-motion` kill-switch.
+  glyph), the redesign keyframes (fadeUp/shimmer/floaty/ringIn/glint), and a
+  `prefers-reduced-motion` kill-switch. `glint` users park the band off-face at
+  rest so the kill-switch leaves no band showing.
 - The card gradient reaches cards and dialog paper, but never `NestedSurface`,
   ring centers, or the tab bar (those remain pinned solid). Contrast floors are
   theme-test guarded in BOTH modes.
@@ -39,7 +42,9 @@ Component recipes:
   (eyebrow/title/avatar/action/children); `heroBleedSx` cancels the shell
   padding. `CollapsibleCard`: native details/summary card with rotating
   chevron, lifted open state, optional `summaryEnd` and heading level.
-- `SurfaceCard` takes `appear` for the staggered fadeUp entry; a link card
+- `SurfaceCard` takes `appear` for the staggered fadeUp entry and an optional
+  `titleEnd` for the far end of the title row (outside the heading, so the
+  card's accessible name stays the title); a link card
   (`href`) renders its `actions` row below the link area, never inside it, so
   the actions can be links of their own; `StatusChip`
   adds the gold `accent` tone; `DonutChart` = the progress ring (ringIn,

@@ -73,6 +73,20 @@ describe('Shared action and surface primitives', () => {
     );
   });
 
+  it('puts titleEnd beside the heading without renaming the card', () => {
+    renderThemed(
+      <SurfaceCard title="Totals" titleEnd={<span>12 badges</span>}>
+        <p>Body</p>
+      </SurfaceCard>,
+    );
+
+    const heading = screen.getByRole('heading', { name: 'Totals' });
+    const badge = screen.getByText('12 badges');
+    expect(screen.getByRole('region', { name: 'Totals' })).toContainElement(badge);
+    expect(heading).not.toContainElement(badge);
+    expect(heading.parentElement).toContainElement(badge);
+  });
+
   it('keeps a link card’s actions out of its link area', () => {
     renderThemed(
       <SurfaceCard

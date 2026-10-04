@@ -16,6 +16,11 @@ export interface SurfaceCardProps {
   children: ReactNode;
   title?: ReactNode;
   /**
+   * Shown at the far end of the title row (the left edge in RTL). Not part of
+   * the heading, so the card's accessible name stays the title alone.
+   */
+  titleEnd?: ReactNode;
+  /**
    * Footer row of buttons or links. A link card renders it below its link area
    * rather than inside it, so each action stays its own control.
    */
@@ -39,6 +44,7 @@ export interface SurfaceCardProps {
 export function SurfaceCard({
   children,
   title,
+  titleEnd,
   actions,
   media,
   href,
@@ -49,6 +55,11 @@ export function SurfaceCard({
 }: SurfaceCardProps) {
   const generatedId = useId();
   const titleId = title ? `surface-card-${generatedId.replace(/:/g, '')}` : undefined;
+  const heading = title ? (
+    <Typography id={titleId} component={headingComponent} variant="h3">
+      {title}
+    </Typography>
+  ) : null;
   const actionRow = actions ? (
     <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
       {actions}
@@ -59,11 +70,17 @@ export function SurfaceCard({
       {media}
       <CardContent sx={{ p: 4, '&:last-child': { pb: 4 } }}>
         <Stack spacing={3}>
-          {title ? (
-            <Typography id={titleId} component={headingComponent} variant="h3">
-              {title}
-            </Typography>
-          ) : null}
+          {heading && titleEnd ? (
+            <Stack
+              direction="row"
+              sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+            >
+              {heading}
+              {titleEnd}
+            </Stack>
+          ) : (
+            heading
+          )}
           {children}
           {href ? null : actionRow}
         </Stack>
