@@ -364,6 +364,45 @@ export function pendingReaders(assignments: readonly Assignment[]): string[] {
   return assignments.filter(hasPendingChunk).map((a) => a.memberId);
 }
 
+export interface CompletedReadingEntry {
+  memberId: string;
+  round: number;
+  pages: readonly number[];
+  /** Epoch ms of the done mark; absent only on legacy data without a timestamp. */
+  completedAt?: number;
+}
+
+/**
+ * A khatma's reading log: one entry per completed chunk, newest first. Built
+ * from live completion state, so a chunk released back to the pool or a done
+ * mark the admin cleared never appears. Empty (pool-drained) chunks are skipped.
+ */
+export function completedReadingLog(
+  assignments: readonly Assignment[],
+): CompletedReadingEntry[] {
+  const entries: CompletedReadingEntry[] = [];
+  for (const assignment of assignments) {
+    for (const chunk of assignment.rounds) {
+      if (chunk.pages.length === 0 || !isChunkCompleted(assignment, chunk)) continue;
+      const completedAt = chunk.completedAt ?? assignment.doneByRound?.[chunk.round];
+      entries.push({
+        memberId: assignment.memberId,
+        round: chunk.round,
+        pages: chunk.pages,
+        ...(completedAt !== undefined && Number.isFinite(completedAt)
+          ? { completedAt }
+          : {}),
+      });
+    }
+  }
+  return entries.sort(
+    (a, b) =>
+      (b.completedAt ?? 0) - (a.completedAt ?? 0) ||
+      b.round - a.round ||
+      a.memberId.localeCompare(b.memberId),
+  );
+}
+
 export interface RoundReaderRecord {
   memberId: string;
   round: number;

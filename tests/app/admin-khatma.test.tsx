@@ -524,6 +524,80 @@ describe('admin Khatma detail', () => {
     ).toBeVisible();
   });
 
+  it('logs who read which pages and when, dropping recalled and cleared pages', async () => {
+    const evening = new Date(2026, 9, 13, 21, 5).getTime();
+    const midnight = new Date(2026, 9, 12, 0, 7).getTime();
+    const khatma = makeKhatma('k', {
+      memberIds: [amina.id, maryam.id],
+      capacities: {
+        [amina.id]: { pages: 2, surahs: 0, juz: 0 },
+        [maryam.id]: { pages: 2, surahs: 0, juz: 0 },
+      },
+      remainingPages: [],
+      roundCount: 2,
+    });
+    const recalled: RoundChunk = {
+      ...round(1, [5, 6]),
+      status: 'released',
+      released: true,
+    };
+    const { user, subscriptions } = renderDetail('k', {
+      roster: [amina, maryam],
+      khatmas: [khatma],
+      assignments: {
+        k: [
+          makeAssignment(amina.id, [round(1, [1, 2]), round(2, [3, 4])], { 1: midnight }),
+          makeAssignment(
+            maryam.id,
+            [recalled, { ...round(2, [5, 6]), completedAt: evening }],
+            {
+              2: evening,
+            },
+          ),
+        ],
+      },
+    });
+
+    const heading = screen.getByRole('heading', {
+      name: strings.admin.readingLogHeading,
+    });
+    const disclosure = heading.closest('details')!;
+    expect(disclosure).not.toHaveAttribute('open');
+    expect(within(disclosure).getByText('2')).toBeInTheDocument();
+    await user.click(heading);
+    expect(disclosure).toHaveAttribute('open');
+
+    const rows = within(
+      within(disclosure).getByRole('list', { name: strings.admin.readingLogHeading }),
+    ).getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    // Newest completion first; the recalled round-1 chunk and the pending round never log.
+    expect(rows[0]).toHaveTextContent('Maryam');
+    expect(rows[0]).toHaveTextContent(`${strings.admin.roundWord} 2 · 5–6`);
+    expect(within(rows[0]!).getByText('13/10/26 @ 09:05 PM')).toHaveAttribute(
+      'dir',
+      'ltr',
+    );
+    expect(rows[1]).toHaveTextContent('Amina');
+    expect(rows[1]).toHaveTextContent(`${strings.admin.roundWord} 1 · 1–2`);
+    expect(within(rows[1]!).getByText('12/10/26 @ 12:07 AM')).toBeVisible();
+
+    // The admin clears Maryam's done mark: her line disappears from the log.
+    subscriptions
+      .assignment('k')
+      .emit([
+        makeAssignment(amina.id, [round(1, [1, 2]), round(2, [3, 4])], { 1: midnight }),
+        makeAssignment(maryam.id, [recalled, { ...round(2, [5, 6]), status: 'pending' }]),
+      ]);
+    expect(within(disclosure).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(disclosure).queryByText('Maryam')).toBeNull();
+
+    subscriptions
+      .assignment('k')
+      .emit([makeAssignment(amina.id), makeAssignment(maryam.id)]);
+    expect(within(disclosure).getByText(strings.admin.readingLogEmpty)).toBeVisible();
+  });
+
   it('shows only start-next and history for a completed khatma', () => {
     renderDetail('k', {
       roster: [amina],

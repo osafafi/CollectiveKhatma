@@ -107,6 +107,9 @@ export const strings = {
     groupProgress: 'تقدّم المجموعة',
     completedRoundCount: 'أتمّوا صفحات الجولة',
     pendingReadersHeading: 'بانتظار إتمام القراءة',
+    // Pages this member actually completed in the open khatma, per round.
+    myPagesHeading: 'صفحاتي في هذه الختمة',
+    myPagesEmpty: 'لم تُكمل أي صفحات في هذه الختمة بعد.',
     lifetimeLead: 'أتممت قراءة',
     lifetimeTail: 'من 604 صفحة من المصحف',
     // Series history
@@ -405,6 +408,12 @@ export const strings = {
     historyHeading: 'ختمات هذه السلسلة المكتملة',
     noCompleted: 'لا توجد ختمات مكتملة بعد.',
     completedOn: 'اكتملت في',
+
+    // Khatma reading log (completed pages per member and round)
+    readingLogHeading: 'سجل القراءة',
+    readingLogEmpty: 'لم يُكمل أحد صفحاته في هذه الختمة بعد.',
+    timeAm: 'AM',
+    timePm: 'PM',
 
     // Du3a editor
     du3aEditorHeading: 'نص دعاء ختم القرآن',

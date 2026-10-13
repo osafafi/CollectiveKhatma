@@ -325,7 +325,8 @@ describe('member khatma routes', () => {
         .getByRole('heading', { name: strings.member.todayHeading })
         .querySelector('svg'),
     ).toBeInTheDocument();
-    expect(screen.getByText('2 صفحات')).toBeVisible();
+    // The paragraph selector skips the my-pages summary chip, which also reads 2.
+    expect(screen.getByText('2 صفحات', { selector: 'p' })).toBeVisible();
     expect(screen.getByText('3')).toBeVisible();
     expect(screen.getByText('4')).toBeVisible();
     // Each page tile opens the reader directly on its page.
@@ -389,6 +390,73 @@ describe('member khatma routes', () => {
     expect(
       await screen.findByRole('heading', { name: strings.member.khatmasHeading }),
     ).toBeVisible();
+  });
+
+  it('lists only the member own completed pages per round in a closed disclosure', async () => {
+    const active = makeKhatma('active', {
+      memberIds: [amina.id, maryam.id],
+      totalPages: 12,
+      remainingPages: [],
+      roundCount: 4,
+    });
+    const recalled: RoundChunk = {
+      ...round(2, [3, 4]),
+      status: 'released',
+      released: true,
+    };
+    const mine = makeAssignment(
+      amina.id,
+      [round(1, [1, 2]), recalled, round(3, [5, 6, 8]), round(4, [7])],
+      { 1: 10, 3: 30 },
+    );
+    const other = makeAssignment(maryam.id, [round(1, [9, 10])], { 1: 10 });
+    localStorage.setItem(`khatma.du3aAck.${active.id}`, '1');
+    const harness = renderMember({
+      route: `/khatma/${active.id}`,
+      data: {
+        roster: [amina, maryam],
+        khatmas: [active],
+        assignments: { [active.id]: [mine, other] },
+      },
+    });
+
+    const heading = await screen.findByRole('heading', {
+      name: strings.member.myPagesHeading,
+    });
+    expect(heading.querySelector('svg')).toBeInTheDocument();
+    const disclosure = heading.closest('details')!;
+    expect(disclosure).not.toHaveAttribute('open');
+    // The summary carries the khatma total: rounds 1 and 3 only.
+    expect(within(disclosure).getByText('5 صفحات')).toBeInTheDocument();
+    await harness.user.click(heading);
+    expect(disclosure).toHaveAttribute('open');
+
+    const rows = within(
+      within(disclosure).getByRole('list', { name: strings.member.myPagesHeading }),
+    ).getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(`${strings.member.roundWord} 3`);
+    expect(rows[0]).toHaveTextContent('5–6، 8');
+    expect(rows[1]).toHaveTextContent(`${strings.member.roundWord} 1`);
+    expect(rows[1]).toHaveTextContent('1–2');
+    expect(disclosure).not.toHaveTextContent('3–4');
+    expect(disclosure).not.toHaveTextContent('9–10');
+
+    // An admin clearing round 3's done mark removes it live.
+    harness.subscriptions.assignment(active.id).emit([
+      makeAssignment(amina.id, [round(1, [1, 2]), recalled, round(3, [5, 6, 8])], {
+        1: 10,
+      }),
+      other,
+    ]);
+    expect(within(disclosure).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(disclosure).getByText('2 صفحات')).toBeInTheDocument();
+
+    harness.subscriptions
+      .assignment(active.id)
+      .emit([makeAssignment(amina.id, [round(1, [1, 2])]), other]);
+    expect(within(disclosure).getByText(strings.member.myPagesEmpty)).toBeVisible();
+    expect(within(disclosure).getByText('0 صفحات')).toBeInTheDocument();
   });
 
   it('shows the paused state without member reading actions', async () => {

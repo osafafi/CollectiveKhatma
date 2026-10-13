@@ -1,6 +1,7 @@
 import { Link, Stack, Typography } from '@mui/material';
 import {
   selectAssignmentsForKhatma,
+  selectAssignmentsListener,
   selectKhatmaById,
   selectKhatmas,
   selectRoster,
@@ -17,6 +18,7 @@ import { KhatmaHeaderCard } from '@/app/admin/khatma/KhatmaHeaderCard';
 import { KhatmaHistoryCard } from '@/app/admin/khatma/KhatmaHistoryCard';
 import { KhatmaMembersCard } from '@/app/admin/khatma/KhatmaMembersCard';
 import { KhatmaMetadataEditor } from '@/app/admin/khatma/KhatmaMetadataEditor';
+import { KhatmaReadingLogCard } from '@/app/admin/khatma/KhatmaReadingLogCard';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { fullyUnreadSurahIds } from '@/domain/assignment';
@@ -26,6 +28,9 @@ export function AdminKhatmaPage({ id }: { id: string }) {
   const khatmas = useAppSelector(selectKhatmas);
   const khatma = useAppSelector((state) => selectKhatmaById(state, id));
   const assignments = useAppSelector((state) => selectAssignmentsForKhatma(state, id));
+  const assignmentsListener = useAppSelector((state) =>
+    selectAssignmentsListener(state, id),
+  );
   const roster = useAppSelector(selectRoster);
   const surahs = useSurahs();
   const scopeMaps = useQuranScopeMaps();
@@ -76,6 +81,11 @@ export function AdminKhatmaPage({ id }: { id: string }) {
         <CompletedKhatmaControls khatma={khatma} />
       )}
       <KhatmaHistoryCard khatma={khatma} khatmas={khatmas} roster={roster} />
+      <KhatmaReadingLogCard
+        assignments={assignments}
+        roster={roster}
+        status={assignmentsListener?.status}
+      />
     </Stack>
   );
 }

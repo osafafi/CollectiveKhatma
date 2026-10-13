@@ -26,7 +26,7 @@ import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
 import { NestedSurface, StatusChip, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
-import { toWesternDigits } from '@/content/quran/symbols';
+import { formatPageRanges, toWesternDigits } from '@/content/quran/symbols';
 import { warningLevel } from '@/domain/distribution';
 import { personAvatar } from '@/domain/personAppearance';
 import {
@@ -296,7 +296,7 @@ function ReaderStatusAccordion({
                   {showRound
                     ? `${strings.admin.roundWord} ${toWesternDigits(record.round)} · `
                     : ''}
-                  {pageRanges(record.pages)}
+                  {formatPageRanges(record.pages)}
                 </Typography>
               </Box>
             ))}
@@ -396,26 +396,6 @@ function MemberIdentity({
 
 function memberName(roster: readonly Person[], memberId: string): string {
   return roster.find((person) => person.id === memberId)?.name ?? memberId;
-}
-
-/** Compress sorted page numbers into exact Western-digit runs: "1–3، 5". */
-function pageRanges(pages: readonly number[]): string {
-  const sorted = [...new Set(pages)].sort((a, b) => a - b);
-  const ranges: string[] = [];
-  for (let i = 0; i < sorted.length;) {
-    const start = sorted[i]!;
-    let end = start;
-    while (i + 1 < sorted.length && sorted[i + 1] === end + 1) {
-      end = sorted[++i]!;
-    }
-    ranges.push(
-      start === end
-        ? toWesternDigits(start)
-        : `${toWesternDigits(start)}–${toWesternDigits(end)}`,
-    );
-    i++;
-  }
-  return ranges.join('، ');
 }
 
 function HistorySubscription({ khatmaId }: { khatmaId: string }) {

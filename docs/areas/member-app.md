@@ -142,6 +142,13 @@ Hard rules:
   disclosure whose avatar/name rows open in a two-column grid. The current
   pages, group progress, history, and pending-reader headers use matching
   semantic icons.
+- Below the current-round card (or the paused note), the khatma landing has a
+  collapsed-by-default `صفحاتي في هذه الختمة` card (`MyPagesCard`) whenever the
+  member has an assignment there. Its summary chip totals the pages they
+  completed in this khatma; inside, one row per completed round shows the round
+  and its exact page ranges, newest first. It derives from `completedReadingLog`
+  over the member's own live assignment, so pending pages, released (recalled)
+  chunks, and done marks an admin cleared never appear.
 - Assigned-reader navigation follows RTL book direction: previous is on the
   right, next is on the left, and both enabled actions share the primary style.
 - Every Quran page in both readers attaches a centered, content-width green tab

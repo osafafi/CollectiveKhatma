@@ -11,6 +11,7 @@ import { useMemberIdentity } from '../memberIdentityContext';
 import { formatIsoDate } from './formatting';
 import { GroupProgressCard } from './GroupProgressCard';
 import { HistoryCard } from './HistoryCard';
+import { MyPagesCard } from './MyPagesCard';
 import { MyRoundCard } from './MyRoundCard';
 
 interface KhatmaLandingContentProps {
@@ -92,6 +93,8 @@ export function KhatmaLandingContent({
             activeSeriesKhatmaIds={activeSeriesKhatmaIds}
           />
         ) : null}
+
+        {mine ? <MyPagesCard assignment={mine} /> : null}
 
         <GroupProgressCard khatma={khatma} assignments={assignments} roster={roster} />
 

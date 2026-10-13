@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  completedReadingLog,
   currentChunk,
   donePageCount,
   hasPendingChunk,
@@ -188,6 +189,54 @@ describe('round reader records', () => {
       ],
       pending: [{ memberId: 'a', round: 2, pages: [5, 6] }],
     });
+  });
+});
+
+describe('completed reading log', () => {
+  it('lists only truly completed chunks, newest completion first', () => {
+    // Explicit-status chunks: a recalled (released) one, its same-round
+    // replacement read later, and a pool-drained empty chunk.
+    const recalled: Assignment = {
+      memberId: 'e',
+      rounds: [
+        { ...chunk(2, '2026-07-09', [40, 41]), status: 'released', releasedAt: 4_500 },
+        { ...chunk(2, '2026-07-09', [40]), status: 'completed', completedAt: 5_000 },
+        { ...chunk(3, '2026-07-10', []), status: 'completed', completedAt: 6_000 },
+      ],
+      doneByRound: { 2: 5_000, 3: 6_000 },
+      missedStreak: 0,
+    };
+    expect(completedReadingLog([partly, finished, flagged, fresh, recalled])).toEqual([
+      { memberId: 'e', round: 2, pages: [40], completedAt: 5_000 },
+      { memberId: 'b', round: 1, pages: [10, 11], completedAt: 3_000 },
+      { memberId: 'a', round: 1, pages: [1, 2], completedAt: 1_000 },
+    ]);
+  });
+
+  it('drops a round once the admin clears its done mark', () => {
+    // clearRoundDone's shape: status back to pending, no completedAt or doneByRound.
+    const cleared: Assignment = {
+      memberId: 'a',
+      rounds: [
+        { ...chunk(1, '2026-07-08', [1, 2]), status: 'completed', completedAt: 1_000 },
+        { ...chunk(2, '2026-07-09', [3, 4]), status: 'pending' },
+      ],
+      doneByRound: { 1: 1_000 },
+      missedStreak: 0,
+    };
+    expect(completedReadingLog([cleared])).toEqual([
+      { memberId: 'a', round: 1, pages: [1, 2], completedAt: 1_000 },
+    ]);
+  });
+
+  it('keeps one line per round when held rounds finish together', () => {
+    const held: Assignment = {
+      memberId: 'a',
+      rounds: [chunk(1, '2026-07-08', [1, 2]), chunk(2, '2026-07-09', [7, 8])],
+      doneByRound: { 1: 2_000, 2: 2_000 },
+      missedStreak: 0,
+    };
+    expect(completedReadingLog([held]).map((entry) => entry.round)).toEqual([2, 1]);
   });
 });
 
