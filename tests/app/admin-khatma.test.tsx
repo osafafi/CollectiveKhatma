@@ -598,8 +598,8 @@ describe('admin Khatma detail', () => {
     expect(within(disclosure).getByText(strings.admin.readingLogEmpty)).toBeVisible();
   });
 
-  it('shows only start-next and history for a completed khatma', () => {
-    renderDetail('k', {
+  it('shows only start-next and history for a completed khatma', async () => {
+    const { user } = renderDetail('k', {
       roster: [amina],
       khatmas: [
         makeKhatma('k', {
@@ -614,9 +614,27 @@ describe('admin Khatma detail', () => {
     expect(screen.getByRole('button', { name: strings.admin.startNext })).toBeVisible();
     expect(screen.queryByRole('button', { name: strings.admin.markComplete })).toBeNull();
     expect(screen.queryByText(strings.admin.membersProgress)).toBeNull();
+
+    // Series history is the last card, after the reading log, and starts collapsed.
+    const history = screen
+      .getByRole('heading', { name: strings.admin.historyHeading })
+      .closest('details')!;
+    const log = screen
+      .getByRole('heading', { name: strings.admin.readingLogHeading })
+      .closest('details')!;
+    expect(log.compareDocumentPosition(history)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(history.nextElementSibling).toBeNull();
+    expect(history).not.toHaveAttribute('open');
+    expect(within(history).getByText('1')).toBeInTheDocument();
+    const line = within(history).getByText(
+      new RegExp(`${strings.admin.completedOn} 2026-07-12`),
+    );
+    expect(line).not.toBeVisible();
+
     // The completed khatma appears in its own series history with the reciter.
-    expect(
-      screen.getByText(new RegExp(`${strings.admin.completedOn} 2026-07-12`)),
-    ).toBeVisible();
+    await user.click(screen.getByRole('heading', { name: strings.admin.historyHeading }));
+    expect(history).toHaveAttribute('open');
+    expect(line).toBeVisible();
+    expect(line).toHaveTextContent(`${strings.admin.reciterIs}: ${amina.name}`);
   });
 });

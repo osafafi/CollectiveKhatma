@@ -57,7 +57,7 @@ Hard rules:
   the roster route or a Home dashboard with active series is mounted, it additionally
   retains completed-khatma histories to derive the same reliability grades for the
   roster and distribution preview, then releases those listeners on navigation.
-- The khatma detail ends with a collapsed `سجل القراءة` card
+- The khatma detail ends with two collapsed cards: the `سجل القراءة` card
   (`KhatmaReadingLogCard`): one line per completed chunk with member name,
   round, exact page ranges, and the local done time as `DD/MM/YY @ HH:MM AM/PM`
   (an isolated LTR run), newest first. It derives from `completedReadingLog`
@@ -65,6 +65,9 @@ Hard rules:
   marks disappear; held rounds finished in one tap log one line each with the
   same time. It shows loading until the assignment listener is ready rather than
   an empty log.
+  Below it, last on the page, the count-labelled series history card
+  (`KhatmaHistoryCard`) lists completed khatmas of the series with completion
+  date and dua reciter.
 - The feedback listener is retained only by the mounted admin shell. Its header
   badge counts unread messages; the top drawer lists every message and supports
   read/unread, clipboard copy, and confirmed deletion. Drawer height is controlled

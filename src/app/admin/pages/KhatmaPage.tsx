@@ -80,12 +80,12 @@ export function AdminKhatmaPage({ id }: { id: string }) {
       ) : (
         <CompletedKhatmaControls khatma={khatma} />
       )}
-      <KhatmaHistoryCard khatma={khatma} khatmas={khatmas} roster={roster} />
       <KhatmaReadingLogCard
         assignments={assignments}
         roster={roster}
         status={assignmentsListener?.status}
       />
+      <KhatmaHistoryCard khatma={khatma} khatmas={khatmas} roster={roster} />
     </Stack>
   );
 }
