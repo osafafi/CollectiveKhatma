@@ -64,8 +64,8 @@ admin edits). Firebase Console shows them under content → global → dailyDu3a
 
 ## Local verification
 
-Run `npm run check` and `npm run check:bundle-budgets`. The ordinary suite uses
-small synthetic prayer strings, never a copy of production content.
+Run `npm run check`. The ordinary suite uses small synthetic prayer strings,
+never a copy of production content.
 
 For Firestore integration, start `npm run emulators`, then in another PowerShell:
 

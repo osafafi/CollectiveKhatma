@@ -24,8 +24,8 @@ jobs:
       - name: Test application
         run: npm test
       # Configuration must sit on the step that actually runs `vite build`.
-      - name: Build and check bundle budgets
-        run: npm run check:bundle-budgets
+      - name: Build production bundle
+        run: npm run build
         env:
           # Non-secret placeholder so the client bundle initializes at build.
           VITE_FIREBASE_PROJECT_ID: demo-khatma

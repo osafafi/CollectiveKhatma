@@ -56,27 +56,25 @@ seeded roster live; the admin page is at `/admin-nano.html` (see
 > Without the emulator running, the app still loads — the roster simply shows
 > "no members yet" (Firestore returns an empty offline snapshot).
 
-The production member and hidden admin pages both mount React. Bundle budgets are
-measured from those two production entries.
+The production member and hidden admin pages both mount React.
 
 ## npm scripts
 
-| Script                         | What it does                                                  |
-| ------------------------------ | ------------------------------------------------------------- |
-| `npm run dev`                  | Vite dev server with hot reload                               |
-| `npm run build`                | Typecheck, then build the static site to `dist/`              |
-| `npm run check:bundle-budgets` | Build production and enforce member/admin initial-load limits |
-| `npm run preview`              | Serve the built `dist/` locally                               |
-| `npm run typecheck`            | `tsc --noEmit`                                                |
-| `npm run lint`                 | ESLint (includes the layer guardrails)                        |
-| `npm run format`               | Prettier write                                                |
-| `npm run format:check`         | Check formatting without changing files                       |
-| `npm run check:agent-docs`     | Check agent docs, links, commands, and route-shell size       |
-| `npm run check`                | Run the full local type/lint/test/build/docs/format gate      |
-| `npm test`                     | Run the Vitest unit tests                                     |
-| `npm run emulators`            | Start the Firestore emulator + Emulator UI (port 4000)        |
-| `npm run seed`                 | Seed intent-named distribution edge cases into the emulator   |
-| `npm run build:quran`          | (Re)generate the bundled Quran dataset under `public/quran/`  |
+| Script                     | What it does                                                 |
+| -------------------------- | ------------------------------------------------------------ |
+| `npm run dev`              | Vite dev server with hot reload                              |
+| `npm run build`            | Typecheck, then build the static site to `dist/`             |
+| `npm run preview`          | Serve the built `dist/` locally                              |
+| `npm run typecheck`        | `tsc --noEmit`                                               |
+| `npm run lint`             | ESLint (includes the layer guardrails)                       |
+| `npm run format`           | Prettier write                                               |
+| `npm run format:check`     | Check formatting without changing files                      |
+| `npm run check:agent-docs` | Check agent docs, links, commands, and route-shell size      |
+| `npm run check`            | Run the full local type/lint/test/build/docs/format gate     |
+| `npm test`                 | Run the Vitest unit tests                                    |
+| `npm run emulators`        | Start the Firestore emulator + Emulator UI (port 4000)       |
+| `npm run seed`             | Seed intent-named distribution edge cases into the emulator  |
+| `npm run build:quran`      | (Re)generate the bundled Quran dataset under `public/quran/` |
 
 ## Firebase setup
 

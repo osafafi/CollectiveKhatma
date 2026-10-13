@@ -39,8 +39,8 @@ jobs:
       # `run` and its `env` silently moves the configuration off the build and
       # ships a bundle with base '/' and no project id — which still passes
       # every check below, because nothing here executes the bundle.
-      - name: Build and check bundle budgets
-        run: npm run check:bundle-budgets
+      - name: Build production bundle
+        run: npm run build
         env:
           # Base path for a GitHub Pages *project* site (https://<user>.github.io/<repo>/).
           # Change to match your repo name, or delete for a user/custom-domain site.

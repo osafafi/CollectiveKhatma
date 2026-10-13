@@ -37,7 +37,7 @@ describe('production entries', () => {
     });
   });
 
-  it('emits a production manifest for bundle-budget measurement', () => {
+  it('emits the production manifest the service-worker precache reads', () => {
     expect(config.build?.manifest).toBe(true);
     expect(config.build?.rollupOptions?.output).toMatchObject({
       manualChunks: expect.any(Function),

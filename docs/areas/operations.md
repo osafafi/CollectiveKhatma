@@ -12,7 +12,6 @@ npm run check
 ```
 
 Focused test: `npm test -- tests/app/name.test.tsx`.
-Bundle-sensitive change: `npm run check:bundle-budgets`.
 Service-worker change: `npm run check:service-worker` after a build.
 
 Firestore transaction/rule change: run domain tests, data callers, then the opt-in
@@ -70,7 +69,7 @@ documented in [daily dua setup](../daily-duas.md). `daily-dua-emulator` tests
 round-trip persistence, stale edits, field independence, and rule rejection.
 
 The daily prayer UI uses the existing Firestore content listener rather than a
-bundled list. Bundle limits are measured by `scripts/check-bundle-budgets.mjs`.
+bundled list.
 
 Roster schema: `roster/{memberId}.holdPages` is an optional boolean for backward
 compatibility with existing documents. New members start with `false`; member
@@ -95,7 +94,7 @@ Hard rules:
   stops the client from starting at all. The tab manager is the multi-tab one
   because member and admin share an origin and may be open together. This is
   what lets `onSnapshot` answer with no network; it costs ~21.9 kB gzip on both
-  entries, which is why the bundle budgets moved in 2026-09.
+  entries.
 - `markRoundDone` and `clearRoundDone` run in transactions, and a Firestore
   transaction always reads from the server — the local cache does not help it.
   Offline it does not reject, it **hangs** (verified against a killed emulator),

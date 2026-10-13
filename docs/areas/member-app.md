@@ -23,7 +23,7 @@ Hard rules:
 
 - `src/app/entries/member.tsx` registers the offline service worker on window
   load, via plain `navigator.serviceWorker` rather than `virtual:pwa-register`,
-  so `workbox-window` stays out of the member bundle budget. Registration is a
+  so `workbox-window` stays out of the member bundle. Registration is a
   no-op in development and tests. See `docs/areas/operations.md` for what the
   worker precaches.
 - The same entry starts the background mushaf sweep. It is a no-op until a
