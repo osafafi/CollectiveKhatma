@@ -42,7 +42,7 @@ import {
 } from '@/domain/progress';
 import { activeSeriesGroups, seriesTitle, type SeriesGroup } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
-import { isWird } from '@/domain/wird';
+import { isKhatma, isWird } from '@/domain/wird';
 import { useQuranScopeMaps, type QuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { DistributionPlannerDialog } from '@/app/admin/distribution/DistributionPlannerDialog';
 
@@ -53,7 +53,8 @@ import { DistributionPlannerDialog } from '@/app/admin/distribution/Distribution
  */
 export function AdminHomePage() {
   const khatmas = useAppSelector(selectKhatmas);
-  const groups = activeSeriesGroups(khatmas);
+  const ordinaryKhatmas = khatmas.filter(isKhatma);
+  const groups = activeSeriesGroups(ordinaryKhatmas);
   const activeWirds = khatmas.filter(
     (series) => isWird(series) && series.status === 'active',
   );
@@ -62,7 +63,7 @@ export function AdminHomePage() {
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="home">
-      {(groups.length > 0 ? khatmas : [])
+      {(groups.length > 0 ? ordinaryKhatmas : [])
         .filter((khatma) => khatma.status === 'completed')
         .map((khatma) => (
           <HistorySubscription key={khatma.id} khatmaId={khatma.id} />
@@ -78,7 +79,7 @@ export function AdminHomePage() {
         <SeriesBlock
           key={group.seriesId}
           group={group}
-          allKhatmas={khatmas}
+          allKhatmas={ordinaryKhatmas}
           scopeMaps={scopeMaps}
         />
       ))}

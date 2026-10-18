@@ -403,6 +403,45 @@ describe('admin Home dashboard', () => {
     expect(screen.queryByText(strings.admin.roundDataLoading)).toBeNull();
   });
 
+  it('does not wait for assignment snapshots from Wird documents', async () => {
+    const commitDistributionRun = vi
+      .fn<WriteOperations['commitDistributionRun']>()
+      .mockResolvedValue({ completedKhatmaIds: [], chunkCount: 1 });
+    const wird = makeKhatma('daily', {
+      kind: 'wird',
+      scope: { kind: 'dua' },
+      remainingPages: [],
+      totalPages: 0,
+      roundCount: 0,
+      completionCount: 0,
+      pastMemberIds: [],
+      wirdDuaText: 'دعاء يومي',
+    });
+    const harness = renderAdmin({
+      data: {
+        roster: [amina],
+        khatmas: [makeKhatma('k1'), wird],
+        assignments: { k1: [] },
+      },
+      operations: { ...writeOperations, commitDistributionRun },
+    });
+
+    const prepare = await screen.findByRole('button', {
+      name: strings.admin.prepareNextRound,
+    });
+    expect(prepare).toBeEnabled();
+    expect(screen.queryByText(strings.admin.roundDataLoading)).toBeNull();
+    expect(harness.subscriptions.assignment('daily').counts().active).toBe(0);
+
+    await harness.user.click(prepare);
+    await harness.user.click(
+      screen.getByRole('button', { name: strings.admin.confirmAndStartRound }),
+    );
+    expect(commitDistributionRun).toHaveBeenCalledWith(
+      expect.objectContaining({ historyKhatmaIds: ['k1'] }),
+    );
+  });
+
   it('only offers swaps between members with exactly equal capacities', async () => {
     const commitDistributionRun = vi
       .fn<WriteOperations['commitDistributionRun']>()
