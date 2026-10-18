@@ -10,6 +10,7 @@ import { useMemberRoute } from '@/app/routing/hooks';
 import { KhatmaLandingPage } from './KhatmaLandingPage';
 import { KhatmasListPage } from './KhatmasListPage';
 import { MemberAssignmentsSubscriptions } from './MemberAssignmentsSubscriptions';
+import { MemberWirdCompletionSubscriptions } from './MemberWirdCompletionSubscriptions';
 import { PersonalPage } from './PersonalPage';
 import { AssignedReaderPage, BrowseReaderPage } from './reader';
 
@@ -35,6 +36,7 @@ export function MemberExperience() {
   return (
     <>
       <MemberAssignmentsSubscriptions />
+      <MemberWirdCompletionSubscriptions />
       <DailyDuaProvider>
         <MemberCompletionInterrupt>
           <MemberShell>

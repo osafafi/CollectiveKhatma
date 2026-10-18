@@ -48,6 +48,23 @@ describe('resolvePageScope', () => {
       resolvePageScope({ kind: 'surahs', surahIds: [999] }, { 1: [1, 1] }),
     ).toThrow();
   });
+
+  it('unions any selected Juz combination and de-duplicates boundaries', () => {
+    const juzToPages = {
+      1: [1, 21],
+      2: [22, 41],
+      20: [382, 401],
+    } as Record<number, [number, number]>;
+    const pages = resolvePageScope(
+      { kind: 'juz', juzIds: [1, 2, 20] },
+      undefined,
+      juzToPages,
+    );
+    expect(pages).toEqual([
+      ...Array.from({ length: 41 }, (_, index) => index + 1),
+      ...Array.from({ length: 20 }, (_, index) => index + 382),
+    ]);
+  });
 });
 
 describe('fullyUnreadSurahIds', () => {

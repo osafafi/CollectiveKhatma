@@ -296,9 +296,21 @@ export async function removeMemberFromKhatma(
  * batch-delete the `assignments` subcollection first, then the khatma itself.
  */
 export async function deleteKhatma(id: string): Promise<void> {
-  const batch = writeBatch(db);
   const assignments = await getDocs(assignmentsCol(id));
-  assignments.forEach((d) => batch.delete(d.ref));
-  batch.delete(doc(khatmasCol, id));
-  await batch.commit();
+  const wirdCompletions = await getDocs(
+    collection(doc(khatmasCol, id), 'wirdCompletions'),
+  );
+  const childRefs = [
+    ...assignments.docs.map((entry) => entry.ref),
+    ...wirdCompletions.docs.map((entry) => entry.ref),
+  ];
+  // A long-lived Wird can have more than Firestore's 500-write batch limit.
+  for (let start = 0; start < childRefs.length; start += 450) {
+    const batch = writeBatch(db);
+    for (const ref of childRefs.slice(start, start + 450)) batch.delete(ref);
+    await batch.commit();
+  }
+  const finalBatch = writeBatch(db);
+  finalBatch.delete(doc(khatmasCol, id));
+  await finalBatch.commit();
 }

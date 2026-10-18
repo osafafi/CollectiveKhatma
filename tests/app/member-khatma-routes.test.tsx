@@ -8,6 +8,7 @@ import { toWesternDigits } from '@/content/quran/symbols';
 import { ReleasedChunkError } from '@/data/assignments';
 import { seriesTitle } from '@/domain/series';
 import type { Assignment, Khatma, Person, RoundChunk } from '@/domain/types';
+import { localDateIso } from '@/domain/wird';
 import {
   renderWithAppProviders,
   type RenderWithAppProvidersOptions,
@@ -53,6 +54,23 @@ function makeAssignment(
   missedStreak = 0,
 ): Assignment {
   return { memberId, rounds, doneByRound, missedStreak };
+}
+
+function makeWird(id: string, overrides: Partial<Khatma> = {}): Khatma {
+  return makeKhatma(id, {
+    kind: 'wird',
+    seriesName: 'ورد الصباح',
+    scope: { kind: 'dua' },
+    totalPages: 0,
+    remainingPages: [],
+    capacities: { [amina.id]: { pages: 0, surahs: 0, juz: 0 } },
+    duaReciterId: '',
+    roundCount: 0,
+    completionCount: 0,
+    pastMemberIds: [],
+    wirdDuaText: 'اللهم افتح لنا أبواب رحمتك',
+    ...overrides,
+  });
 }
 
 function round(roundNumber: number, pages: number[]): RoundChunk {
@@ -204,6 +222,91 @@ describe('member khatma routes', () => {
       // aria-hidden and only reachable with the hidden option.
       screen.getByRole('img', { name: strings.admin.seriesImageAlt, hidden: true }),
     ).toHaveAttribute('src', '/khatma-images/green-arch.svg');
+  });
+
+  it('shows a daily custom-dua Wird and completes it through the Wird writer', async () => {
+    const wird = makeWird('morning-wird');
+    const completeWirdDay = vi
+      .fn<WriteOperations['completeWirdDay']>()
+      .mockResolvedValue(undefined);
+    const { user } = renderMember({
+      data: {
+        roster: [amina],
+        khatmas: [wird],
+        content: { dailyDu3as: ['دعاء اليوم التجريبي'] },
+        wirdCompletions: { [wird.id]: [] },
+      },
+      operations: { ...writeOperations, completeWirdDay },
+    });
+
+    const title = seriesTitle(wird, toWesternDigits);
+    const link = await screen.findByRole('link', {
+      name: `${strings.member.openWird}: ${title}`,
+    });
+    expect(within(link).getByText(strings.member.wirdBadge)).toBeVisible();
+    await user.click(link);
+    expect(
+      await screen.findByRole('heading', { name: strings.member.wirdTodayHeading }),
+    ).toBeVisible();
+    expect(screen.getByText(wird.wirdDuaText!)).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: strings.member.wirdFinishedToday }),
+    );
+
+    await waitFor(() => expect(completeWirdDay).toHaveBeenCalledTimes(1));
+    expect(completeWirdDay.mock.calls[0]![0]).toMatchObject({
+      wirdId: wird.id,
+      memberId: amina.id,
+      date: localDateIso(),
+      contentKind: 'dua',
+      pages: [],
+    });
+    expect(await screen.findByText('دعاء اليوم التجريبي')).toBeVisible();
+  });
+
+  it('offers a fresh Wird finish after local midnight in a tab left open', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 9, 18, 23, 59, 50));
+    try {
+      const wird = makeWird('night-wird');
+      const completeWirdDay = vi
+        .fn<WriteOperations['completeWirdDay']>()
+        .mockResolvedValue(undefined);
+      const { user } = renderMember({
+        data: {
+          roster: [amina],
+          khatmas: [wird],
+          wirdCompletions: { [wird.id]: [] },
+        },
+        operations: { ...writeOperations, completeWirdDay },
+      });
+
+      await user.click(
+        await screen.findByRole('link', {
+          name: `${strings.member.openWird}: ${seriesTitle(wird, toWesternDigits)}`,
+        }),
+      );
+      await user.click(
+        await screen.findByRole('button', { name: strings.member.wirdFinishedToday }),
+      );
+      expect(
+        await screen.findByText(strings.member.wirdDoneToday, { exact: false }),
+      ).toBeVisible();
+      expect(completeWirdDay.mock.calls[0]![0]).toMatchObject({ date: '2026-10-18' });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+
+      expect(
+        await screen.findByRole('button', { name: strings.member.wirdFinishedToday }),
+      ).toBeVisible();
+      expect(
+        screen.queryByText(strings.member.wirdDoneToday, { exact: false }),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('updates card targeting in realtime and reconciles assignment listeners', async () => {

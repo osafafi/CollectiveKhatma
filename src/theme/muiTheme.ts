@@ -37,6 +37,8 @@ export interface CustomThemeTokens {
   medalCenter: string;
   surahBandInk: string;
   heroGrad: string;
+  goldHeroGrad: string;
+  goldCardBg: string;
   heroGlow: string;
   heroPill: string;
   heroPillBorder: string;
@@ -92,6 +94,8 @@ export function createKhatmaTheme(
     medalCenter: t.medalCenter,
     surahBandInk: t.surahBandInk,
     heroGrad: t.heroGrad,
+    goldHeroGrad: t.goldHeroGrad,
+    goldCardBg: t.goldCardBg,
     heroGlow: t.heroGlow,
     heroPill: t.heroPill,
     heroPillBorder: t.heroPillBorder,

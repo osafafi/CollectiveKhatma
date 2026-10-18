@@ -4,11 +4,14 @@ import {
   selectKhatmas,
   selectKhatmasListener,
   selectRoster,
+  selectWirdCompletions,
   useAppSelector,
 } from '@/app/store';
 import { KhatmaLandingContent } from './khatma/KhatmaLandingContent';
 import { LandingFeedback } from './khatma/LandingFeedback';
 import { useMemberIdentity } from './memberIdentityContext';
+import { isWird } from '@/domain/wird';
+import { WirdLandingContent } from './wird/WirdLandingContent';
 
 /** Member `#/khatma/{id}` landing page and live-state boundary. */
 export function KhatmaLandingPage({ khatmaId }: { khatmaId: string }) {
@@ -25,6 +28,9 @@ export function KhatmaLandingPage({ khatmaId }: { khatmaId: string }) {
     selectAssignmentsListener(state, khatma?.id ?? khatmaId),
   );
   const roster = useAppSelector(selectRoster);
+  const wirdCompletions = useAppSelector((state) =>
+    selectWirdCompletions(state, khatmaId),
+  );
 
   if (khatmasListener.status === 'error') {
     return <LandingFeedback kind="error" />;
@@ -42,6 +48,17 @@ export function KhatmaLandingPage({ khatmaId }: { khatmaId: string }) {
 
   if (assignmentsListener?.status === 'error') {
     return <LandingFeedback kind="error" />;
+  }
+
+  if (isWird(khatma)) {
+    return (
+      <WirdLandingContent
+        wird={khatma}
+        completions={wirdCompletions}
+        memberId={memberId}
+        paused={member ? !member.enabled : false}
+      />
+    );
   }
 
   return (

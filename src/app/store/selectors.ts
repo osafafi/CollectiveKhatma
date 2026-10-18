@@ -2,6 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { assignmentsAdapter } from './assignmentsSlice';
 import { khatmasAdapter } from './khatmasSlice';
 import { rosterAdapter } from './rosterSlice';
+import { wirdCompletionsAdapter } from './wirdCompletionsSlice';
 import type { RootState } from './store';
 
 export const selectRosterState = (state: RootState) => state.roster;
@@ -45,5 +46,21 @@ export const selectAssignmentByMemberId = createSelector(
 
 export const selectAssignmentsListener = createSelector(
   [selectAssignmentBucket],
+  (bucket) => bucket?.listener,
+);
+
+const selectWirdCompletionBucket = (state: RootState, wirdId: string) =>
+  state.wirdCompletions.byWirdId[wirdId];
+const wirdCompletionSelectors = wirdCompletionsAdapter.getSelectors();
+const EMPTY_WIRD_COMPLETIONS = [] as const;
+
+export const selectWirdCompletions = createSelector(
+  [selectWirdCompletionBucket],
+  (bucket) =>
+    bucket ? wirdCompletionSelectors.selectAll(bucket) : EMPTY_WIRD_COMPLETIONS,
+);
+
+export const selectWirdCompletionsListener = createSelector(
+  [selectWirdCompletionBucket],
   (bucket) => bucket?.listener,
 );

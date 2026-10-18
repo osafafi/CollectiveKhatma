@@ -22,13 +22,20 @@ service cloud.firestore {
     match /khatmas/{khatmaId} {
       allow read: if true;
       allow create: if isValidKhatma(request.resource.data)
-        && hasFullQuranScope(request.resource.data);
+        && (hasFullQuranScope(request.resource.data) || hasValidWird(request.resource.data));
       allow update: if isValidKhatma(request.resource.data)
-        && hasFullQuranScope(request.resource.data);
+        && (hasFullQuranScope(request.resource.data) || hasValidWird(request.resource.data));
       allow delete: if true;
       match /assignments/{memberId} {
         allow read: if true;
         allow create, update: if isValidAssignment(request.resource.data);
+        allow delete: if true;
+      }
+      match /wirdCompletions/{completionId} {
+        allow read: if true;
+        allow create: if isValidWirdCompletion(request.resource.data)
+          && get(/databases/$(database)/documents/khatmas/$(khatmaId)).data.kind == 'wird';
+        allow update: if false;
         allow delete: if true;
       }
     }
@@ -101,6 +108,10 @@ service cloud.firestore {
         && d.scope is map
         && d.capacities is map
         && d.duaReciterId is string
+        && (!('kind' in d) || (d.kind == 'khatma' || d.kind == 'wird'))
+        && (!('pastMemberIds' in d) || d.pastMemberIds is list)
+        && (!('wirdDuaText' in d) || d.wirdDuaText is string)
+        && (!('completionCount' in d) || d.completionCount is number)
         && (!('imageName' in d) || d.imageName is string)
         && (!('lastDistributionDate' in d) || d.lastDistributionDate is string)
         && (!('currentDistributionRunId' in d) || d.currentDistributionRunId is string)
@@ -109,9 +120,37 @@ service cloud.firestore {
     }
 
     function hasFullQuranScope(d) {
-      return d.scope.kind == 'full'
+      return (!('kind' in d) || d.kind == 'khatma')
+        && d.scope.kind == 'full'
         && d.totalPages == 604
         && d.remainingPages.size() <= 604;
+    }
+
+    function hasValidWird(d) {
+      return d.kind == 'wird'
+        && (d.status == 'active' || d.status == 'archived')
+        && d.memberIds.size() <= 1
+        && d.totalPages >= 0
+        && d.totalPages <= 604
+        && d.remainingPages.size() == d.totalPages
+        && d.completionCount is number
+        && d.pastMemberIds is list
+        && (d.scope.kind == 'surahs' || d.scope.kind == 'juz' || d.scope.kind == 'dua')
+        && (d.scope.kind != 'dua'
+          || ('wirdDuaText' in d
+            && d.wirdDuaText.size() > 0
+            && d.wirdDuaText.size() <= 100000));
+    }
+
+    function isValidWirdCompletion(d) {
+      return d.keys().hasOnly(['memberId', 'date', 'completedAt', 'contentKind', 'pages'])
+        && d.memberId is string
+        && d.date is string
+        && d.completedAt is number
+        && (d.contentKind == 'quran' || d.contentKind == 'dua')
+        && d.pages is list
+        && d.pages.size() <= 604
+        && (d.contentKind != 'dua' || d.pages.size() == 0);
     }
 
     function isValidDistributionRun(d) {

@@ -1,13 +1,14 @@
 # Member app brick
 
-Owns: identity gate, khatma list/landing, assigned pages, finish, completion, settings,
-and member-to-admin feedback submission.
+Owns: identity gate, khatma/Wird list and landing, assigned pages, daily Wird,
+finish, completion, settings, and member-to-admin feedback submission.
 
 Start files:
 
 - Entry/routes: `src/app/entries/member.tsx`, `src/app/member/MemberApp.tsx`
 - Khatma UI: `src/app/member/KhatmasListPage.tsx`, `KhatmaLandingPage.tsx`,
   `src/app/member/khatma/`
+- Wird UI: `src/app/member/wird/`
 - Reader: `src/app/member/reader/`
 - Completion: `src/app/member/MemberCompletionInterrupt.tsx`
 - Feedback form: `src/app/member/MemberFeedbackSection.tsx`
@@ -45,9 +46,26 @@ Hard rules:
   still reported as the real answer it is, and a failed khatma subscription
   reads as could-not-load rather than spinning.
 - Persistent member listeners subscribe only to the selected member's active
-  khatmas. While the personal route is mounted, it additionally retains that
+  khatmas and active Wird completion logs. While the personal route is mounted,
+  it additionally retains that
   member's completed-khatma assignment histories for read-only insights, then
-  releases those historical listeners when the route unmounts.
+  releases those historical listeners when the route unmounts. It likewise
+  retains current and archived Wird logs involving the current or a past assignee.
+- Active Wirds appear beside khatmas as gold-toned cards (gold `SurfaceCard`
+  and `HeroHeader` tones) with an accent `ورد يومي` badge.
+  A Quran Wird uses the assigned Quran reader over its fixed Surah/Juz page set;
+  a custom-du'a Wird uses a text-reading view. Both expose
+  `أتممت وردي اليومي` and the same rotating daily-du'a popup as khatma finishes.
+- A Wird is available once per local calendar day and becomes available again
+  automatically at local midnight, including in a tab left open overnight.
+  Missed days create no backlog or warning. A paused member cannot open or
+  complete the Wird until re-enabled, and it is not listed as pending. The
+  finish button's own success state is keyed to the local day, so an open tab
+  offers the new day's button after midnight.
+- Wird completion uses the durable finish queue. The queue captures the local
+  date, tap timestamp, content kind, and exact page snapshot so an offline finish
+  credits what the member actually read even if the admin edits the Wird before
+  replay. Completion is idempotent per member/Wird/date.
 - The assigned reader opens on the page its link names
   (`#/khatma/{id}/read/{page}`), else on the page this member last had open in
   that khatma on this device, else on the first page — each only while that page
@@ -126,6 +144,10 @@ Hard rules:
   the longest run of local calendar days with a completed round. Released/empty
   rounds do not count, and multiple completions on one date count as one streak
   day.
+- Quran Wird pages count on every daily completion, including rereads, toward
+  lifetime/monthly pages, full-khatma equivalents, shields, and accomplishments.
+  Custom-du'a completions add zero pages but do count as a reading day for the
+  streak. The fourth statistic tile shows total completed Wird days.
 - Achievement shields (`KhatmaShields.tsx`, rule `khatmaShieldProgress`): bronze
   at 1 full khatma, silver at 5, gold at 10. The track between shields fills
   with partial khatmas; the line below names the next shield and the whole

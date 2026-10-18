@@ -21,6 +21,9 @@ Tests: domain `distribution`, `assignment`, `rotation`, `progress`; `admin-home`
 
 Hard rules:
 
+- Wird records never enter khatma assignment, distribution, release, or rollover.
+  UI selectors and transactional data adapters both enforce this boundary; a
+  legacy document with no `kind` remains an ordinary khatma.
 - Pending pages stay with the reader and normally block a new chunk until the
   admin releases them or the member pauses themselves. A reader with
   `Person.holdPages` enabled keeps receiving one new chunk per distribution;

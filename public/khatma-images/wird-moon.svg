@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Nightly Wird</title>
+  <desc id="desc">Prayer beads and a crescent moon on a deep blue background</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102d48"/>
+      <stop offset="1" stop-color="#315e76"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <g fill="#f4d48a">
+    <circle cx="170" cy="118" r="5"/><circle cx="270" cy="210" r="4"/><circle cx="987" cy="142" r="5"/><circle cx="895" cy="240" r="3"/><circle cx="1044" cy="334" r="4"/>
+  </g>
+  <path d="M750 105c-88 33-133 132-100 220 33 88 132 133 220 100-53 65-147 88-227 49-99-47-141-166-94-265 37-78 119-120 201-104z" fill="#f5dc9d"/>
+  <path d="M318 214c-99 58-132 186-74 285 58 99 186 132 285 74" fill="none" stroke="#d7b765" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 28"/>
+  <g fill="#e8ca7d" stroke="#fff0bf" stroke-width="3">
+    <circle cx="308" cy="230" r="16"/><circle cx="270" cy="267" r="16"/><circle cx="244" cy="314" r="16"/><circle cx="234" cy="368" r="16"/><circle cx="240" cy="423" r="16"/><circle cx="263" cy="473" r="16"/><circle cx="299" cy="515" r="16"/><circle cx="346" cy="544" r="16"/><circle cx="400" cy="557" r="16"/><circle cx="455" cy="553" r="16"/><circle cx="507" cy="532" r="16"/>
+  </g>
+  <path d="M523 544l45 58 38-30-45-57z" fill="#c99f48" stroke="#f7e4ac" stroke-width="5"/>
+  <path d="M587 589l25 43M570 602l12 48M602 579l36 34" stroke="#f4d48a" stroke-width="7" stroke-linecap="round"/>
+  <text x="750" y="545" fill="#f8e9bd" font-size="86" text-anchor="middle" font-family="serif">وِرْد</text>
+</svg>

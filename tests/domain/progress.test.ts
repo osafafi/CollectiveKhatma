@@ -307,6 +307,7 @@ describe('memberReadingInsights', () => {
       completedKhatmas: 2,
       pagesReadThisMonth: 7,
       longestDailyStreak: 3,
+      completedWirdDays: 0,
     });
   });
 
@@ -374,6 +375,49 @@ describe('memberReadingInsights', () => {
       fullKhatmas: 2,
       nextKhatmaPages: 6,
       nextKhatmaPercent: 0,
+    });
+  });
+
+  it('credits repeated Quran Wird pages and lets a custom-dua Wird extend the streak', () => {
+    const result = memberReadingInsights({
+      memberId: 'selected',
+      roster: [member('selected', [])],
+      khatmas: [],
+      assignments: [],
+      wirdCompletions: [
+        {
+          id: 'day-1',
+          memberId: 'selected',
+          date: '2026-07-01',
+          completedAt: atLocalNoon(2026, 7, 1),
+          contentKind: 'quran',
+          pages: [1, 2, 3],
+        },
+        {
+          id: 'day-2',
+          memberId: 'selected',
+          date: '2026-07-02',
+          completedAt: atLocalNoon(2026, 7, 2),
+          contentKind: 'quran',
+          pages: [1, 2, 3],
+        },
+        {
+          id: 'day-3',
+          memberId: 'selected',
+          date: '2026-07-03',
+          completedAt: atLocalNoon(2026, 7, 3),
+          contentKind: 'dua',
+          pages: [],
+        },
+      ],
+      referenceTime: atLocalNoon(2026, 7, 20),
+    });
+
+    expect(result).toMatchObject({
+      lifetimePagesRead: 6,
+      pagesReadThisMonth: 6,
+      longestDailyStreak: 3,
+      completedWirdDays: 3,
     });
   });
 

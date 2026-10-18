@@ -55,6 +55,15 @@ export interface FinishRoundResult {
   error: Error | null;
 }
 
+export interface FinishWirdTarget {
+  wirdId: string;
+  memberId: string;
+  date: string;
+  contentKind: 'quran' | 'dua';
+  pages: readonly number[];
+  onAccepted?: () => void;
+}
+
 /**
  * One member's "I finished my pages" action, for one round.
  *
@@ -103,6 +112,58 @@ export function useFinishRound(target: FinishRoundTarget): FinishRoundResult {
   };
 }
 
+/** Daily Wird completion with the same durable offline behavior as khatma finishes. */
+export function useFinishWird(target: FinishWirdTarget): FinishRoundResult {
+  const { wirdId, memberId, date, contentKind, pages, onAccepted } = target;
+  const complete = useCompleteWirdDayRaw();
+  const operation = useOperation(complete);
+  const queue = useFinishQueue();
+  const roundKey = Number(date.replaceAll('-', ''));
+  const { execute } = operation;
+  const run = useCallback((): void => {
+    const completedAt = Date.now();
+    const input = {
+      wirdId,
+      memberId,
+      date,
+      completedAt,
+      contentKind,
+      pages: [...pages],
+    };
+    const entry = {
+      kind: 'wird' as const,
+      khatmaId: wirdId,
+      memberId,
+      round: roundKey,
+      activeSeriesKhatmaIds: [] as string[],
+      date,
+      contentKind,
+      pages: [...pages],
+      queuedAt: completedAt,
+    };
+    if (!isOnline()) {
+      queueFinish(entry);
+      onAccepted?.();
+      return;
+    }
+    void Promise.race([execute(input), timeout(UNREACHABLE_AFTER_MS)]).then((settled) => {
+      if (settled === TIMED_OUT) {
+        queueFinish(entry);
+        onAccepted?.();
+      } else if (settled.status === 'success') onAccepted?.();
+    });
+  }, [contentKind, date, execute, memberId, onAccepted, pages, roundKey, wirdId]);
+
+  const isQueued = isFinishQueued(queue, wirdId, memberId, roundKey);
+  return {
+    run,
+    isPending: operation.isPending && !isQueued,
+    isDone: operation.state.status === 'success',
+    isQueued,
+    error: isQueued ? null : operation.state.error,
+  };
+}
+
 /**
  * Drain the finish queue: once when the app starts, and again whenever the
  * connection comes back. Mounted once, high in the member tree, so a tap saved
@@ -110,13 +171,14 @@ export function useFinishRound(target: FinishRoundTarget): FinishRoundResult {
  */
 export function useFinishQueueReplay(): void {
   const markDone = useWriteOperationRaw();
+  const completeWirdDay = useCompleteWirdDayRaw();
   const hasQueued = useFinishQueue().length > 0;
 
   useEffect(() => {
     let cancelled = false;
     const replay = (): void => {
       if (cancelled || !isOnline()) return;
-      void replayFinishQueue(markDone);
+      void replayFinishQueue({ markRoundDone: markDone, completeWirdDay });
     };
     const replayWhenVisible = (): void => {
       if (document.visibilityState === 'visible') replay();
@@ -135,7 +197,7 @@ export function useFinishQueueReplay(): void {
       document.removeEventListener('visibilitychange', replayWhenVisible);
       if (timer !== undefined) clearInterval(timer);
     };
-  }, [markDone, hasQueued]);
+  }, [markDone, completeWirdDay, hasQueued]);
 }
 
 /** Subscribe to the queue itself, so a queued tap re-renders its own button. */
@@ -150,6 +212,10 @@ function useFinishQueue() {
  */
 function useWriteOperationRaw() {
   return useContext(WriteOperationsContext).markRoundDone;
+}
+
+function useCompleteWirdDayRaw() {
+  return useContext(WriteOperationsContext).completeWirdDay;
 }
 
 function isOnline(): boolean {

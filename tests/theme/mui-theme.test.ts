@@ -129,6 +129,26 @@ describe('MUI theme — token mapping', () => {
     expect(contrastRatio(rgb(t.goldInk), rgb(t.goldSoft))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each(MODES)('keeps %s text legible on the gold (Wird) hero and card', (mode) => {
+    const t = TOKENS[mode];
+    const stops = (gradient: string) =>
+      [...gradient.matchAll(/#[0-9a-f]{6}/gi)].map((match) => rgb(match[0]));
+
+    const heroStops = stops(t.goldHeroGrad);
+    expect(heroStops).toHaveLength(3);
+    for (const stop of heroStops) {
+      expect(contrastRatio(rgb(t.heroInk), stop)).toBeGreaterThanOrEqual(4.5);
+    }
+
+    const cardStops = stops(t.goldCardBg);
+    expect(cardStops).toEqual([rgb(t.surface), rgb(t.goldSoft)]);
+    for (const stop of cardStops) {
+      for (const foreground of [rgb(t.ink), rgb(t.muted), rgb(t.goldInk)]) {
+        expect(contrastRatio(foreground, stop)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
   it('derives the focus ring from the mode primary in the retained globals', () => {
     for (const mode of MODES) {
       const theme = createKhatmaTheme(mode);
@@ -183,6 +203,8 @@ describe('MUI theme — token mapping', () => {
       expect(theme.custom.goldSoft).toBe(t.goldSoft);
       expect(theme.custom.goldInk).toBe(t.goldInk);
       expect(theme.custom.heroGrad).toBe(t.heroGrad);
+      expect(theme.custom.goldHeroGrad).toBe(t.goldHeroGrad);
+      expect(theme.custom.goldCardBg).toBe(t.goldCardBg);
       expect(theme.custom.heroInk).toBe(t.heroInk);
       expect(theme.custom.cellRem).toBe(t.cellRem);
       expect(theme.custom.tabActiveBg).toBe(t.tabActiveBg);

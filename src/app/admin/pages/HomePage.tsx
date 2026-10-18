@@ -24,7 +24,12 @@ import {
 } from '@/app/store';
 import { AdminRouteLink } from '@/app/routing/RouteLink';
 import { DonutChart, QuranPageGrid, SegmentBar } from '@/components/charts';
-import { NestedSurface, StatusChip, SurfaceCard } from '@/components/primitives';
+import {
+  KhatmaSeriesArtwork,
+  NestedSurface,
+  StatusChip,
+  SurfaceCard,
+} from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { formatPageRanges, toWesternDigits } from '@/content/quran/symbols';
 import { warningLevel } from '@/domain/distribution';
@@ -37,6 +42,7 @@ import {
 } from '@/domain/progress';
 import { activeSeriesGroups, seriesTitle, type SeriesGroup } from '@/domain/series';
 import type { Assignment, Khatma, Person } from '@/domain/types';
+import { isWird } from '@/domain/wird';
 import { useQuranScopeMaps, type QuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { DistributionPlannerDialog } from '@/app/admin/distribution/DistributionPlannerDialog';
 
@@ -48,6 +54,9 @@ import { DistributionPlannerDialog } from '@/app/admin/distribution/Distribution
 export function AdminHomePage() {
   const khatmas = useAppSelector(selectKhatmas);
   const groups = activeSeriesGroups(khatmas);
+  const activeWirds = khatmas.filter(
+    (series) => isWird(series) && series.status === 'active',
+  );
   // Loaded once for the whole dashboard (distribution needs surah/juz maps).
   const scopeMaps = useQuranScopeMaps();
 
@@ -58,22 +67,54 @@ export function AdminHomePage() {
         .map((khatma) => (
           <HistorySubscription key={khatma.id} khatmaId={khatma.id} />
         ))}
-      {groups.length === 0 ? (
+      {groups.length === 0 && activeWirds.length === 0 ? (
         // Before the first khatmas snapshot this empty card also shows transiently
         // (no dedicated loading state), matching the legacy dashboard.
         <SurfaceCard>
           <Typography color="text.secondary">{strings.admin.noActive}</Typography>
         </SurfaceCard>
-      ) : (
-        groups.map((group) => (
-          <SeriesBlock
-            key={group.seriesId}
-            group={group}
-            allKhatmas={khatmas}
-            scopeMaps={scopeMaps}
-          />
-        ))
-      )}
+      ) : null}
+      {groups.map((group) => (
+        <SeriesBlock
+          key={group.seriesId}
+          group={group}
+          allKhatmas={khatmas}
+          scopeMaps={scopeMaps}
+        />
+      ))}
+      {activeWirds.length > 0 ? (
+        <SurfaceCard title={strings.member.wirdBadge} tone="gold">
+          <Stack spacing={2}>
+            {activeWirds.map((wird) => (
+              <Stack
+                key={wird.id}
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: 'center' }}
+              >
+                <KhatmaSeriesArtwork
+                  variant="avatar"
+                  imageName={wird.imageName}
+                  alt={strings.admin.seriesImageAlt}
+                  size={48}
+                />
+                <Link
+                  component={AdminRouteLink}
+                  to={{ name: 'khatma', id: wird.id }}
+                  underline="always"
+                  sx={{ flex: 1, fontWeight: 700 }}
+                >
+                  {seriesTitle(wird, toWesternDigits)}
+                </Link>
+                <StatusChip
+                  tone="accent"
+                  label={`${strings.member.wirdDaysCompleted}: ${toWesternDigits(wird.completionCount ?? 0)}`}
+                />
+              </Stack>
+            ))}
+          </Stack>
+        </SurfaceCard>
+      ) : null}
     </Stack>
   );
 }

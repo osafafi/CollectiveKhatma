@@ -12,6 +12,7 @@ import { AppButton } from '@/components/primitives';
 import { DEFAULT_DU3A_TEXT, strings } from '@/content/strings.ar';
 import { khatmaProgress } from '@/domain/progress';
 import type { Khatma } from '@/domain/types';
+import { isKhatma } from '@/domain/wird';
 import { useMemberIdentity } from './memberIdentityContext';
 
 interface MemberCompletionInterruptProps {
@@ -29,6 +30,7 @@ export function MemberCompletionInterrupt({ children }: MemberCompletionInterrup
     (state) =>
       selectKhatmas(state).filter(
         (khatma) =>
+          isKhatma(khatma) &&
           khatma.status === 'active' &&
           khatma.duaReciterId === memberId &&
           khatma.memberIds.includes(memberId) &&

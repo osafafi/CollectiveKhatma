@@ -12,6 +12,7 @@ import {
 } from '@/domain/distribution';
 import { memberReliabilityScores } from '@/domain/progress';
 import { pickRolloverDuaReciter } from '@/domain/rotation';
+import { isKhatma } from '@/domain/wird';
 import type { PageUnitMaps } from '@/domain/assignment';
 import type {
   Assignment,
@@ -166,7 +167,7 @@ export function runDistribution(
       const snap = await tx.get(doc(khatmasCol, id));
       if (!snap.exists()) throw new Error(`runDistribution: khatma ${id} not found`);
       const khatma = { id, ...(snap.data() as Omit<Khatma, 'id'>) };
-      if (khatma.status !== 'active') continue; // completed since the button was drawn
+      if (!isKhatma(khatma) || khatma.status !== 'active') continue;
       khatmas.push({ ...khatma, assignments: [] });
     }
     khatmas.sort((a, b) => a.seriesNumber - b.seriesNumber);
@@ -355,7 +356,9 @@ export function commitDistributionRun(
       if (!snap.exists())
         throw new Error(`commitDistributionRun: khatma ${id} not found`);
       const khatma = { id, ...(snap.data() as Omit<Khatma, 'id'>) };
-      if (khatma.status === 'active') khatmas.push({ ...khatma, assignments: [] });
+      if (isKhatma(khatma) && khatma.status === 'active') {
+        khatmas.push({ ...khatma, assignments: [] });
+      }
     }
     khatmas.sort((left, right) => left.seriesNumber - right.seriesNumber);
     const latest = khatmas[khatmas.length - 1];

@@ -7,6 +7,7 @@ import {
   resetFinishQueue,
   subscribeToFinishQueue,
   type MarkRoundDone,
+  type CompleteWirdDay,
 } from '@/app/operations/finishQueue';
 import { ReleasedChunkError } from '@/data/assignments';
 
@@ -66,6 +67,35 @@ describe('finish queue', () => {
     expect(result.sent).toBe(2);
     expect(markRoundDone).toHaveBeenNthCalledWith(1, 'k1', 'p1', 3, ['k1', 'k2']);
     expect(markRoundDone).toHaveBeenNthCalledWith(2, 'k1', 'p1', 4, ['k1', 'k2']);
+    expect(getQueuedFinishes()).toHaveLength(0);
+  });
+
+  it('replays a queued Wird with the captured day, pages, and tap time', async () => {
+    const markRoundDone = vi.fn<MarkRoundDone>().mockResolvedValue(undefined);
+    const completeWirdDay = vi.fn<CompleteWirdDay>().mockResolvedValue(undefined);
+    queueFinish({
+      kind: 'wird',
+      khatmaId: 'w1',
+      memberId: 'p1',
+      round: 20261018,
+      activeSeriesKhatmaIds: [],
+      date: '2026-10-18',
+      contentKind: 'quran',
+      pages: [1, 2, 3],
+      queuedAt: 1234,
+    });
+
+    await replayFinishQueue({ markRoundDone, completeWirdDay });
+
+    expect(markRoundDone).not.toHaveBeenCalled();
+    expect(completeWirdDay).toHaveBeenCalledWith({
+      wirdId: 'w1',
+      memberId: 'p1',
+      date: '2026-10-18',
+      completedAt: 1234,
+      contentKind: 'quran',
+      pages: [1, 2, 3],
+    });
     expect(getQueuedFinishes()).toHaveLength(0);
   });
 

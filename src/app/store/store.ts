@@ -4,6 +4,7 @@ import { contentReducer } from './contentSlice';
 import { feedbackReducer } from './feedbackSlice';
 import { khatmasReducer } from './khatmasSlice';
 import { rosterReducer } from './rosterSlice';
+import { wirdCompletionsReducer } from './wirdCompletionsSlice';
 
 export function createAppStore() {
   return configureStore({
@@ -13,6 +14,7 @@ export function createAppStore() {
       assignments: assignmentsReducer,
       content: contentReducer,
       feedback: feedbackReducer,
+      wirdCompletions: wirdCompletionsReducer,
     },
   });
 }

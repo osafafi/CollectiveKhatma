@@ -62,7 +62,9 @@ export interface MemberCapacity {
   juz: number;
 }
 
+export type ReadingSeriesKind = 'khatma' | 'wird';
 export type KhatmaStatus = 'active' | 'completed';
+export type ReadingSeriesStatus = KhatmaStatus | 'archived';
 export type DistributionRunStatus = 'open' | 'closed';
 export type AssignmentChunkStatus = 'pending' | 'completed' | 'released';
 
@@ -91,7 +93,9 @@ export interface DistributionRun {
 export type PageScope =
   | { kind: 'full'; totalPages?: number }
   | { kind: 'range'; fromPage: number; toPage: number }
-  | { kind: 'surahs'; surahIds: number[] };
+  | { kind: 'surahs'; surahIds: number[] }
+  | { kind: 'juz'; juzIds: number[] }
+  | { kind: 'dua' };
 
 /**
  * A group reading. Firestore: `khatmas/{id}`
@@ -113,6 +117,8 @@ export type PageScope =
  */
 export interface Khatma {
   id: string;
+  /** Missing on legacy documents and therefore treated as `khatma`. */
+  kind?: ReadingSeriesKind;
   /** Stable across the whole series; minted when the series is first created. */
   seriesId: string;
   /** Series display name (e.g. "أهل القرآن") — the number is appended in the UI. */
@@ -133,7 +139,7 @@ export interface Khatma {
    * the same pace.
    */
   capacities: Record<string, MemberCapacity>;
-  status: KhatmaStatus;
+  status: ReadingSeriesStatus;
   /** Pages not yet held by any live chunk, ascending. Starts as the full pool. */
   remainingPages: number[];
   /** How many distribution rounds have run against THIS khatma. */
@@ -152,7 +158,24 @@ export interface Khatma {
   duaReciterId: string;
   /** Epoch ms when the khatma was marked completed (drives the series history). */
   completedAt?: number;
+  /** Wird-only: previous assignees retained so their statistics/history stay readable. */
+  pastMemberIds?: string[];
+  /** Wird-only: custom text when `scope.kind === 'dua'`. */
+  wirdDuaText?: string;
+  /** Wird-only: total accepted daily completions across all assignees. */
+  completionCount?: number;
   createdAt: number;
+}
+
+/** One immutable daily completion in `khatmas/{wirdId}/wirdCompletions/{id}`. */
+export interface WirdCompletion {
+  id: string;
+  memberId: string;
+  date: string;
+  completedAt: number;
+  contentKind: 'quran' | 'dua';
+  /** Snapshot of the Quran pages read that day; empty for a custom du'a. */
+  pages: number[];
 }
 
 /**

@@ -84,6 +84,7 @@ function makeKhatma(id: string, overrides: Partial<Khatma> = {}): Khatma {
 
 function mockOperations(): WriteOperations & {
   createKhatma: ReturnType<typeof vi.fn>;
+  createWird: ReturnType<typeof vi.fn>;
   setSeriesImage: ReturnType<typeof vi.fn>;
 } {
   return {
@@ -91,6 +92,7 @@ function mockOperations(): WriteOperations & {
     createKhatma: vi
       .fn<WriteOperations['createKhatma']>()
       .mockResolvedValue('new-khatma'),
+    createWird: vi.fn<WriteOperations['createWird']>().mockResolvedValue('new-wird'),
     setSeriesImage: vi
       .fn<WriteOperations['setSeriesImage']>()
       .mockResolvedValue(undefined),
@@ -283,6 +285,50 @@ describe('admin Khatmas list/create', () => {
     await waitFor(() => expect(operations.createKhatma).toHaveBeenCalledTimes(1));
     expect(operations.createKhatma.mock.calls[0]![0]).toMatchObject({
       imageName: 'green-arch.svg',
+    });
+  });
+
+  it('creates a single-member Surah Wird without using khatma distribution', async () => {
+    const { user, operations } = renderKhatmas({
+      roster: [amina, maryam],
+      khatmas: [],
+    });
+    await user.click(screen.getByRole('button', { name: strings.admin.createNewButton }));
+    await user.click(
+      screen.getByRole('combobox', { name: strings.admin.seriesTypeLabel }),
+    );
+    await user.click(
+      within(screen.getByRole('listbox')).getByRole('option', {
+        name: strings.admin.typeWird,
+      }),
+    );
+    await user.type(
+      screen.getByLabelText(strings.admin.wirdNamePlaceholder),
+      'ورد الملك',
+    );
+    await user.click(
+      screen.getByRole('combobox', { name: strings.admin.wirdMemberLabel }),
+    );
+    await user.click(
+      within(screen.getByRole('listbox')).getByRole('option', { name: amina.name }),
+    );
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: `${toWesternDigits(1)}. ${SURAHS[0]!.name}`,
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: strings.admin.createWirdButton }),
+    );
+
+    await waitFor(() => expect(operations.createWird).toHaveBeenCalledTimes(1));
+    expect(operations.createKhatma).not.toHaveBeenCalled();
+    expect(operations.createWird.mock.calls[0]![0]).toMatchObject({
+      seriesName: 'ورد الملك',
+      seriesNumber: 1,
+      memberId: amina.id,
+      scope: { kind: 'surahs', surahIds: [1] },
+      pages: [1],
     });
   });
 

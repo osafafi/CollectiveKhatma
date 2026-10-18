@@ -3,6 +3,7 @@ import { AppProviders } from '@/app/providers/AppProviders';
 import { useReadingScale } from '@/app/persistence';
 import { AdminAssignmentsSubscriptions } from '@/app/admin/AdminAssignmentsSubscriptions';
 import { AdminGhostMemberCleanup } from '@/app/admin/AdminGhostMemberCleanup';
+import { AdminWirdCompletionSubscriptions } from '@/app/admin/AdminWirdCompletionSubscriptions';
 import { AdminShell } from '@/app/admin/AdminShell';
 import { CreateKhatmaPrefillProvider } from '@/app/admin/CreateKhatmaPrefill';
 import { AdminHomePage } from '@/app/admin/pages/HomePage';
@@ -30,6 +31,7 @@ export function AdminExperience() {
   return (
     <CreateKhatmaPrefillProvider>
       <AdminAssignmentsSubscriptions />
+      <AdminWirdCompletionSubscriptions />
       <AdminGhostMemberCleanup />
       <AdminShell>
         <AdminRouteContent />

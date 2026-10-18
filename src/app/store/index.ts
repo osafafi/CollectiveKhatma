@@ -36,3 +36,7 @@ export {
 export { createAppStore, store } from './store';
 export type { AppDispatch, AppStore, RootState } from './store';
 export { useAssignmentsSubscription } from './useAssignmentsSubscription';
+export { useWirdCompletionsSubscription } from './useWirdCompletionsSubscription';
+export { wirdCompletionsActions } from './wirdCompletionsSlice';
+export type { WirdCompletionBucket, WirdCompletionsState } from './wirdCompletionsSlice';
+export { selectWirdCompletions, selectWirdCompletionsListener } from './selectors';

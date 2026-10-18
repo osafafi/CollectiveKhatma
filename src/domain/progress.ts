@@ -1,6 +1,7 @@
 /** Pure progress / insight calculations (REQUIREMENTS §6, §8). */
 
-import type { Assignment, Khatma, Person, RoundChunk } from './types';
+import type { Assignment, Khatma, Person, RoundChunk, WirdCompletion } from './types';
+import { isKhatma } from './wird';
 import { isChunkCompleted, isChunkReleased } from './chunkStatus';
 
 export { isChunkCompleted, isChunkReleased } from './chunkStatus';
@@ -40,14 +41,18 @@ export interface MemberReadingInsights {
   pagesReadThisMonth: number;
   /** Longest run of consecutive local calendar days containing a credited completion. */
   longestDailyStreak: number;
+  /** Accepted daily Wird completions, including custom du'a days. */
+  completedWirdDays: number;
 }
 
 export interface MemberReadingInsightsInput {
   memberId: string;
   roster: readonly Pick<Person, 'id' | 'completedPages'>[];
-  khatmas: readonly Pick<Khatma, 'status' | 'memberIds'>[];
+  khatmas: readonly Pick<Khatma, 'kind' | 'status' | 'memberIds'>[];
   /** Assignment history from every selected-member khatma, active and completed. */
   assignments: readonly Assignment[];
+  /** Daily Wird history for this member, including archived/reassigned Wirds. */
+  wirdCompletions?: readonly WirdCompletion[];
   /** Epoch ms used to select "this month"; defaults to the user's current time. */
   referenceTime?: number;
 }
@@ -94,6 +99,31 @@ function completedReadingRecords(
   return records;
 }
 
+function wirdReadingRecords(
+  memberId: string,
+  completions: readonly WirdCompletion[],
+): CompletedReadingRecord[] {
+  return completions.flatMap((completion) => {
+    if (completion.memberId !== memberId || !Number.isFinite(completion.completedAt)) {
+      return [];
+    }
+    const completedDate = new Date(completion.completedAt);
+    if (Number.isNaN(completedDate.getTime())) return [];
+    return [
+      {
+        completedDate,
+        day:
+          Date.UTC(
+            completedDate.getFullYear(),
+            completedDate.getMonth(),
+            completedDate.getDate(),
+          ) / DAY_MS,
+        pages: completion.pages.length,
+      },
+    ];
+  });
+}
+
 function longestStreak(readingDays: ReadonlySet<number>): number {
   let longest = 0;
   let current = 0;
@@ -115,6 +145,7 @@ export function memberReadingInsights({
   roster,
   khatmas,
   assignments,
+  wirdCompletions = [],
   referenceTime = Date.now(),
 }: MemberReadingInsightsInput): MemberReadingInsights {
   const member = roster.find((person) => person.id === memberId);
@@ -134,7 +165,11 @@ export function memberReadingInsights({
   let pagesReadThisMonth = 0;
   let historyPages = 0;
 
-  for (const record of completedReadingRecords(memberId, assignments)) {
+  const records = [
+    ...completedReadingRecords(memberId, assignments),
+    ...wirdReadingRecords(memberId, wirdCompletions),
+  ];
+  for (const record of records) {
     if (
       record.completedDate.getFullYear() === referenceYear &&
       record.completedDate.getMonth() === referenceMonth
@@ -155,10 +190,16 @@ export function memberReadingInsights({
     nextKhatmaPercent: Math.floor((nextKhatmaPages / QURAN_TOTAL_PAGES) * 100),
     topReaderPercent,
     completedKhatmas: khatmas.filter(
-      (khatma) => khatma.status === 'completed' && khatma.memberIds.includes(memberId),
+      (khatma) =>
+        isKhatma(khatma) &&
+        khatma.status === 'completed' &&
+        khatma.memberIds.includes(memberId),
     ).length,
     pagesReadThisMonth,
     longestDailyStreak,
+    completedWirdDays: wirdCompletions.filter(
+      (completion) => completion.memberId === memberId,
+    ).length,
   };
 }
 
@@ -220,10 +261,14 @@ export interface MemberReliabilityScore {
 export function memberReliabilityScores(
   roster: readonly Pick<Person, 'id'>[],
   assignments: readonly Assignment[],
+  wirdCompletions: readonly WirdCompletion[] = [],
 ): Record<string, MemberReliabilityScore> {
   return Object.fromEntries(
     roster.map((person) => {
-      const records = completedReadingRecords(person.id, assignments);
+      const records = [
+        ...completedReadingRecords(person.id, assignments),
+        ...wirdReadingRecords(person.id, wirdCompletions),
+      ];
       const readingDays = new Set(records.map((record) => record.day));
       const streak = longestStreak(readingDays);
       const averagePages =

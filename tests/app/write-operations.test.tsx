@@ -29,6 +29,7 @@ import {
 } from '@/data/khatmas';
 import { addPerson, removePerson, renamePerson, updatePerson } from '@/data/roster';
 import { disableSelfAndReleasePages } from '@/data/personStatus';
+import { completeWirdDay, createWird, setWirdStatus, updateWird } from '@/data/wirds';
 
 function deferred<Value>() {
   let resolve!: (value: Value | PromiseLike<Value>) => void;
@@ -54,8 +55,11 @@ describe('write operations', () => {
       setFeedbackRead,
       deleteFeedback,
       createKhatma,
+      createWird,
       setSeriesImage,
       updateKhatma,
+      updateWird,
+      setWirdStatus,
       renameSeries,
       completeKhatma,
       addMemberToKhatma,
@@ -64,6 +68,7 @@ describe('write operations', () => {
       removeMemberFromKhatma,
       deleteKhatma,
       markRoundDone,
+      completeWirdDay,
       clearRoundDone,
       clearWarning,
       runDistribution: expect.any(Function),

@@ -7,6 +7,7 @@ import { strings } from '@/content/strings.ar';
 import { khatmaProgress } from '@/domain/progress';
 import { khatmasListEntries, seriesTitle } from '@/domain/series';
 import type { Khatma } from '@/domain/types';
+import { isWird } from '@/domain/wird';
 
 /** Ongoing khatmas plus the terminal entry of any fully ended series. */
 export function KhatmasList({ khatmas }: { khatmas: readonly Khatma[] }) {
@@ -37,8 +38,12 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
   const assignments = useAppSelector((state) =>
     selectAssignmentsForKhatma(state, khatma.id),
   );
-  const percent =
-    khatma.status === 'completed' ? 100 : khatmaProgress(khatma, assignments).percent;
+  const wird = isWird(khatma);
+  const percent = wird
+    ? 0
+    : khatma.status === 'completed'
+      ? 100
+      : khatmaProgress(khatma, assignments).percent;
 
   return (
     <Link
@@ -63,13 +68,18 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
       <Typography component="span" sx={{ flex: 1, fontWeight: 600 }} color="primary.main">
         {seriesTitle(khatma, toWesternDigits)}
       </Typography>
+      {wird ? (
+        <StatusChip size="small" tone="accent" label={strings.member.wirdBadge} />
+      ) : null}
       <StatusChip
         size="small"
         tone={khatma.status === 'active' ? 'primary' : 'neutral'}
         label={
           khatma.status === 'active'
             ? strings.admin.statusActive
-            : strings.admin.statusCompleted
+            : wird
+              ? strings.admin.statusArchived
+              : strings.admin.statusCompleted
         }
       />
       <Typography
@@ -78,7 +88,9 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         color="text.secondary"
         sx={{ fontVariantNumeric: 'tabular-nums' }}
       >
-        {`${toWesternDigits(percent)}٪`}
+        {wird
+          ? `${strings.member.wirdDaysCompleted}: ${toWesternDigits(khatma.completionCount ?? 0)}`
+          : `${toWesternDigits(percent)}٪`}
       </Typography>
     </Link>
   );

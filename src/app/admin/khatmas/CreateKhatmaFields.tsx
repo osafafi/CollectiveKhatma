@@ -13,7 +13,8 @@ import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import type { Surah } from '@/content/quran/types';
 import { findSeriesByName, nextSeriesNumber } from '@/domain/series';
-import type { Khatma, MemberCapacity, Person } from '@/domain/types';
+import type { Khatma, MemberCapacity, Person, ReadingSeriesKind } from '@/domain/types';
+import { WirdContentFields } from '../wird/WirdContentFields';
 import { CreateKhatmaCapacityRow } from './CreateKhatmaCapacityRow';
 import { requiredDraftCapacity, type CreateKhatmaDraft } from './createKhatmaDraft';
 
@@ -42,7 +43,7 @@ export function CreateKhatmaFields({
   onCancel,
 }: CreateKhatmaFieldsProps) {
   const selected = roster.filter((person) => draft.memberIds.has(person.id));
-  const matchingSeries = findSeriesByName(khatmas, draft.seriesName);
+  const matchingSeries = findSeriesByName(khatmas, draft.seriesName, draft.kind);
   const matchingImageName = matchingSeries
     ? khatmas.find(
         (candidate) =>
@@ -83,31 +84,98 @@ export function CreateKhatmaFields({
     ...selected.map((person) => ({ value: person.id, label: person.name })),
   ];
   const reciterValue = draft.memberIds.has(draft.reciterId) ? draft.reciterId : '';
+  const typeOptions: SelectOption[] = [
+    { value: 'khatma', label: strings.admin.typeKhatma },
+    { value: 'wird', label: strings.admin.typeWird },
+  ];
+  const memberOptions: SelectOption[] = roster.map((person) => ({
+    value: person.id,
+    label: person.enabled
+      ? `${person.emoji || ''} ${person.name}`
+      : `${person.emoji || ''} ${person.name} (${strings.admin.disabledBadge})`,
+  }));
 
   return (
-    <SurfaceCard title={strings.admin.createHeading}>
+    <SurfaceCard
+      title={
+        draft.kind === 'wird'
+          ? strings.admin.createWirdHeading
+          : strings.admin.createHeading
+      }
+    >
       <Stack spacing={3}>
+        <AppSelectField
+          label={strings.admin.seriesTypeLabel}
+          value={draft.kind}
+          options={typeOptions}
+          onChange={(value) =>
+            setDraft((current) => ({
+              ...current,
+              kind: value as ReadingSeriesKind,
+              memberIds: new Set(),
+              memberCaps: {},
+              reciterId: '',
+            }))
+          }
+        />
         <AppTextField
-          label={strings.admin.seriesNamePlaceholder}
+          label={
+            draft.kind === 'wird'
+              ? strings.admin.wirdNamePlaceholder
+              : strings.admin.seriesNamePlaceholder
+          }
           value={draft.seriesName}
           onChange={(event) =>
             setDraft((current) => ({ ...current, seriesName: event.target.value }))
           }
         />
-        <SeriesContinuationNote khatmas={khatmas} name={draft.seriesName} />
+        <SeriesContinuationNote
+          khatmas={khatmas}
+          name={draft.seriesName}
+          kind={draft.kind}
+        />
         <SeriesImagePicker
           value={draft.imageName ?? matchingImageName ?? ''}
           disabled={busy}
           onChange={(imageName) => setDraft((current) => ({ ...current, imageName }))}
         />
 
-        <FieldGroup label={strings.admin.scopeLabel}>
-          <Typography>{strings.admin.fullQuranOnly}</Typography>
-        </FieldGroup>
+        {draft.kind === 'khatma' ? (
+          <FieldGroup label={strings.admin.scopeLabel}>
+            <Typography>{strings.admin.fullQuranOnly}</Typography>
+          </FieldGroup>
+        ) : (
+          <FieldGroup label={strings.admin.wirdContentLabel}>
+            <WirdContentFields
+              draft={draft.wird}
+              surahs={surahs}
+              onChange={(wird) => setDraft((current) => ({ ...current, wird }))}
+            />
+          </FieldGroup>
+        )}
 
-        <FieldGroup label={strings.admin.membersLabel}>
+        <FieldGroup
+          label={
+            draft.kind === 'wird'
+              ? strings.admin.wirdMemberLabel
+              : strings.admin.membersLabel
+          }
+        >
           {roster.length === 0 ? (
             <Typography color="text.secondary">{strings.admin.emptyRoster}</Typography>
+          ) : draft.kind === 'wird' ? (
+            <AppSelectField
+              label={strings.admin.wirdMemberLabel}
+              value={selected[0]?.id ?? ''}
+              options={[{ value: '', label: strings.admin.none }, ...memberOptions]}
+              onChange={(value) =>
+                setDraft((current) => ({
+                  ...current,
+                  memberIds: value ? new Set([value]) : new Set(),
+                  memberCaps: value ? { [value]: { pages: 0, surahs: 0, juz: 0 } } : {},
+                }))
+              }
+            />
           ) : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               {roster.map((person) => (
@@ -126,7 +194,7 @@ export function CreateKhatmaFields({
           )}
         </FieldGroup>
 
-        {selected.length > 0 ? (
+        {draft.kind === 'khatma' && selected.length > 0 ? (
           <FieldGroup label={strings.admin.capacityLabel}>
             <Stack spacing={2}>
               {selected.map((person) => (
@@ -142,12 +210,16 @@ export function CreateKhatmaFields({
           </FieldGroup>
         ) : null}
 
-        <AppSelectField
-          label={strings.admin.reciterLabel}
-          value={reciterValue}
-          options={reciterOptions}
-          onChange={(value) => setDraft((current) => ({ ...current, reciterId: value }))}
-        />
+        {draft.kind === 'khatma' ? (
+          <AppSelectField
+            label={strings.admin.reciterLabel}
+            value={reciterValue}
+            options={reciterOptions}
+            onChange={(value) =>
+              setDraft((current) => ({ ...current, reciterId: value }))
+            }
+          />
+        ) : null}
 
         <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <AppTextField
@@ -162,7 +234,11 @@ export function CreateKhatmaFields({
           />
           <AppTextField
             type="number"
-            label={strings.admin.khatmaNumberLabel}
+            label={
+              draft.kind === 'wird'
+                ? strings.admin.wirdNumberLabel
+                : strings.admin.khatmaNumberLabel
+            }
             value={draft.seriesNumberOverride}
             fieldWidth={120}
             onChange={(event) =>
@@ -182,7 +258,9 @@ export function CreateKhatmaFields({
           sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         >
           <AppButton disabled={busy} onClick={onCreate}>
-            {strings.admin.createButton}
+            {draft.kind === 'wird'
+              ? strings.admin.createWirdButton
+              : strings.admin.createButton}
           </AppButton>
           <AppButton variant="text" quiet color="inherit" onClick={onCancel}>
             {strings.admin.cancel}
@@ -202,16 +280,22 @@ export function CreateKhatmaFields({
 function SeriesContinuationNote({
   khatmas,
   name,
+  kind,
 }: {
   khatmas: readonly Khatma[];
   name: string;
+  kind: ReadingSeriesKind;
 }) {
-  const existing = findSeriesByName(khatmas, name);
+  const existing = findSeriesByName(khatmas, name, kind);
   if (!existing) return null;
   const next = nextSeriesNumber(khatmas, existing.seriesId);
   return (
     <Typography variant="body2" color="text.secondary">
-      {`${strings.admin.continuesSeries} ${toWesternDigits(next)}`}
+      {`${
+        kind === 'wird'
+          ? strings.admin.continuesWirdSeries
+          : strings.admin.continuesSeries
+      } ${toWesternDigits(next)}`}
     </Typography>
   );
 }

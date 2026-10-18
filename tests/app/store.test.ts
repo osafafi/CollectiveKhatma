@@ -93,6 +93,7 @@ describe('Redux store foundation', () => {
       assignments: { byKhatmaId: {} },
       content: { value: null, listener: { status: 'idle', error: null } },
       feedback: { items: [], listener: { status: 'idle', error: null } },
+      wirdCompletions: { byWirdId: {} },
     });
   });
 

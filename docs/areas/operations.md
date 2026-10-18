@@ -49,6 +49,16 @@ atomic rollover may create N+1 with its first round already assigned, so its
 persisted `remainingPages` is legitimately smaller at creation time. New UI and
 rollover writes always create full-Quran khatmas.
 
+Wirds are an additive series shape stored in the same `khatmas` collection with
+`kind: "wird"`. Each has one current member, an active or archived lifecycle,
+and exactly one content mode: selected Surahs, selected Juz, or editable custom
+dua text. Daily completion records live at
+`khatmas/{wirdId}/wirdCompletions/{memberId_date}`. They are immutable,
+idempotent per member and local date, and retain the exact page snapshot used for
+history and stats. Member changes append the former member to `pastMemberIds` so
+their history remains visible. Legacy khatmas omit `kind` and keep their existing
+schema and rules.
+
 Feedback schema: `content/feedback/messages/{feedbackId}` is append-only at
 submission time. Each document stores `memberId`, `memberName`, `message`,
 `isRead`, and numeric `createdAt`. Create rules require unread 10–500-character
@@ -103,6 +113,11 @@ Hard rules:
   replayed write is raced against `REPLAY_TIMEOUT_MS` so one unreachable entry
   cannot hold the replay lock forever. Replay is safe because `markRoundDone` is
   idempotent — re-tapping a completed round is a no-op.
+- `completeWirdDay` is also transactional and idempotent. The offline finish
+  queue records the local completion date, content kind, and page snapshot at
+  tap time, then replays that exact completion after reconnect. Quran Wird pages
+  may therefore contribute again on each completed day; custom dua contributes
+  zero pages while still contributing a completed reading day.
 - An empty persistent cache arrives as a **ready** empty snapshot, not as a
   pending one. Listener status alone therefore cannot tell "nothing is cached
   on this device" apart from "nothing exists"; UI that must distinguish them

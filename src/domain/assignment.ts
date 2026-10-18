@@ -27,6 +27,7 @@ function pageRange(from: number, to: number): number[] {
 export function resolvePageScope(
   scope: PageScope,
   surahToPages?: Record<number, [number, number]>,
+  juzToPages?: Record<number, [number, number]>,
 ): number[] {
   switch (scope.kind) {
     case 'full': {
@@ -64,6 +65,22 @@ export function resolvePageScope(
       }
       return [...pages].sort((a, b) => a - b);
     }
+    case 'juz': {
+      if (!juzToPages) {
+        throw new Error(
+          'resolvePageScope: juzToPages is required to resolve a Juz scope',
+        );
+      }
+      const pages = new Set<number>();
+      for (const id of scope.juzIds) {
+        const span = juzToPages[id];
+        if (!span) throw new Error(`resolvePageScope: unknown Juz ${id}`);
+        for (let page = span[0]; page <= span[1]; page++) pages.add(page);
+      }
+      return [...pages].sort((left, right) => left - right);
+    }
+    case 'dua':
+      return [];
   }
 }
 
@@ -194,12 +211,15 @@ export interface RemainingPagesAssignmentPlan {
  * completed immediately.
  */
 export function planRemainingPagesAssignment(
-  khatma: Pick<Khatma, 'status' | 'memberIds' | 'remainingPages' | 'roundCount'>,
+  khatma: Pick<Khatma, 'kind' | 'status' | 'memberIds' | 'remainingPages' | 'roundCount'>,
   assignment: Assignment | undefined,
   memberId: string,
   date: string,
   chunkId: string,
 ): RemainingPagesAssignmentPlan | undefined {
+  if (khatma.kind === 'wird') {
+    throw new Error('planRemainingPagesAssignment: target must be a khatma');
+  }
   if (khatma.status !== 'active') {
     throw new Error('planRemainingPagesAssignment: khatma must be active');
   }

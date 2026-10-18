@@ -4,7 +4,8 @@
  * by both apps.
  */
 
-import type { Khatma } from './types';
+import type { Khatma, ReadingSeriesKind } from './types';
+import { isKhatma, isWird } from './wird';
 
 export interface SeriesGroup {
   seriesId: string;
@@ -19,7 +20,7 @@ export interface SeriesGroup {
 export function activeSeriesGroups(khatmas: readonly Khatma[]): SeriesGroup[] {
   const bySeries = new Map<string, Khatma[]>();
   for (const k of khatmas) {
-    if (k.status !== 'active') continue;
+    if (!isKhatma(k) || k.status !== 'active') continue;
     const group = bySeries.get(k.seriesId);
     if (group) group.push(k);
     else bySeries.set(k.seriesId, [k]);
@@ -45,7 +46,7 @@ export function completedInSeries(
   seriesId: string,
 ): Khatma[] {
   return khatmas
-    .filter((k) => k.seriesId === seriesId && k.status === 'completed')
+    .filter((k) => isKhatma(k) && k.seriesId === seriesId && k.status === 'completed')
     .sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));
 }
 
@@ -55,7 +56,10 @@ export function activeKhatmaIdsInSeries(
   seriesId: string,
 ): string[] {
   return khatmas
-    .filter((khatma) => khatma.seriesId === seriesId && khatma.status === 'active')
+    .filter(
+      (khatma) =>
+        isKhatma(khatma) && khatma.seriesId === seriesId && khatma.status === 'active',
+    )
     .sort((a, b) => a.seriesNumber - b.seriesNumber)
     .map((khatma) => khatma.id);
 }
@@ -68,7 +72,7 @@ export function activeKhatmaIdsInSeries(
 export function khatmasListEntries(khatmas: readonly Khatma[]): Khatma[] {
   const activeSeriesIds = new Set(
     khatmas
-      .filter((khatma) => khatma.status === 'active')
+      .filter((khatma) => isKhatma(khatma) && khatma.status === 'active')
       .map((khatma) => khatma.seriesId),
   );
   const terminalCompleted = new Map<string, Khatma>();
@@ -84,9 +88,29 @@ export function khatmasListEntries(khatmas: readonly Khatma[]): Khatma[] {
       terminalCompleted.set(khatma.seriesId, khatma);
     }
   }
+  const activeWirdSeriesIds = new Set(
+    khatmas
+      .filter((series) => isWird(series) && series.status === 'active')
+      .map((series) => series.seriesId),
+  );
+  const terminalArchivedWirds = new Map<string, Khatma>();
+  for (const series of khatmas) {
+    if (
+      !isWird(series) ||
+      series.status !== 'archived' ||
+      activeWirdSeriesIds.has(series.seriesId)
+    ) {
+      continue;
+    }
+    const current = terminalArchivedWirds.get(series.seriesId);
+    if (!current || series.seriesNumber > current.seriesNumber) {
+      terminalArchivedWirds.set(series.seriesId, series);
+    }
+  }
   return [
     ...khatmas.filter((khatma) => khatma.status === 'active'),
     ...terminalCompleted.values(),
+    ...terminalArchivedWirds.values(),
   ];
 }
 
@@ -107,9 +131,14 @@ export function nextSeriesNumber(khatmas: readonly Khatma[], seriesId: string): 
 export function findSeriesByName(
   khatmas: readonly Khatma[],
   name: string,
+  kind: ReadingSeriesKind = 'khatma',
 ): { seriesId: string; seriesName: string } | undefined {
   const wanted = name.trim();
-  const match = khatmas.find((k) => k.seriesName.trim() === wanted);
+  const match = khatmas.find(
+    (series) =>
+      series.seriesName.trim() === wanted &&
+      (kind === 'wird' ? isWird(series) : isKhatma(series)),
+  );
   return match ? { seriesId: match.seriesId, seriesName: match.seriesName } : undefined;
 }
 

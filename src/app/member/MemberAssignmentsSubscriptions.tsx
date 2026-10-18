@@ -1,6 +1,7 @@
 import { shallowEqual } from 'react-redux';
 import { selectKhatmas, useAppSelector, useAssignmentsSubscription } from '@/app/store';
 import { useMemberIdentity } from './memberIdentityContext';
+import { isKhatma } from '@/domain/wird';
 
 /**
  * Keep exactly the selected member's active-khatma assignment listeners alive.
@@ -12,7 +13,10 @@ export function MemberAssignmentsSubscriptions() {
     (state) =>
       selectKhatmas(state)
         .filter(
-          (khatma) => khatma.status === 'active' && khatma.memberIds.includes(memberId),
+          (khatma) =>
+            isKhatma(khatma) &&
+            khatma.status === 'active' &&
+            khatma.memberIds.includes(memberId),
         )
         .map((khatma) => khatma.id),
     shallowEqual,

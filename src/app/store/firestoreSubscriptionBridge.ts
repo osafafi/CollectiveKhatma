@@ -4,6 +4,7 @@ import type {
   Khatma,
   MemberFeedback,
   Person,
+  WirdCompletion,
 } from '@/domain/types';
 import { assignmentsActions } from './assignmentsSlice';
 import { contentActions } from './contentSlice';
@@ -11,6 +12,7 @@ import { feedbackActions } from './feedbackSlice';
 import { khatmasActions } from './khatmasSlice';
 import { rosterActions } from './rosterSlice';
 import type { AppStore } from './store';
+import { wirdCompletionsActions } from './wirdCompletionsSlice';
 
 export type SubscriptionCleanup = () => void;
 
@@ -30,6 +32,12 @@ export interface FirestoreSubscriptionSources {
     onChange: (assignments: Assignment[]) => void,
     onError: (error: unknown) => void,
   ) => SubscriptionCleanup;
+  /** Optional so older test harnesses remain valid while this beta source is additive. */
+  wirdCompletions?: (
+    wirdId: string,
+    onChange: (completions: WirdCompletion[]) => void,
+    onError: (error: unknown) => void,
+  ) => SubscriptionCleanup;
 }
 
 export interface FirestoreSubscriptionBridge {
@@ -37,6 +45,8 @@ export interface FirestoreSubscriptionBridge {
   startGlobalSubscriptions: () => SubscriptionCleanup;
   /** Retain the assignments listener for one khatma. */
   retainAssignmentsSubscription: (khatmaId: string) => SubscriptionCleanup;
+  /** Retain the daily completion listener for one Wird. */
+  retainWirdCompletionsSubscription: (wirdId: string) => SubscriptionCleanup;
   /** Retain the admin feedback inbox listener. */
   retainFeedbackSubscription: () => SubscriptionCleanup;
 }
@@ -117,6 +127,7 @@ export function createFirestoreSubscriptionBridge(
   let globalConsumers = 0;
   let closeGlobalSubscriptions: SubscriptionCleanup[] = [];
   const assignmentSubscriptions = new Map<string, SharedSubscription>();
+  const wirdCompletionSubscriptions = new Map<string, SharedSubscription>();
   let feedbackSubscription: SharedSubscription | null = null;
 
   function startGlobalSubscriptions(): SubscriptionCleanup {
@@ -193,6 +204,38 @@ export function createFirestoreSubscriptionBridge(
     return createAssignmentRelease(khatmaId, shared);
   }
 
+  function retainWirdCompletionsSubscription(wirdId: string): SubscriptionCleanup {
+    const existing = wirdCompletionSubscriptions.get(wirdId);
+    if (existing) {
+      existing.consumers += 1;
+      return createWirdCompletionRelease(wirdId, existing);
+    }
+
+    const source = sources.wirdCompletions;
+    const shared: SharedSubscription = {
+      consumers: 1,
+      close: source
+        ? openSubscription<WirdCompletion[]>(
+            (onChange, onError) => source(wirdId, onChange, onError),
+            () => dispatch(wirdCompletionsActions.subscriptionStarted({ wirdId })),
+            (completions) =>
+              dispatch(wirdCompletionsActions.snapshotReceived({ wirdId, completions })),
+            (error) =>
+              dispatch(wirdCompletionsActions.subscriptionFailed({ wirdId, error })),
+            () => dispatch(wirdCompletionsActions.subscriptionStopped({ wirdId })),
+          )
+        : (() => {
+            dispatch(wirdCompletionsActions.subscriptionStarted({ wirdId }));
+            dispatch(
+              wirdCompletionsActions.snapshotReceived({ wirdId, completions: [] }),
+            );
+            return () => dispatch(wirdCompletionsActions.subscriptionStopped({ wirdId }));
+          })(),
+    };
+    wirdCompletionSubscriptions.set(wirdId, shared);
+    return createWirdCompletionRelease(wirdId, shared);
+  }
+
   function createAssignmentRelease(
     khatmaId: string,
     shared: SharedSubscription,
@@ -208,6 +251,23 @@ export function createFirestoreSubscriptionBridge(
         shared.close();
       } finally {
         dispatch(assignmentsActions.assignmentsRemoved({ khatmaId }));
+      }
+    });
+  }
+
+  function createWirdCompletionRelease(
+    wirdId: string,
+    shared: SharedSubscription,
+  ): SubscriptionCleanup {
+    return once(() => {
+      if (wirdCompletionSubscriptions.get(wirdId) !== shared) return;
+      shared.consumers -= 1;
+      if (shared.consumers !== 0) return;
+      wirdCompletionSubscriptions.delete(wirdId);
+      try {
+        shared.close();
+      } finally {
+        dispatch(wirdCompletionsActions.removed({ wirdId }));
       }
     });
   }
@@ -247,6 +307,7 @@ export function createFirestoreSubscriptionBridge(
   return {
     startGlobalSubscriptions,
     retainAssignmentsSubscription,
+    retainWirdCompletionsSubscription,
     retainFeedbackSubscription,
   };
 }
