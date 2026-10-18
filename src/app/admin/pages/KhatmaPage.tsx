@@ -1,13 +1,14 @@
-import { Link, Stack, Typography } from '@mui/material';
+import { Stack } from '@mui/material';
 import {
   selectAssignmentsForKhatma,
   selectAssignmentsListener,
   selectKhatmaById,
   selectKhatmas,
   selectRoster,
+  selectWirdCompletions,
+  selectWirdCompletionsListener,
   useAppSelector,
 } from '@/app/store';
-import { adminHash } from '@/app/routing/routes';
 import { useQuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { useSurahs } from '@/app/admin/useSurahs';
 import {
@@ -19,9 +20,13 @@ import { KhatmaHistoryCard } from '@/app/admin/khatma/KhatmaHistoryCard';
 import { KhatmaMembersCard } from '@/app/admin/khatma/KhatmaMembersCard';
 import { KhatmaMetadataEditor } from '@/app/admin/khatma/KhatmaMetadataEditor';
 import { KhatmaReadingLogCard } from '@/app/admin/khatma/KhatmaReadingLogCard';
-import { SurfaceCard } from '@/components/primitives';
-import { strings } from '@/content/strings.ar';
+import {
+  KhatmaBackLink,
+  MissingKhatmaState,
+} from '@/app/admin/khatma/KhatmaRouteSupport';
 import { fullyUnreadSurahIds } from '@/domain/assignment';
+import { isWird } from '@/domain/wird';
+import { WirdAdminDetail } from '@/app/admin/wird/WirdAdminDetail';
 
 /** Route container for one admin khatma detail page. */
 export function AdminKhatmaPage({ id }: { id: string }) {
@@ -34,21 +39,27 @@ export function AdminKhatmaPage({ id }: { id: string }) {
   const roster = useAppSelector(selectRoster);
   const surahs = useSurahs();
   const scopeMaps = useQuranScopeMaps();
+  const wirdCompletions = useAppSelector((state) => selectWirdCompletions(state, id));
+  const wirdCompletionsListener = useAppSelector((state) =>
+    selectWirdCompletionsListener(state, id),
+  );
 
   if (!khatma) {
+    return <MissingKhatmaState hasSeries={khatmas.length > 0} />;
+  }
+
+  if (isWird(khatma)) {
     return (
-      <Stack
-        component="section"
-        spacing={4}
-        data-react-surface="admin"
-        data-route="khatma"
-      >
-        <BackLink />
-        <SurfaceCard>
-          <Typography color="text.secondary">
-            {khatmas.length === 0 ? strings.common.loading : strings.admin.noActive}
-          </Typography>
-        </SurfaceCard>
+      <Stack component="section" spacing={4} data-react-surface="admin" data-route="wird">
+        <KhatmaBackLink />
+        <WirdAdminDetail
+          wird={khatma}
+          roster={roster}
+          surahs={surahs}
+          scopeMaps={scopeMaps}
+          completions={wirdCompletions}
+          completionStatus={wirdCompletionsListener?.status}
+        />
       </Stack>
     );
   }
@@ -63,7 +74,7 @@ export function AdminKhatmaPage({ id }: { id: string }) {
 
   return (
     <Stack component="section" spacing={4} data-react-surface="admin" data-route="khatma">
-      <BackLink />
+      <KhatmaBackLink />
       <KhatmaHeaderCard khatma={khatma} assignments={assignments} roster={roster} />
       <KhatmaMetadataEditor khatma={khatma} />
       {khatma.status === 'active' ? (
@@ -87,19 +98,5 @@ export function AdminKhatmaPage({ id }: { id: string }) {
       />
       <KhatmaHistoryCard khatma={khatma} khatmas={khatmas} roster={roster} />
     </Stack>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      href={adminHash.khatmas()}
-      underline="always"
-      variant="body2"
-      color="text.secondary"
-      sx={{ alignSelf: 'start' }}
-    >
-      {`‹ ${strings.admin.navKhatmas}`}
-    </Link>
   );
 }

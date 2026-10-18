@@ -20,6 +20,7 @@ import type {
   Khatma,
   MemberFeedback,
   Person,
+  WirdCompletion,
 } from '@/domain/types';
 
 export interface TestAppData {
@@ -28,6 +29,7 @@ export interface TestAppData {
   feedback?: MemberFeedback[];
   khatmas?: Khatma[];
   assignments?: Readonly<Record<string, Assignment[]>>;
+  wirdCompletions?: Readonly<Record<string, WirdCompletion[]>>;
 }
 
 export interface SubscriptionCounts {
@@ -56,6 +58,7 @@ export interface TestFirestoreSubscriptions {
   feedback: TestSubscriptionPublisher<MemberFeedback[]>;
   khatmas: TestSubscriptionPublisher<Khatma[]>;
   assignment: (khatmaId: string) => TestSubscriptionPublisher<Assignment[]>;
+  wirdCompletion: (wirdId: string) => TestSubscriptionPublisher<WirdCompletion[]>;
 }
 
 export interface RenderWithAppProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
@@ -127,6 +130,7 @@ export function createTestFirestoreSubscriptions(
     hasOwn(data, 'khatmas') ? { value: data.khatmas! } : undefined,
   );
   const assignments = new Map<string, TestSubscriptionSource<Assignment[]>>();
+  const wirdCompletions = new Map<string, TestSubscriptionSource<WirdCompletion[]>>();
 
   const assignment = (khatmaId: string): TestSubscriptionSource<Assignment[]> => {
     let source = assignments.get(khatmaId);
@@ -140,6 +144,18 @@ export function createTestFirestoreSubscriptions(
     return source;
   };
 
+  const wirdCompletion = (wirdId: string): TestSubscriptionSource<WirdCompletion[]> => {
+    let source = wirdCompletions.get(wirdId);
+    if (!source) {
+      const initial = hasOwn(data.wirdCompletions, wirdId)
+        ? { value: data.wirdCompletions![wirdId]! }
+        : undefined;
+      source = createTestSubscriptionSource(initial);
+      wirdCompletions.set(wirdId, source);
+    }
+    return source;
+  };
+
   const sources: FirestoreSubscriptionSources = {
     roster: roster.subscribe,
     content: content.subscribe,
@@ -147,9 +163,19 @@ export function createTestFirestoreSubscriptions(
     khatmas: khatmas.subscribe,
     assignments: (khatmaId, onChange, onError) =>
       assignment(khatmaId).subscribe(onChange, onError),
+    wirdCompletions: (wirdId, onChange, onError) =>
+      wirdCompletion(wirdId).subscribe(onChange, onError),
   };
 
-  return { sources, roster, content, feedback, khatmas, assignment };
+  return {
+    sources,
+    roster,
+    content,
+    feedback,
+    khatmas,
+    assignment,
+    wirdCompletion,
+  };
 }
 
 function createTestSubscriptionSource<Value>(initial?: {

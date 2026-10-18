@@ -26,6 +26,8 @@ export interface HeroHeaderProps {
   children?: ReactNode;
   /** Tighter padding for reader chrome. */
   compact?: boolean;
+  /** `gold` marks a different reading type (daily Wird) with the gold hero. */
+  tone?: 'emerald' | 'gold';
   sx?: SxProps<Theme>;
 }
 
@@ -45,6 +47,7 @@ export function HeroHeader({
   action,
   children,
   compact = false,
+  tone = 'emerald',
   sx,
 }: HeroHeaderProps) {
   return (
@@ -54,7 +57,7 @@ export function HeroHeader({
           ...heroBleedSx,
           position: 'relative',
           overflow: 'hidden',
-          background: theme.custom.heroGrad,
+          background: tone === 'gold' ? theme.custom.goldHeroGrad : theme.custom.heroGrad,
           color: theme.custom.heroInk,
           px: 5,
           pt: compact ? 3 : 4,

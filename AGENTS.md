@@ -10,7 +10,7 @@ For feature, fix, or refactor work, use `$ship-ranqur-change` from
 | User says                                               | Read                         | Start code                            |
 | ------------------------------------------------------- | ---------------------------- | ------------------------------------- |
 | person, roster, name, pause, avatar                     | `docs/areas/people.md`       | `src/app/admin/pages/RosterPage.tsx`  |
-| khatma, series, create, scope, image, reciter           | `docs/areas/khatmas.md`      | `src/app/admin/pages/KhatmasPage.tsx` |
+| khatma, wird, series, create, scope, image, reciter     | `docs/areas/khatmas.md`      | `src/app/admin/pages/KhatmasPage.tsx` |
 | assign, distribute, round, warning, release, rollover   | `docs/areas/distribution.md` | `src/domain/distribution.ts`          |
 | member, my pages, finish, completion, history           | `docs/areas/member-app.md`   | `src/app/member/MemberApp.tsx`        |
 | admin, dashboard, form, manage                          | `docs/areas/admin-app.md`    | `src/app/admin/AdminApp.tsx`          |

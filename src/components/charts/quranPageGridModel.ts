@@ -66,8 +66,8 @@ function pagesInKhatma(khatma: Khatma, assignments: readonly Assignment[]): numb
     return pageRange(khatma.scope.fromPage, khatma.scope.toPage);
   }
 
-  // A surah-scoped khatma does not carry its resolved page list separately.
-  // Remaining pages plus assignment history are the complete persisted scope.
+  // Unit-scoped series carry their resolved page list in `remainingPages`.
+  // Assignment history is included for legacy partial-scope khatmas.
   const pages = new Set(khatma.remainingPages);
   for (const assignment of assignments) {
     for (const chunk of assignment.rounds) {

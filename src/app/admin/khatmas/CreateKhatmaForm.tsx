@@ -7,12 +7,17 @@ import {
   type CreateKhatmaPrefill,
 } from '@/app/admin/createKhatmaPrefillContext';
 import { useSurahs } from '@/app/admin/useSurahs';
+import { useQuranScopeMaps } from '@/app/admin/useQuranScopeMaps';
 import { AppButton } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { resolvePageScope } from '@/domain/assignment';
 import { pickDuaReciter } from '@/domain/rotation';
 import { findSeriesByName, nextSeriesNumber } from '@/domain/series';
 import type { Khatma } from '@/domain/types';
+import {
+  resolveWirdContent,
+  type ResolvedWirdContent,
+} from '@/app/admin/wird/wirdContentDraft';
 import { CreateKhatmaFields } from './CreateKhatmaFields';
 import {
   buildKhatmaCapacities,
@@ -28,7 +33,9 @@ import {
 export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
   const roster = useAppSelector(selectRoster);
   const surahs = useSurahs();
+  const scopeMaps = useQuranScopeMaps();
   const createKhatma = useWriteOperation('createKhatma');
+  const createWird = useWriteOperation('createWird');
   const setSeriesImage = useWriteOperation('setSeriesImage');
   const { peekPrefill, clearPrefill } = useCreateKhatmaPrefill();
 
@@ -62,30 +69,41 @@ export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
       return;
     }
     const ids = [...draft.memberIds];
-    if (ids.length === 0) {
-      setError(strings.admin.selectMembers);
+    if (ids.length === 0 || (draft.kind === 'wird' && ids.length !== 1)) {
+      setError(
+        draft.kind === 'wird'
+          ? strings.admin.selectOneWirdMember
+          : strings.admin.selectMembers,
+      );
       return;
+    }
+    let wirdContent: ResolvedWirdContent | undefined;
+    if (draft.kind === 'wird') {
+      const resolved = resolveWirdContent(draft.wird, scopeMaps);
+      if ('error' in resolved) {
+        setError(resolved.error);
+        return;
+      }
+      wirdContent = resolved.content;
     }
     const scope = buildKhatmaScope();
-    let pool: number[];
-    try {
-      pool = resolvePageScope(scope);
-    } catch (cause) {
-      console.error('onCreate: scope resolution failed', cause);
-      setError(strings.admin.createError);
-      return;
+    let pool: number[] = [];
+    if (!wirdContent) {
+      try {
+        pool = resolvePageScope(scope);
+      } catch (cause) {
+        console.error('onCreate: scope resolution failed', cause);
+        setError(strings.admin.createError);
+        return;
+      }
     }
 
-    const existing = findSeriesByName(khatmas, name);
+    const existing = findSeriesByName(khatmas, name, draft.kind);
     const seriesId = existing?.seriesId ?? safeUUID();
     const autoNumber = existing ? nextSeriesNumber(khatmas, seriesId) : 1;
     const override = parseInt(draft.seriesNumberOverride, 10);
     const seriesNumber =
       Number.isInteger(override) && override > 0 ? override : autoNumber;
-    const reciter = draft.memberIds.has(draft.reciterId)
-      ? draft.reciterId
-      : pickDuaReciter(ids, khatmas);
-    const capacities = buildKhatmaCapacities(draft, ids);
     const createdAt = dateToEpoch(draft.createdDate);
     const inheritedImageName = khatmas.find(
       (candidate) => candidate.seriesId === seriesId && candidate.imageName,
@@ -101,19 +119,31 @@ export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
       }
     }
 
-    const result = await createKhatma.execute({
-      seriesId,
-      seriesName: existing?.seriesName ?? name,
-      seriesNumber,
-      totalPages: pool.length,
-      scope,
-      memberIds: ids,
-      remainingPages: pool,
-      duaReciterId: reciter,
-      capacities,
-      ...(imageName ? { imageName } : {}),
-      ...(createdAt !== undefined ? { createdAt } : {}),
-    });
+    const result = wirdContent
+      ? await createWird.execute({
+          seriesId,
+          seriesName: existing?.seriesName ?? name,
+          seriesNumber,
+          memberId: ids[0]!,
+          ...wirdContent,
+          ...(imageName ? { imageName } : {}),
+          ...(createdAt !== undefined ? { createdAt } : {}),
+        })
+      : await createKhatma.execute({
+          seriesId,
+          seriesName: existing?.seriesName ?? name,
+          seriesNumber,
+          totalPages: pool.length,
+          scope,
+          memberIds: ids,
+          remainingPages: pool,
+          duaReciterId: draft.memberIds.has(draft.reciterId)
+            ? draft.reciterId
+            : pickDuaReciter(ids, khatmas),
+          capacities: buildKhatmaCapacities(draft, ids),
+          ...(imageName ? { imageName } : {}),
+          ...(createdAt !== undefined ? { createdAt } : {}),
+        });
 
     if (result.status === 'success') {
       setDraft(emptyCreateKhatmaDraft());
@@ -132,7 +162,7 @@ export function CreateKhatmaForm({ khatmas }: { khatmas: readonly Khatma[] }) {
       khatmas={khatmas}
       roster={roster}
       surahs={surahs}
-      busy={createKhatma.isPending || setSeriesImage.isPending}
+      busy={createKhatma.isPending || createWird.isPending || setSeriesImage.isPending}
       error={error}
       onCreate={() => void onCreate()}
       onCancel={() => setShowCreateForm(false)}

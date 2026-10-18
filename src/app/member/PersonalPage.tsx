@@ -8,11 +8,14 @@ import {
   selectRoster,
   useAppSelector,
   useAssignmentsSubscription,
+  selectWirdCompletions,
+  useWirdCompletionsSubscription,
 } from '@/app/store';
 import { SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import { memberReadingInsights } from '@/domain/progress';
 import type { Assignment } from '@/domain/types';
+import { isKhatma, isWird, memberBelongsToWird } from '@/domain/wird';
 import { MemberHero } from './MemberHero';
 import { MemberIdentitySummary } from './MemberIdentitySummary';
 import { PendingAssignmentsCard } from './PendingAssignmentsCard';
@@ -27,9 +30,16 @@ export function PersonalPage() {
   const assignments = useAppSelector(
     (state) =>
       khatmas
-        .filter((khatma) => khatma.memberIds.includes(memberId))
+        .filter((khatma) => isKhatma(khatma) && khatma.memberIds.includes(memberId))
         .map((khatma) => selectAssignmentByMemberId(state, khatma.id, memberId))
         .filter((assignment): assignment is Assignment => assignment !== undefined),
+    shallowEqual,
+  );
+  const wirdCompletions = useAppSelector(
+    (state) =>
+      khatmas
+        .filter((series) => isWird(series) && memberBelongsToWird(series, memberId))
+        .flatMap((series) => selectWirdCompletions(state, series.id)),
     shallowEqual,
   );
   const insights = memberReadingInsights({
@@ -37,11 +47,13 @@ export function PersonalPage() {
     roster,
     khatmas,
     assignments,
+    wirdCompletions,
   });
 
   return (
     <>
       <CompletedKhatmaAssignmentSubscriptions />
+      <HistoricalWirdCompletionSubscriptions />
       <Stack spacing={4}>
         <MemberHero />
         <MemberIdentitySummary />
@@ -107,7 +119,9 @@ function CompletedKhatmaAssignmentSubscriptions() {
       selectKhatmas(state)
         .filter(
           (khatma) =>
-            khatma.status === 'completed' && khatma.memberIds.includes(memberId),
+            isKhatma(khatma) &&
+            khatma.status === 'completed' &&
+            khatma.memberIds.includes(memberId),
         )
         .map((khatma) => khatma.id),
     shallowEqual,
@@ -116,6 +130,23 @@ function CompletedKhatmaAssignmentSubscriptions() {
   return khatmaIds.map((khatmaId) => (
     <CompletedKhatmaAssignmentSubscription key={khatmaId} khatmaId={khatmaId} />
   ));
+}
+
+function HistoricalWirdCompletionSubscriptions() {
+  const { memberId } = useMemberIdentity();
+  const ids = useAppSelector(
+    (state) =>
+      selectKhatmas(state)
+        .filter((series) => isWird(series) && memberBelongsToWird(series, memberId))
+        .map((series) => series.id),
+    shallowEqual,
+  );
+  return ids.map((id) => <HistoricalWirdSubscription key={id} id={id} />);
+}
+
+function HistoricalWirdSubscription({ id }: { id: string }) {
+  useWirdCompletionsSubscription(id);
+  return null;
 }
 
 function CompletedKhatmaAssignmentSubscription({ khatmaId }: { khatmaId: string }) {

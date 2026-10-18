@@ -4,6 +4,7 @@ import {
   selectAssignmentsForKhatma,
   selectKhatmas,
   selectKhatmasListener,
+  selectWirdCompletions,
   useAppSelector,
 } from '@/app/store';
 import { ReleasedChunkError, type FinishRoundResult } from '@/app/operations';
@@ -30,6 +31,8 @@ import type { RoundChunk } from '@/domain/types';
 import { startMushafPrefetch } from '../install/mushafPrefetch';
 import { useMemberIdentity } from '../memberIdentityContext';
 import { useOnlineStatus } from '../useOnlineStatus';
+import { isWird } from '@/domain/wird';
+import { WirdReaderPage } from '../wird/WirdReaderPage';
 import {
   QuranPageContent,
   ReaderBackground,
@@ -59,6 +62,9 @@ export function AssignedReaderPage({
   const assignments = useAppSelector((state) =>
     selectAssignmentsForKhatma(state, khatmaId),
   );
+  const wirdCompletions = useAppSelector((state) =>
+    selectWirdCompletions(state, khatmaId),
+  );
 
   const khatma = khatmas.find(
     (candidate) =>
@@ -82,6 +88,18 @@ export function AssignedReaderPage({
   if (!khatma) return <NoPagesView khatmaId={khatmaId} />;
 
   const paused = member ? !member.enabled : false;
+  if (isWird(khatma)) {
+    if (paused) return <NoPagesView khatmaId={khatmaId} />;
+    return (
+      <WirdReaderPage
+        wird={khatma}
+        completions={wirdCompletions}
+        memberId={memberId}
+        memberName={member?.name ?? ''}
+        routePage={page}
+      />
+    );
+  }
   const mine = assignments.find((assignment) => assignment.memberId === memberId);
   // The member reads their current round's chunk (revisiting it once done).
   const chunk = mine && !paused ? latestReadableChunk(mine) : undefined;

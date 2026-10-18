@@ -2,6 +2,7 @@ import { subscribeAssignments } from '@/data/assignments';
 import { subscribeGlobalContent } from '@/data/content';
 import { subscribeKhatmas } from '@/data/khatmas';
 import { subscribeRoster } from '@/data/roster';
+import { subscribeWirdCompletions } from '@/data/wirds';
 import type { FirestoreSubscriptionSources } from './firestoreSubscriptionBridge';
 
 /** Production data-boundary functions; tests inject deterministic substitutes. */
@@ -28,4 +29,5 @@ export const firestoreSubscriptionSources: FirestoreSubscriptionSources = {
   },
   khatmas: subscribeKhatmas,
   assignments: subscribeAssignments,
+  wirdCompletions: subscribeWirdCompletions,
 };

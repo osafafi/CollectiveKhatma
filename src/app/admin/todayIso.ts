@@ -6,8 +6,4 @@
  * Kept as the single application source so pages and tests share one clock and
  * distribution-idempotency contract.
  */
-export function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
+export { localDateIso as todayIso } from '@/domain/wird';

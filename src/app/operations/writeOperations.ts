@@ -35,6 +35,7 @@ import {
   updatePerson,
 } from '@/data/roster';
 import { disableSelfAndReleasePages } from '@/data/personStatus';
+import { completeWirdDay, createWird, setWirdStatus, updateWird } from '@/data/wirds';
 
 /** Feature-facing errors and results exposed without leaking the data layer. */
 export { DuplicatePersonNameError, ReleasedChunkError };
@@ -66,8 +67,11 @@ export interface WriteOperations {
   setFeedbackRead: typeof setFeedbackRead;
   deleteFeedback: typeof deleteFeedback;
   createKhatma: typeof createKhatma;
+  createWird: typeof createWird;
   setSeriesImage: typeof setSeriesImage;
   updateKhatma: typeof updateKhatma;
+  updateWird: typeof updateWird;
+  setWirdStatus: typeof setWirdStatus;
   renameSeries: typeof renameSeries;
   completeKhatma: typeof completeKhatma;
   addMemberToKhatma: typeof addMemberToKhatma;
@@ -76,6 +80,7 @@ export interface WriteOperations {
   removeMemberFromKhatma: typeof removeMemberFromKhatma;
   deleteKhatma: typeof deleteKhatma;
   markRoundDone: typeof markRoundDone;
+  completeWirdDay: typeof completeWirdDay;
   clearRoundDone: typeof clearRoundDone;
   clearWarning: typeof clearWarning;
   runDistribution: RunDistribution;
@@ -95,8 +100,11 @@ export const writeOperations: WriteOperations = Object.freeze({
   setFeedbackRead,
   deleteFeedback,
   createKhatma,
+  createWird,
   setSeriesImage,
   updateKhatma,
+  updateWird,
+  setWirdStatus,
   renameSeries,
   completeKhatma,
   addMemberToKhatma,
@@ -105,6 +113,7 @@ export const writeOperations: WriteOperations = Object.freeze({
   removeMemberFromKhatma,
   deleteKhatma,
   markRoundDone,
+  completeWirdDay,
   clearRoundDone,
   clearWarning,
   runDistribution,

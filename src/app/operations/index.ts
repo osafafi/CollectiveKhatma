@@ -8,13 +8,17 @@ export {
   resetFinishQueue,
   subscribeToFinishQueue,
   type MarkRoundDone,
+  type CompleteWirdDay,
+  type FinishQueueWriters,
   type QueuedFinish,
 } from './finishQueue';
 export {
   useFinishQueueReplay,
   useFinishRound,
+  useFinishWird,
   type FinishRoundResult,
   type FinishRoundTarget,
+  type FinishWirdTarget,
 } from './useFinishRound';
 export {
   toOperationError,

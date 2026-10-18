@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { AppShell, HeroHeader, type ShellTab } from '@/components/navigation';
 import { adminRoutePath, type AdminRoute } from '@/app/routing/routes';
 import { useAdminRoute } from '@/app/routing/hooks';
+import { selectKhatmaById, useAppSelector } from '@/app/store';
 import { strings } from '@/content/strings.ar';
+import { isWird } from '@/domain/wird';
 import { AdminFeedbackInbox } from './AdminFeedbackInbox';
 
 /**
@@ -42,6 +44,11 @@ const ADMIN_CONTENT_MAX_WIDTH = { xs: 672, lg: 896 };
 /** Responsive admin shell: frames route content with the admin navigation. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const route = useAdminRoute();
+  const wirdDetail = useAppSelector((state) => {
+    if (route.name !== 'khatma') return false;
+    const series = selectKhatmaById(state, route.id);
+    return series ? isWird(series) : false;
+  });
   return (
     <AppShell
       tabs={ADMIN_TABS}
@@ -59,7 +66,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       */}
       <HeroHeader
         eyebrow={strings.admin.heading}
-        title={adminRouteTitle(route)}
+        title={wirdDetail ? strings.admin.wirdDetailTitle : adminRouteTitle(route)}
         titleComponent={route.name === 'khatma' ? 'div' : 'h1'}
         action={<AdminFeedbackInbox />}
         sx={{ mb: 4 }}

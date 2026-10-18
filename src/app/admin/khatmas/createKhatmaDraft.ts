@@ -1,7 +1,9 @@
 import type { CreateKhatmaPrefill } from '@/app/admin/createKhatmaPrefillContext';
-import type { MemberCapacity, PageScope } from '@/domain/types';
+import type { MemberCapacity, PageScope, ReadingSeriesKind } from '@/domain/types';
+import { wirdContentDraft, type WirdContentDraft } from '../wird/wirdContentDraft';
 
 export interface CreateKhatmaDraft {
+  kind: ReadingSeriesKind;
   seriesName: string;
   memberIds: Set<string>;
   memberCaps: Record<string, MemberCapacity>;
@@ -10,10 +12,12 @@ export interface CreateKhatmaDraft {
   seriesNumberOverride: string;
   /** null inherits a matching series; empty string explicitly uses the placeholder. */
   imageName: string | null;
+  wird: WirdContentDraft;
 }
 
 export function emptyCreateKhatmaDraft(): CreateKhatmaDraft {
   return {
+    kind: 'khatma',
     seriesName: '',
     memberIds: new Set(),
     memberCaps: {},
@@ -21,6 +25,7 @@ export function emptyCreateKhatmaDraft(): CreateKhatmaDraft {
     createdDate: '',
     seriesNumberOverride: '',
     imageName: null,
+    wird: wirdContentDraft({ kind: 'surahs', surahIds: [] }, ''),
   };
 }
 

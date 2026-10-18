@@ -76,7 +76,10 @@ export function PersonalReadingInsights({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gridTemplateColumns: {
+            xs: 'repeat(2, minmax(0, 1fr))',
+            sm: 'repeat(4, minmax(0, 1fr))',
+          },
           gap: { xs: 1.5, sm: 2 },
         }}
       >
@@ -92,6 +95,11 @@ export function PersonalReadingInsights({
         <ReadingStat
           value={insights.longestDailyStreak}
           label={strings.personal.longestDailyStreak}
+        />
+        <ReadingStat
+          value={insights.completedWirdDays}
+          label={strings.personal.completedWirdDays}
+          tone="gold"
         />
       </Box>
     </SurfaceCard>

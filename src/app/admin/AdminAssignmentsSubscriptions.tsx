@@ -1,6 +1,7 @@
 import { shallowEqual } from 'react-redux';
 import { selectKhatmas, useAppSelector, useAssignmentsSubscription } from '@/app/store';
 import { useAdminRoute } from '@/app/routing/hooks';
+import { isKhatma } from '@/domain/wird';
 
 /**
  * Keep the admin's dynamic assignment listeners alive for exactly the set the
@@ -19,11 +20,15 @@ export function AdminAssignmentsSubscriptions() {
   const khatmaIds = useAppSelector((state) => {
     const khatmas = selectKhatmas(state);
     const wanted = new Set(
-      khatmas.filter((khatma) => khatma.status === 'active').map((khatma) => khatma.id),
+      khatmas
+        .filter((khatma) => isKhatma(khatma) && khatma.status === 'active')
+        .map((khatma) => khatma.id),
     );
     // The open detail khatma is subscribed even when completed — but only once it
     // actually exists, matching the legacy guard.
-    if (openId && khatmas.some((khatma) => khatma.id === openId)) wanted.add(openId);
+    if (openId && khatmas.some((khatma) => khatma.id === openId && isKhatma(khatma))) {
+      wanted.add(openId);
+    }
     return [...wanted];
   }, shallowEqual);
 

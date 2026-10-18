@@ -6,6 +6,7 @@ import { AppButton, AppTextField, SurfaceCard } from '@/components/primitives';
 import { strings } from '@/content/strings.ar';
 import type { Khatma } from '@/domain/types';
 import { dateToEpoch, dateToInput } from './formatting';
+import { isWird } from '@/domain/wird';
 
 /** Edit series-wide identity plus this khatma's number and creation date. */
 export function KhatmaMetadataEditor({ khatma }: { khatma: Khatma }) {
@@ -61,10 +62,18 @@ export function KhatmaMetadataEditor({ khatma }: { khatma: Khatma }) {
   };
 
   return (
-    <SurfaceCard title={strings.admin.editKhatmaHeading}>
+    <SurfaceCard
+      title={
+        isWird(khatma) ? strings.admin.editWirdHeading : strings.admin.editKhatmaHeading
+      }
+    >
       <Stack spacing={3}>
         <AppTextField
-          label={strings.admin.seriesNamePlaceholder}
+          label={
+            isWird(khatma)
+              ? strings.admin.wirdNamePlaceholder
+              : strings.admin.seriesNamePlaceholder
+          }
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
@@ -76,7 +85,11 @@ export function KhatmaMetadataEditor({ khatma }: { khatma: Khatma }) {
         <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <AppTextField
             type="number"
-            label={strings.admin.khatmaNumberLabel}
+            label={
+              isWird(khatma)
+                ? strings.admin.wirdNumberLabel
+                : strings.admin.khatmaNumberLabel
+            }
             value={number}
             fieldWidth={120}
             onChange={(event) => setNumber(event.target.value)}

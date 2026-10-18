@@ -37,6 +37,8 @@ const MAX_ATTEMPTS = 5;
 export const REPLAY_TIMEOUT_MS = 8000;
 
 export interface QueuedFinish {
+  /** Missing on persisted legacy entries and therefore treated as `khatma`. */
+  kind?: 'khatma' | 'wird';
   khatmaId: string;
   memberId: string;
   round: number;
@@ -44,6 +46,10 @@ export interface QueuedFinish {
   activeSeriesKhatmaIds: readonly string[];
   queuedAt: number;
   attempts: number;
+  /** Wird-only local day and content snapshot captured when the member tapped. */
+  date?: string;
+  contentKind?: 'quran' | 'dua';
+  pages?: readonly number[];
 }
 
 export type MarkRoundDone = (
@@ -52,6 +58,20 @@ export type MarkRoundDone = (
   round: number,
   activeSeriesKhatmaIds: readonly string[],
 ) => Promise<void>;
+
+export type CompleteWirdDay = (input: {
+  wirdId: string;
+  memberId: string;
+  date: string;
+  completedAt: number;
+  contentKind: 'quran' | 'dua';
+  pages: number[];
+}) => Promise<void>;
+
+export interface FinishQueueWriters {
+  markRoundDone: MarkRoundDone;
+  completeWirdDay: CompleteWirdDay;
+}
 
 /** Identity of one queued tap: one member, one round, in one khatma. */
 export function finishKey(khatmaId: string, memberId: string, round: number): string {
@@ -87,12 +107,16 @@ export function queueFinish(
 ): void {
   const key = finishKey(entry.khatmaId, entry.memberId, entry.round);
   const queued: QueuedFinish = {
+    ...(entry.kind ? { kind: entry.kind } : {}),
     khatmaId: entry.khatmaId,
     memberId: entry.memberId,
     round: entry.round,
     activeSeriesKhatmaIds: [...entry.activeSeriesKhatmaIds],
     queuedAt: entry.queuedAt ?? Date.now(),
     attempts: 0,
+    ...(entry.date ? { date: entry.date } : {}),
+    ...(entry.contentKind ? { contentKind: entry.contentKind } : {}),
+    ...(entry.pages ? { pages: [...entry.pages] } : {}),
   };
   commit([...getQueuedFinishes().filter((item) => entryKey(item) !== key), queued]);
 }
@@ -133,7 +157,7 @@ let replaying = false;
  * no-op rather than a second pass over the same entries.
  */
 export async function replayFinishQueue(
-  markRoundDone: MarkRoundDone,
+  writers: MarkRoundDone | FinishQueueWriters,
   timeoutMs: number = REPLAY_TIMEOUT_MS,
 ): Promise<ReplayFinishQueueResult> {
   const result: ReplayFinishQueueResult = { sent: 0, released: [], kept: 0 };
@@ -144,15 +168,25 @@ export async function replayFinishQueue(
     for (const entry of [...getQueuedFinishes()]) {
       const key = entryKey(entry);
       try {
-        const sent = await Promise.race([
-          markRoundDone(
-            entry.khatmaId,
-            entry.memberId,
-            entry.round,
-            entry.activeSeriesKhatmaIds,
-          ).then(() => true),
-          timeout(timeoutMs),
-        ]);
+        const write =
+          entry.kind === 'wird'
+            ? typeof writers === 'function'
+              ? Promise.reject(new Error('No Wird completion writer is configured'))
+              : writers.completeWirdDay({
+                  wirdId: entry.khatmaId,
+                  memberId: entry.memberId,
+                  date: entry.date!,
+                  completedAt: entry.queuedAt,
+                  contentKind: entry.contentKind!,
+                  pages: [...(entry.pages ?? [])],
+                })
+            : (typeof writers === 'function' ? writers : writers.markRoundDone)(
+                entry.khatmaId,
+                entry.memberId,
+                entry.round,
+                entry.activeSeriesKhatmaIds,
+              );
+        const sent = await Promise.race([write.then(() => true), timeout(timeoutMs)]);
         if (!sent) {
           // Still hanging. Leave it exactly as it is and stop holding the lock.
           result.kept += 1;
@@ -221,14 +255,21 @@ function readStoredQueue(): readonly QueuedFinish[] {
 function isQueuedFinish(value: unknown): value is QueuedFinish {
   if (typeof value !== 'object' || value === null) return false;
   const entry = value as Record<string, unknown>;
-  return (
+  const base =
     typeof entry.khatmaId === 'string' &&
     typeof entry.memberId === 'string' &&
     Number.isInteger(entry.round) &&
     Array.isArray(entry.activeSeriesKhatmaIds) &&
     entry.activeSeriesKhatmaIds.every((id) => typeof id === 'string') &&
     typeof entry.queuedAt === 'number' &&
-    Number.isInteger(entry.attempts)
+    Number.isInteger(entry.attempts);
+  if (!base) return false;
+  if (entry.kind !== 'wird') return entry.kind === undefined || entry.kind === 'khatma';
+  return (
+    typeof entry.date === 'string' &&
+    (entry.contentKind === 'quran' || entry.contentKind === 'dua') &&
+    Array.isArray(entry.pages) &&
+    entry.pages.every((page) => Number.isInteger(page))
   );
 }
 

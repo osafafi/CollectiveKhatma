@@ -1,5 +1,10 @@
 import { useContext } from 'react';
-import { useFinishRound, type FinishRoundTarget } from '@/app/operations';
+import {
+  useFinishRound,
+  useFinishWird,
+  type FinishRoundTarget,
+  type FinishWirdTarget,
+} from '@/app/operations';
 import { selectAssignmentsForKhatma, useAppSelector } from '@/app/store';
 import { selectDailyDu3as } from '@/app/store/dailyDuaSelectors';
 import { dailyDuaForDate, dailyDuaRoundDate } from '@/domain/dailyDua';
@@ -14,6 +19,18 @@ export function useFinishWithDailyDua(target: FinishRoundTarget) {
   );
   const text = dailyDuaForDate(duas, dailyDuaRoundDate(assignments, target.round));
   return useFinishRound({
+    ...target,
+    onAccepted: () => {
+      if (text) show(text);
+    },
+  });
+}
+
+export function useFinishWirdWithDailyDua(target: FinishWirdTarget) {
+  const show = useContext(DailyDuaContext);
+  const duas = useAppSelector(selectDailyDu3as);
+  const text = dailyDuaForDate(duas, target.date);
+  return useFinishWird({
     ...target,
     onAccepted: () => {
       if (text) show(text);

@@ -6,6 +6,8 @@ import { buildPageUnitMaps, type PageUnitMaps } from '@/domain/assignment';
 export interface QuranScopeMaps {
   /** surah id -> `[firstPage, lastPage]`, for resolving a `chapters` scope pool. */
   surahToPages: Record<number, [number, number]>;
+  /** Juz number -> `[firstPage, lastPage]`, used by multi-Juz Wird scopes. */
+  juzToPages: Record<number, [number, number]>;
   /** page -> Surah / page -> Juz, for specific whole-unit selections. */
   pageUnitMaps: PageUnitMaps;
 }
@@ -29,6 +31,7 @@ export function useQuranScopeMaps(): QuranScopeMaps | null {
         if (!active) return;
         setMaps({
           surahToPages: index.surahToPages,
+          juzToPages: index.juzToPages,
           pageUnitMaps: buildPageUnitMaps(index.surahToPages, index.juzToPages),
         });
       })

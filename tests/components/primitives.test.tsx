@@ -24,6 +24,7 @@ import {
   StatusChip,
   SurfaceCard,
 } from '@/components/primitives';
+import { TOKENS } from '@/theme/tokens';
 
 function renderThemed(ui: ReactElement) {
   return render(<AppThemeProvider>{ui}</AppThemeProvider>);
@@ -103,6 +104,21 @@ describe('Shared action and surface primitives', () => {
     expect(card).toHaveTextContent('Series title');
     expect(card).not.toContainElement(action);
     expect(card.closest('section')).toContainElement(action);
+  });
+
+  it('keeps entry motion, the gold tone, and caller sx together', () => {
+    renderThemed(
+      <SurfaceCard title="Daily Wird" appear={1} tone="gold" sx={{ height: '100%' }}>
+        <p>Wird</p>
+      </SurfaceCard>,
+    );
+
+    const card = screen.getByRole('region', { name: 'Daily Wird' });
+    expect(card).toHaveStyle({
+      height: '100%',
+      borderColor: TOKENS.light.gold,
+      animationDelay: '0.06s',
+    });
   });
 });
 

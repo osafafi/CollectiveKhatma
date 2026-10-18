@@ -38,6 +38,10 @@ export interface ColorTokens {
   medalCenter: string;
   surahBandInk: string;
   heroGrad: string;
+  /** Gold hero variant (daily Wird); heroInk stays AA-legible on every stop. */
+  goldHeroGrad: string;
+  /** Gold-tinted card variant: surface → goldSoft, so text keeps its AA floor. */
+  goldCardBg: string;
   heroGlow: string;
   heroPill: string;
   heroPillBorder: string;
@@ -78,6 +82,8 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     medalCenter: '#fff9ec',
     surahBandInk: '#fdf3d8',
     heroGrad: 'linear-gradient(140deg,#0e6f61 0%,#0a5348 60%,#08463c 100%)',
+    goldHeroGrad: 'linear-gradient(140deg,#806018 0%,#6a4f14 60%,#553f10 100%)',
+    goldCardBg: 'linear-gradient(160deg,#fffdf7 0%,#f4ead0 100%)',
     heroGlow:
       'radial-gradient(120% 90% at 88% -12%, rgba(201,162,74,.32), transparent 55%)',
     heroPill: 'rgba(255,255,255,.16)',
@@ -112,6 +118,8 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     medalCenter: '#0f1c17',
     surahBandInk: '#fbeecb',
     heroGrad: 'linear-gradient(140deg,#155448 0%,#0c342c 60%,#08251f 100%)',
+    goldHeroGrad: 'linear-gradient(140deg,#6b5520 0%,#4a3a15 60%,#30260d 100%)',
+    goldCardBg: 'linear-gradient(160deg,#16211c 0%,#2a2415 100%)',
     heroGlow:
       'radial-gradient(120% 90% at 88% -12%, rgba(217,180,95,.28), transparent 55%)',
     heroPill: 'rgba(255,255,255,.12)',

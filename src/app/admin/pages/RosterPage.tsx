@@ -34,6 +34,7 @@ import { toWesternDigits } from '@/content/quran/symbols';
 import { memberReliabilityScores, type MemberReliabilityScore } from '@/domain/progress';
 import { isNameUnique, normalizeName } from '@/domain/validation';
 import type { Person } from '@/domain/types';
+import { isKhatma } from '@/domain/wird';
 
 /**
  * Admin Roster `#/roster` (current UI contract): search-as-you-type over the member
@@ -51,13 +52,16 @@ export function AdminRosterPage() {
   const roster = useAppSelector(selectRoster);
   const khatmas = useAppSelector(selectKhatmas);
   const assignments = useAppSelector(
-    (state) => khatmas.flatMap((khatma) => selectAssignmentsForKhatma(state, khatma.id)),
+    (state) =>
+      khatmas
+        .filter(isKhatma)
+        .flatMap((khatma) => selectAssignmentsForKhatma(state, khatma.id)),
     shallowEqual,
   );
   const scoresReady = useAppSelector((state) =>
-    khatmas.every(
-      (khatma) => selectAssignmentsListener(state, khatma.id)?.status === 'ready',
-    ),
+    khatmas
+      .filter(isKhatma)
+      .every((khatma) => selectAssignmentsListener(state, khatma.id)?.status === 'ready'),
   );
   const reliabilityScores = scoresReady
     ? memberReliabilityScores(roster, assignments)
@@ -105,7 +109,7 @@ function CompletedKhatmaAssignmentSubscriptions() {
   const completedIds = useAppSelector(
     (state) =>
       selectKhatmas(state)
-        .filter((khatma) => khatma.status === 'completed')
+        .filter((khatma) => isKhatma(khatma) && khatma.status === 'completed')
         .map((khatma) => khatma.id),
     shallowEqual,
   );

@@ -1,6 +1,7 @@
 # Khatmas brick
 
-Owns: series, create/edit, scope, members, capacities, image, reciter, history.
+Owns: khatma and Wird series, create/edit, scope, members, capacities, image,
+reciter, archive/completion, and history.
 
 Start files:
 
@@ -8,7 +9,8 @@ Start files:
 - List/create parts: `src/app/admin/khatmas/`
 - Detail: `src/app/admin/pages/KhatmaPage.tsx`, `src/app/admin/khatma/`
 - Rules: `src/domain/types.ts`, `src/domain/assignment.ts`, `src/domain/series.ts`
-- Writes: `src/app/operations` -> `src/data/khatmas.ts`
+- Wird admin UI: `src/app/admin/wird/`
+- Writes: `src/app/operations` -> `src/data/khatmas.ts` or `src/data/wirds.ts`
 
 Flow: admin draft -> operation -> data -> Firestore -> store -> admin/member cards.
 
@@ -24,6 +26,21 @@ Hard rules:
   `range`/`surahs` scope variants remain readable so existing data does not
   break, but the create UI, data adapter, and Firestore writes require full
   Quran khatmas.
+- A legacy document with no `kind` is an ordinary khatma. A new Wird stores
+  `kind: 'wird'` in the same `khatmas` collection so existing subscriptions and
+  routes remain compatible, but it never enters distribution or rollover.
+- A Wird is a numbered, indefinite series assigned to exactly one current member.
+  Its mutually exclusive scope is one or more Surahs, any combination of Juz,
+  or a nonblank custom du'a. Quran scopes persist the resolved, de-duplicated
+  page snapshot in `remainingPages`; those pages are not a consumable pool.
+- Wird content and its current member are editable. Changes affect future daily
+  completions only. Reassigned member ids move to `pastMemberIds`, keeping their
+  existing statistics and completion history readable.
+- Wirds stay active until the admin archives or deletes them. An archived Wird
+  can be reactivated. `completionCount`/`roundCount` count accepted daily
+  completions; a Wird never auto-completes when its selected pages are read.
+- The khatma image catalog is shared by both types. `wird-dawn.svg` and
+  `wird-moon.svg` are the initial replaceable Wird-oriented choices.
 - Every member has additive `{ pages, surahs, juz }` capacity, where `surahs`
   selects one Surah id and `juz` selects one Juz number (`1..30`; `0` means none).
 - On an active khatma's detail page, Surah capacity menus offer only Surahs whose
@@ -56,4 +73,4 @@ Hard rules:
 - N and N+1 may both be active during rollover.
 - Image is a filename from `public/khatma-images/`; missing means placeholder.
 
-Update this doc when khatma shape, create/detail flow, or lifecycle changes.
+Update this doc when khatma/Wird shape, create/detail flow, or lifecycle changes.
