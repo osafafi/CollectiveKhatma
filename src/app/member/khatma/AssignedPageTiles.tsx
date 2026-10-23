@@ -5,16 +5,18 @@ import { strings } from '@/content/strings.ar';
 import { toWesternDigits } from '@/content/quran/symbols';
 
 /**
- * The design's gold page tiles (mock 2a) for one khatma's assigned pages. Each
+ * Gold khatma page tiles (mock 2a), or blue tiles for a daily Wird. Each
  * tile links straight to the assigned reader on its page. Plain anchors rather
  * than ButtonBase, which would reset the app's global keyboard focus ring.
  */
 export function AssignedPageTiles({
   khatmaId,
   pages,
+  tone = 'gold',
 }: {
   khatmaId: string;
   pages: readonly number[];
+  tone?: 'gold' | 'wird';
 }) {
   return (
     <Stack
@@ -41,12 +43,14 @@ export function AssignedPageTiles({
               fontSize: '1.125rem',
               fontWeight: 700,
               fontVariantNumeric: 'tabular-nums',
-              color: theme.custom.goldInk,
-              bgcolor: theme.custom.goldSoft,
-              border: `1px solid ${alpha(theme.custom.gold, 0.35)}`,
+              color: tone === 'wird' ? theme.custom.wirdInk : theme.custom.goldInk,
+              bgcolor: tone === 'wird' ? theme.custom.wirdSoft : theme.custom.goldSoft,
+              border: `1px solid ${alpha(tone === 'wird' ? theme.custom.wird : theme.custom.gold, 0.35)}`,
               borderRadius: `${theme.custom.radii.button}px`,
               transition: theme.transitions.create('border-color'),
-              '&:hover, &:active': { borderColor: theme.custom.gold },
+              '&:hover, &:active': {
+                borderColor: tone === 'wird' ? theme.custom.wird : theme.custom.gold,
+              },
             })}
           >
             {toWesternDigits(page)}

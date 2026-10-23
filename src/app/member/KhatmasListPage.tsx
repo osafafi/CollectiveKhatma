@@ -213,7 +213,7 @@ function WirdSeriesCard({
       href={memberHash.khatma(wird.id)}
       linkLabel={`${strings.member.openWird}: ${title}`}
       appear={appear}
-      tone="gold"
+      tone="wird"
       sx={{ height: '100%' }}
     >
       <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
@@ -228,14 +228,14 @@ function WirdSeriesCard({
             <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 800 }}>
               {title}
             </Typography>
-            <StatusChip tone="accent" label={strings.member.wirdBadge} />
+            <StatusChip tone="wird" label={strings.member.wirdBadge} />
           </Stack>
           <Typography variant="body2">{content}</Typography>
           <Typography
             variant="body2"
             sx={(theme) => ({
               fontWeight: 700,
-              color: done ? theme.palette.success.main : theme.custom.goldInk,
+              color: done ? theme.palette.success.dark : theme.custom.wirdInk,
             })}
           >
             {done ? `✓ ${strings.member.wirdDoneToday}` : strings.member.wirdPendingToday}
@@ -261,7 +261,7 @@ function ArchivedWirdCard({ wird, appear }: { wird: Khatma; appear: number }) {
           <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
-          <StatusChip tone="accent" label={strings.member.wirdBadge} />
+          <StatusChip tone="wird" label={strings.member.wirdBadge} />
           <Typography variant="body2" color="text.secondary">
             {strings.member.wirdDaysCompleted}:{' '}
             {toWesternDigits(wird.completionCount ?? 0)}

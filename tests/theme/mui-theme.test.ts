@@ -129,16 +129,10 @@ describe('MUI theme — token mapping', () => {
     expect(contrastRatio(rgb(t.goldInk), rgb(t.goldSoft))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(MODES)('keeps %s text legible on the gold (Wird) hero and card', (mode) => {
+  it.each(MODES)('keeps %s text legible on gold cards', (mode) => {
     const t = TOKENS[mode];
     const stops = (gradient: string) =>
       [...gradient.matchAll(/#[0-9a-f]{6}/gi)].map((match) => rgb(match[0]));
-
-    const heroStops = stops(t.goldHeroGrad);
-    expect(heroStops).toHaveLength(3);
-    for (const stop of heroStops) {
-      expect(contrastRatio(rgb(t.heroInk), stop)).toBeGreaterThanOrEqual(4.5);
-    }
 
     const cardStops = stops(t.goldCardBg);
     expect(cardStops).toEqual([rgb(t.surface), rgb(t.goldSoft)]);
@@ -147,6 +141,43 @@ describe('MUI theme — token mapping', () => {
         expect(contrastRatio(foreground, stop)).toBeGreaterThanOrEqual(4.5);
       }
     }
+  });
+
+  it.each(MODES)('keeps %s Wird text and focus legible across blue surfaces', (mode) => {
+    const t = TOKENS[mode];
+    const stops = (gradient: string) =>
+      [...gradient.matchAll(/#[0-9a-f]{6}/gi)].map((match) => rgb(match[0]));
+    const overlay = (value: string, background: Rgb): Rgb => {
+      const channels = value
+        .match(/rgba\(([^)]+)\)/)![1]!
+        .split(',')
+        .map(Number);
+      return composite(channels.slice(0, 3) as unknown as Rgb, background, channels[3]!);
+    };
+
+    const heroStops = stops(t.wirdHeroGrad);
+    expect(heroStops).toHaveLength(3);
+    const cardStops = stops(t.wirdCardBg);
+    expect(cardStops).toEqual([rgb(t.surface), rgb(t.wirdSoft)]);
+    for (let step = 0; step <= 20; step++) {
+      const fraction = step / 20;
+      for (let index = 1; index < heroStops.length; index++) {
+        const background = composite(heroStops[index]!, heroStops[index - 1]!, fraction);
+        // Include the brightest overlap of glow + shimmer and the 85% eyebrow ink.
+        const decorated = overlay(t.wirdHeroShimmer, overlay(t.wirdHeroGlow, background));
+        expect(
+          contrastRatio(composite(rgb(t.heroInk), decorated, 0.85), decorated),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      const background = composite(cardStops[1]!, cardStops[0]!, fraction);
+      for (const foreground of [t.ink, t.muted, t.wirdInk, t.emerald, t.successStrong]) {
+        expect(contrastRatio(rgb(foreground), background)).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(
+        contrastRatio(composite(rgb(t.emerald), background, 0.7), background),
+      ).toBeGreaterThanOrEqual(3);
+    }
+    expect(contrastRatio(rgb(t.wirdInk), rgb(t.wirdSoft))).toBeGreaterThanOrEqual(4.5);
   });
 
   it('derives the focus ring from the mode primary in the retained globals', () => {
@@ -203,7 +234,13 @@ describe('MUI theme — token mapping', () => {
       expect(theme.custom.goldSoft).toBe(t.goldSoft);
       expect(theme.custom.goldInk).toBe(t.goldInk);
       expect(theme.custom.heroGrad).toBe(t.heroGrad);
-      expect(theme.custom.goldHeroGrad).toBe(t.goldHeroGrad);
+      expect(theme.custom.wird).toBe(t.wird);
+      expect(theme.custom.wirdSoft).toBe(t.wirdSoft);
+      expect(theme.custom.wirdInk).toBe(t.wirdInk);
+      expect(theme.custom.wirdHeroGrad).toBe(t.wirdHeroGrad);
+      expect(theme.custom.wirdCardBg).toBe(t.wirdCardBg);
+      expect(theme.custom.wirdHeroGlow).toBe(t.wirdHeroGlow);
+      expect(theme.custom.wirdHeroShimmer).toBe(t.wirdHeroShimmer);
       expect(theme.custom.goldCardBg).toBe(t.goldCardBg);
       expect(theme.custom.heroInk).toBe(t.heroInk);
       expect(theme.custom.cellRem).toBe(t.cellRem);

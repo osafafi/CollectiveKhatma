@@ -17,7 +17,9 @@ Theme contract (redesign):
 
 - `src/theme/tokens.ts` is the single source of style values: light + dark
   `TOKENS` maps, `RADII`, `MOTION`, `cardGradient(mode, strength, angle)`,
-  `primaryBtnGradient(mode)`, the gold `goldHeroGrad`/`goldCardBg` variants,
+  `primaryBtnGradient(mode)`, the gold `goldCardBg` variant, separate blue Wird
+  tokens (`wird`/`wirdSoft`/`wirdInk`, `wirdHeroGrad`/`wirdCardBg`, and blue hero
+  glow/shimmer),
   and the per-mode `MEDALS` bronze/silver/gold
   hi/mid/lo stops (`theme.custom.medals`; decorative fills only, so no
   contrast floor). No literal colors/radii/shadows/durations in component code —
@@ -41,8 +43,10 @@ Component recipes:
 
 - `HeroHeader` (navigation): emerald gradient hero, pure props
   (eyebrow/title/avatar/action/children); `heroBleedSx` cancels the shell
-  padding. `tone="gold"` swaps in `goldHeroGrad` (a different reading type,
-  e.g. the daily Wird); its stops keep `heroInk` above 4.5:1.
+  padding. `tone="wird"` swaps in the blue `wirdHeroGrad` and blue glow/shimmer
+  for daily Wird; contrast tests cover the gradient and overlapping decoration,
+  including the translucent eyebrow text, above 4.5:1 in both modes.
+  Wird hero controls use the light hero ink for visible keyboard focus.
   `CollapsibleCard`: native details/summary card with rotating chevron, lifted
   open state, optional `summaryEnd` and heading level.
 - `SurfaceCard` takes `appear` for the staggered fadeUp entry and an optional
@@ -51,7 +55,9 @@ Component recipes:
   (`href`) renders its `actions` row below the link area, never inside it, so
   the actions can be links of their own; `tone="gold"` gives a gold border
   over `goldCardBg` (surface → goldSoft, text-contrast guarded); `StatusChip`
-  adds the gold `accent` tone; `DonutChart` = the progress ring (ringIn,
+  adds the gold `accent` tone. `SurfaceCard` and `StatusChip` also accept
+  `tone="wird"` for dedicated blue surfaces; card text, badges, and focus rings
+  are contrast guarded in both modes. `DonutChart` = the progress ring (ringIn,
   cellRem track) and accepts an optional short center caption; `SegmentBar`
   neutral tone = cellRem; `AppNav` renders the 56×32 active pill on the bottom
   bar and the desktop rail. On mobile, the bar is fixed to the dynamic

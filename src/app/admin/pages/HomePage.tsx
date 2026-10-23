@@ -84,7 +84,7 @@ export function AdminHomePage() {
         />
       ))}
       {activeWirds.length > 0 ? (
-        <SurfaceCard title={strings.member.wirdBadge} tone="gold">
+        <SurfaceCard title={strings.member.wirdBadge} tone="wird">
           <Stack spacing={2}>
             {activeWirds.map((wird) => (
               <Stack
@@ -108,7 +108,7 @@ export function AdminHomePage() {
                   {seriesTitle(wird, toWesternDigits)}
                 </Link>
                 <StatusChip
-                  tone="accent"
+                  tone="wird"
                   label={`${strings.member.wirdDaysCompleted}: ${toWesternDigits(wird.completionCount ?? 0)}`}
                 />
               </Stack>

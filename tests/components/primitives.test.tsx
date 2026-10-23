@@ -7,6 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ThemeProvider } from '@mui/material/styles';
 import { describe, expect, it, vi } from 'vitest';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { ConfirmationProvider } from '@/app/providers/ConfirmationProvider';
@@ -25,6 +26,7 @@ import {
   SurfaceCard,
 } from '@/components/primitives';
 import { TOKENS } from '@/theme/tokens';
+import { createKhatmaTheme } from '@/theme/muiTheme';
 
 function renderThemed(ui: ReactElement) {
   return render(<AppThemeProvider>{ui}</AppThemeProvider>);
@@ -108,18 +110,39 @@ describe('Shared action and surface primitives', () => {
 
   it('keeps entry motion, the gold tone, and caller sx together', () => {
     renderThemed(
-      <SurfaceCard title="Daily Wird" appear={1} tone="gold" sx={{ height: '100%' }}>
-        <p>Wird</p>
+      <SurfaceCard title="Gold card" appear={1} tone="gold" sx={{ height: '100%' }}>
+        <p>Body</p>
       </SurfaceCard>,
     );
 
-    const card = screen.getByRole('region', { name: 'Daily Wird' });
+    const card = screen.getByRole('region', { name: 'Gold card' });
     expect(card).toHaveStyle({
       height: '100%',
       borderColor: TOKENS.light.gold,
       animationDelay: '0.06s',
     });
   });
+
+  it.each(['light', 'dark'] as const)(
+    'renders blue Wird cards and badges in %s mode',
+    (mode) => {
+      render(
+        <ThemeProvider theme={createKhatmaTheme(mode)}>
+          <SurfaceCard title="Daily Wird" tone="wird">
+            <StatusChip tone="wird" label="Wird badge" />
+          </SurfaceCard>
+        </ThemeProvider>,
+      );
+      expect(screen.getByRole('region', { name: 'Daily Wird' })).toHaveStyle({
+        borderColor: TOKENS[mode].wird,
+        backgroundImage: TOKENS[mode].wirdCardBg,
+      });
+      expect(screen.getByText('Wird badge').closest('.MuiChip-root')).toHaveStyle({
+        color: TOKENS[mode].wirdInk,
+        backgroundColor: TOKENS[mode].wirdSoft,
+      });
+    },
+  );
 });
 
 describe('Shared form primitives', () => {

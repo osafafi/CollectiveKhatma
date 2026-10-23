@@ -54,7 +54,7 @@ export function WirdLandingContent({
           />
         }
         avatarVariant="plain"
-        tone="gold"
+        tone="wird"
         action={
           <AppButton
             quiet
@@ -68,7 +68,7 @@ export function WirdLandingContent({
         sx={{ pb: 11 }}
       >
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          <StatusChip tone="accent" label={strings.member.wirdBadge} />
+          <StatusChip tone="wird" label={strings.member.wirdBadge} />
           <Typography variant="body2" sx={{ opacity: 0.9 }}>
             {strings.member.wirdDaysCompleted}:{' '}
             {toWesternDigits(wird.completionCount ?? 0)}
@@ -96,7 +96,7 @@ export function WirdLandingContent({
                     {toWesternDigits(pages.length)} {strings.member.pagesWord} ·{' '}
                     {formatPageRanges(pages)}
                   </Typography>
-                  <AssignedPageTiles khatmaId={wird.id} pages={pages} />
+                  <AssignedPageTiles khatmaId={wird.id} pages={pages} tone="wird" />
                 </>
               )}
               <WirdFinishAction
@@ -121,7 +121,7 @@ export function WirdLandingContent({
 function WirdTitle() {
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}>
-      <SpaRoundedIcon color="secondary" fontSize="small" />
+      <SpaRoundedIcon sx={(theme) => ({ color: theme.custom.wird })} fontSize="small" />
       <Box component="span">{strings.member.wirdTodayHeading}</Box>
     </Box>
   );
@@ -139,13 +139,16 @@ function WirdHistoryCard({ completions }: { completions: readonly WirdCompletion
           component="span"
           sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}
         >
-          <HistoryRoundedIcon color="secondary" fontSize="small" />
+          <HistoryRoundedIcon
+            sx={(theme) => ({ color: theme.custom.wird })}
+            fontSize="small"
+          />
           <Box component="span">{strings.admin.wirdCompletionLogHeading}</Box>
         </Box>
       }
       open={open}
       onOpenChange={setOpen}
-      summaryEnd={<StatusChip tone="accent" label={toWesternDigits(entries.length)} />}
+      summaryEnd={<StatusChip tone="wird" label={toWesternDigits(entries.length)} />}
     >
       {entries.length === 0 ? (
         <Typography color="text.secondary">

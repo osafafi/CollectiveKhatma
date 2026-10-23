@@ -68,7 +68,7 @@ export function WirdHeaderCard({
       ? strings.admin.wirdCustomDua
       : `${toWesternDigits(wird.totalPages)} ${strings.member.pagesWord}`;
   return (
-    <SurfaceCard tone="gold">
+    <SurfaceCard tone="wird">
       <Stack direction="row" spacing={3} useFlexGap sx={{ alignItems: 'center' }}>
         <KhatmaSeriesArtwork
           variant="avatar"
@@ -81,7 +81,7 @@ export function WirdHeaderCard({
             <Typography component="h1" variant="h2">
               {title}
             </Typography>
-            <StatusChip tone="accent" label={strings.member.wirdBadge} />
+            <StatusChip tone="wird" label={strings.member.wirdBadge} />
             <StatusChip
               tone={wird.status === 'active' ? 'primary' : 'neutral'}
               label={
@@ -223,7 +223,10 @@ export function WirdCompletionLogCard({
           component="span"
           sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}
         >
-          <HistoryRoundedIcon color="secondary" fontSize="small" />
+          <HistoryRoundedIcon
+            sx={(theme) => ({ color: theme.custom.wird })}
+            fontSize="small"
+          />
           <Box component="span">{strings.admin.wirdCompletionLogHeading}</Box>
         </Box>
       }
@@ -231,7 +234,7 @@ export function WirdCompletionLogCard({
       onOpenChange={setOpen}
       summaryEnd={
         status === 'ready' ? (
-          <StatusChip tone="accent" label={toWesternDigits(entries.length)} />
+          <StatusChip tone="wird" label={toWesternDigits(entries.length)} />
         ) : undefined
       }
     >

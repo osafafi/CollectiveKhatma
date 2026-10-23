@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { mergeSx } from './mergeSx';
 
 export type StatusTone =
-  'neutral' | 'primary' | 'accent' | 'success' | 'warning' | 'danger';
+  'neutral' | 'primary' | 'accent' | 'wird' | 'success' | 'warning' | 'danger';
 
 export interface StatusChipProps extends Omit<ChipProps, 'color' | 'variant'> {
   tone?: StatusTone;
@@ -54,14 +54,16 @@ function statusSx(tone: StatusTone): SxProps<Theme> {
   return (theme) => {
     const color = toneColor(theme, tone);
     return {
-      // The design's "completed" chip sits on the solid gold-soft surface;
-      // other tones keep their translucent tint over the ambient background.
+      // Accent and Wird badges have solid tinted surfaces, including on heroes;
+      // other status tones use a translucent tint over the ambient background.
       bgcolor:
         tone === 'neutral'
           ? theme.palette.background.default
           : tone === 'accent'
             ? theme.custom.goldSoft
-            : alpha(color, 0.1),
+            : tone === 'wird'
+              ? theme.custom.wirdSoft
+              : alpha(color, 0.1),
       color,
       fontWeight: tone === 'warning' || tone === 'danger' ? 600 : 400,
     };
@@ -74,6 +76,8 @@ function toneColor(theme: Theme, tone: StatusTone): string {
       return theme.palette.primary.main;
     case 'accent':
       return theme.custom.goldInk;
+    case 'wird':
+      return theme.custom.wirdInk;
     case 'success':
       return theme.palette.success.dark;
     case 'warning':

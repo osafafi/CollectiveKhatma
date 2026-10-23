@@ -26,8 +26,8 @@ export interface HeroHeaderProps {
   children?: ReactNode;
   /** Tighter padding for reader chrome. */
   compact?: boolean;
-  /** `gold` marks a different reading type (daily Wird) with the gold hero. */
-  tone?: 'emerald' | 'gold';
+  /** `wird` marks the daily Wird with a blue hero. */
+  tone?: 'emerald' | 'wird';
   sx?: SxProps<Theme>;
 }
 
@@ -57,8 +57,11 @@ export function HeroHeader({
           ...heroBleedSx,
           position: 'relative',
           overflow: 'hidden',
-          background: tone === 'gold' ? theme.custom.goldHeroGrad : theme.custom.heroGrad,
+          background: tone === 'wird' ? theme.custom.wirdHeroGrad : theme.custom.heroGrad,
           color: theme.custom.heroInk,
+          ...(tone === 'wird'
+            ? { '& :focus-visible': { outlineColor: theme.custom.heroInk } }
+            : undefined),
           px: 5,
           pt: compact ? 3 : 4,
           pb: compact ? 4 : 6,
@@ -75,7 +78,7 @@ export function HeroHeader({
         sx={(theme) => ({
           position: 'absolute',
           inset: 0,
-          background: theme.custom.heroGlow,
+          background: tone === 'wird' ? theme.custom.wirdHeroGlow : theme.custom.heroGlow,
           pointerEvents: 'none',
         })}
       />
@@ -87,7 +90,7 @@ export function HeroHeader({
           insetInlineEnd: '-15%',
           width: 52,
           height: '200%',
-          background: `linear-gradient(180deg, transparent, ${theme.custom.heroShimmer}, transparent)`,
+          background: `linear-gradient(180deg, transparent, ${tone === 'wird' ? theme.custom.wirdHeroShimmer : theme.custom.heroShimmer}, transparent)`,
           animation: `shimmer ${theme.custom.motion.shimmer} ${theme.custom.motion.easingSoft} infinite`,
           pointerEvents: 'none',
         })}

@@ -69,7 +69,7 @@ function KhatmaListLine({ khatma }: { khatma: Khatma }) {
         {seriesTitle(khatma, toWesternDigits)}
       </Typography>
       {wird ? (
-        <StatusChip size="small" tone="accent" label={strings.member.wirdBadge} />
+        <StatusChip size="small" tone="wird" label={strings.member.wirdBadge} />
       ) : null}
       <StatusChip
         size="small"

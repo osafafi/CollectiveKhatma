@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ThemeProvider } from '@mui/material/styles';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppThemeProvider } from '@/app/providers/AppThemeProvider';
 import { AppHashRouter } from '@/app/routing/AppHashRouter';
@@ -13,6 +14,8 @@ import {
   appShellFrameSx,
 } from '@/components/navigation/layoutContracts';
 import { strings } from '@/content/strings.ar';
+import { createKhatmaTheme } from '@/theme/muiTheme';
+import { TOKENS } from '@/theme/tokens';
 import { renderWithAppProviders } from '../support/reactTestHarness';
 
 /** Mirror the hash-routing tests: drive HashRouter via the real location hash. */
@@ -130,6 +133,23 @@ describe('Member shell navigation', () => {
 });
 
 describe('HeroHeader', () => {
+  it.each(['light', 'dark'] as const)('uses blue Wird chrome in %s mode', (mode) => {
+    const { container } = render(
+      <ThemeProvider theme={createKhatmaTheme(mode)}>
+        <HeroHeader tone="wird" title="Daily Wird" />
+      </ThemeProvider>,
+    );
+    const hero = container.firstElementChild!;
+    expect(hero).toHaveStyle({
+      background: TOKENS[mode].wirdHeroGrad,
+      color: TOKENS[mode].heroInk,
+    });
+    expect(hero.children[0]).toHaveStyle({ backgroundImage: TOKENS[mode].wirdHeroGlow });
+    expect(hero.children[1]).toHaveStyle({
+      backgroundImage: `linear-gradient(180deg, transparent, ${TOKENS[mode].wirdHeroShimmer}, transparent)`,
+    });
+  });
+
   it('renders eyebrow, title, avatar chip, action slot, and extra rows as pure props', () => {
     render(
       <AppThemeProvider>

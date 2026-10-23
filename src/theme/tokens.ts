@@ -23,6 +23,9 @@ export interface ColorTokens {
   gold: string;
   goldSoft: string;
   goldInk: string;
+  wird: string;
+  wirdSoft: string;
+  wirdInk: string;
   heroInk: string;
   onEmerald: string;
   cellRem: string;
@@ -38,8 +41,11 @@ export interface ColorTokens {
   medalCenter: string;
   surahBandInk: string;
   heroGrad: string;
-  /** Gold hero variant (daily Wird); heroInk stays AA-legible on every stop. */
-  goldHeroGrad: string;
+  /** Blue daily Wird surfaces, separate from achievement/status gold. */
+  wirdHeroGrad: string;
+  wirdCardBg: string;
+  wirdHeroGlow: string;
+  wirdHeroShimmer: string;
   /** Gold-tinted card variant: surface → goldSoft, so text keeps its AA floor. */
   goldCardBg: string;
   heroGlow: string;
@@ -64,6 +70,9 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     // Handoff proposed #8a6a1f (4.2:1 on goldSoft); nudged darker to clear the
     // repo's WCAG-AA 4.5 floor for chip text.
     goldInk: '#806018',
+    wird: '#2872a3',
+    wirdSoft: '#e7f4fd',
+    wirdInk: '#28628b',
     heroInk: '#eafaf4',
     onEmerald: '#ffffff',
     cellRem: '#e5ddcb',
@@ -82,7 +91,11 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     medalCenter: '#fff9ec',
     surahBandInk: '#fdf3d8',
     heroGrad: 'linear-gradient(140deg,#0e6f61 0%,#0a5348 60%,#08463c 100%)',
-    goldHeroGrad: 'linear-gradient(140deg,#806018 0%,#6a4f14 60%,#553f10 100%)',
+    wirdHeroGrad: 'linear-gradient(140deg,#16496b 0%,#123e5c 60%,#0e324c 100%)',
+    wirdCardBg: 'linear-gradient(160deg,#fffdf7 0%,#e7f4fd 100%)',
+    wirdHeroGlow:
+      'radial-gradient(120% 90% at 88% -12%, rgba(126,200,253,.12), transparent 55%)',
+    wirdHeroShimmer: 'rgba(126,200,253,.12)',
     goldCardBg: 'linear-gradient(160deg,#fffdf7 0%,#f4ead0 100%)',
     heroGlow:
       'radial-gradient(120% 90% at 88% -12%, rgba(201,162,74,.32), transparent 55%)',
@@ -103,6 +116,9 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     gold: '#d9b45f',
     goldSoft: '#2a2415',
     goldInk: '#e6c877',
+    wird: '#7ec8fd',
+    wirdSoft: '#172c3c',
+    wirdInk: '#7ec8fd',
     heroInk: '#eafaf4',
     onEmerald: '#052019',
     cellRem: '#2a3a32',
@@ -118,7 +134,11 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     medalCenter: '#0f1c17',
     surahBandInk: '#fbeecb',
     heroGrad: 'linear-gradient(140deg,#155448 0%,#0c342c 60%,#08251f 100%)',
-    goldHeroGrad: 'linear-gradient(140deg,#6b5520 0%,#4a3a15 60%,#30260d 100%)',
+    wirdHeroGrad: 'linear-gradient(140deg,#163d56 0%,#102e43 60%,#0c2334 100%)',
+    wirdCardBg: 'linear-gradient(160deg,#16211c 0%,#172c3c 100%)',
+    wirdHeroGlow:
+      'radial-gradient(120% 90% at 88% -12%, rgba(126,200,253,.12), transparent 55%)',
+    wirdHeroShimmer: 'rgba(126,200,253,.12)',
     goldCardBg: 'linear-gradient(160deg,#16211c 0%,#2a2415 100%)',
     heroGlow:
       'radial-gradient(120% 90% at 88% -12%, rgba(217,180,95,.28), transparent 55%)',

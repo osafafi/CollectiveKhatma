@@ -37,14 +37,19 @@ export interface SurfaceCardProps {
    * 0.16s so long lists do not crawl. Omit for no entry motion.
    */
   appear?: number;
-  /** `gold` marks a different reading type (daily Wird): gold border and tint. */
-  tone?: 'default' | 'gold';
+  /** Optional gold accent or blue daily Wird border and tint. */
+  tone?: 'default' | 'gold' | 'wird';
   sx?: SxProps<Theme>;
 }
 
 const goldToneSx: SxProps<Theme> = (theme) => ({
   borderColor: theme.custom.gold,
   backgroundImage: theme.custom.goldCardBg,
+});
+
+const wirdToneSx: SxProps<Theme> = (theme) => ({
+  borderColor: theme.custom.wird,
+  backgroundImage: theme.custom.wirdCardBg,
 });
 
 /** Shared titled/untitled surface, including the clickable member-list variant. */
@@ -103,7 +108,7 @@ export function SurfaceCard({
       sx={mergeSx(
         mergeSx(
           mergeSx({ overflow: 'hidden' }, appearSx(appear)),
-          tone === 'gold' ? goldToneSx : undefined,
+          tone === 'wird' ? wirdToneSx : tone === 'gold' ? goldToneSx : undefined,
         ),
         sx,
       )}

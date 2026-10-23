@@ -41,6 +41,10 @@ Hard rules:
   completions; a Wird never auto-completes when its selected pages are read.
 - The khatma image catalog is shared by both types. `wird-dawn.svg` and
   `wird-moon.svg` are the initial replaceable Wird-oriented choices.
+- Wird uses a separate blue theme across admin/member cards, headers, badges,
+  history icons, and page tiles. Light mode pairs a pale blue tint with deep blue
+  ink; dark mode uses a muted blue surface with sky-blue accents. Ordinary khatma
+  accents and achievement gold retain their existing colors.
 - Every member has additive `{ pages, surahs, juz }` capacity, where `surahs`
   selects one Surah id and `juz` selects one Juz number (`1..30`; `0` means none).
 - On an active khatma's detail page, Surah capacity menus offer only Surahs whose

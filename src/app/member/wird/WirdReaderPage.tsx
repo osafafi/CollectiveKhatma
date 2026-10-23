@@ -161,8 +161,9 @@ function WirdReaderHeader({ wird, memberName }: { wird: Khatma; memberName: stri
         mb: 3,
         px: 4,
         py: 2.5,
-        background: theme.custom.goldHeroGrad,
+        background: theme.custom.wirdHeroGrad,
         color: theme.custom.heroInk,
+        '& :focus-visible': { outlineColor: theme.custom.heroInk },
         borderRadius: {
           xs: `0 0 ${theme.custom.radii.hero}px ${theme.custom.radii.hero}px`,
           lg: `${theme.custom.radii.card}px`,
@@ -184,7 +185,7 @@ function WirdReaderHeader({ wird, memberName }: { wird: Khatma; memberName: stri
             {seriesTitle(wird, toWesternDigits)} · {memberName}
           </Typography>
         </Stack>
-        <StatusChip tone="accent" label={strings.member.wirdBadge} />
+        <StatusChip tone="wird" label={strings.member.wirdBadge} />
       </Stack>
       <AppButton
         quiet

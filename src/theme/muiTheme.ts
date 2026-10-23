@@ -27,6 +27,9 @@ export interface CustomThemeTokens {
   gold: string;
   goldSoft: string;
   goldInk: string;
+  wird: string;
+  wirdSoft: string;
+  wirdInk: string;
   heroInk: string;
   onEmerald: string;
   cellRem: string;
@@ -37,7 +40,10 @@ export interface CustomThemeTokens {
   medalCenter: string;
   surahBandInk: string;
   heroGrad: string;
-  goldHeroGrad: string;
+  wirdHeroGrad: string;
+  wirdCardBg: string;
+  wirdHeroGlow: string;
+  wirdHeroShimmer: string;
   goldCardBg: string;
   heroGlow: string;
   heroPill: string;
@@ -84,6 +90,9 @@ export function createKhatmaTheme(
     gold: t.gold,
     goldSoft: t.goldSoft,
     goldInk: t.goldInk,
+    wird: t.wird,
+    wirdSoft: t.wirdSoft,
+    wirdInk: t.wirdInk,
     heroInk: t.heroInk,
     onEmerald: t.onEmerald,
     cellRem: t.cellRem,
@@ -94,7 +103,10 @@ export function createKhatmaTheme(
     medalCenter: t.medalCenter,
     surahBandInk: t.surahBandInk,
     heroGrad: t.heroGrad,
-    goldHeroGrad: t.goldHeroGrad,
+    wirdHeroGrad: t.wirdHeroGrad,
+    wirdCardBg: t.wirdCardBg,
+    wirdHeroGlow: t.wirdHeroGlow,
+    wirdHeroShimmer: t.wirdHeroShimmer,
     goldCardBg: t.goldCardBg,
     heroGlow: t.heroGlow,
     heroPill: t.heroPill,
