@@ -14,7 +14,12 @@ export type FakePlayBehaviour = 'resolve' | 'hang' | { reject: string };
  */
 export class FakeAudio implements RecitationAudio {
   readonly srcHistory: string[] = [];
+  /** Every fade the engine asked for, oldest first. */
+  readonly fades: { level: number; seconds: number }[] = [];
   currentTime = 0;
+  duration = Number.NaN;
+  /** The level the last fade is heading to. */
+  gain = 1;
   paused = true;
   ended = false;
   playBehaviour: FakePlayBehaviour = 'resolve';
@@ -60,6 +65,11 @@ export class FakeAudio implements RecitationAudio {
     this.source = '';
   }
 
+  fadeTo(level: number, seconds: number): void {
+    this.fades.push({ level, seconds });
+    this.gain = level;
+  }
+
   addEventListener(type: RecitationAudioEvent, listener: () => void): void {
     const set = this.listeners.get(type) ?? new Set();
     set.add(listener);
@@ -100,12 +110,18 @@ export function audioResponse(type = 'audio/mpeg'): Response {
 }
 
 export function createFakeRecitationEnvironment() {
-  const audio = new FakeAudio();
+  // The engine's two channels, in creation order. Without an overlapped
+  // handoff only the first is ever used, so most tests just read `audio`.
+  const channels = [new FakeAudio(), new FakeAudio()] as const;
+  const audio = channels[0];
   let online = true;
   let saveData = false;
   let objectUrls = 0;
+  let created = 0;
+  const interruptions = new Set<() => void>();
 
-  const createAudio = vi.fn(() => audio);
+  const createAudio = vi.fn(() => channels[created++ % 2]!);
+  const unlock = vi.fn();
   // Prefetches hang unless a test answers them.
   const fetch = vi.fn(
     (_url: string, _init: { signal: AbortSignal }): Promise<Response> =>
@@ -116,6 +132,10 @@ export function createFakeRecitationEnvironment() {
 
   const env: RecitationEnvironment = {
     createAudio,
+    unlock,
+    onInterrupted: (listener) => {
+      interruptions.add(listener);
+    },
     fetch: (url, init) => fetch(url, init),
     createObjectURL: (blob) => createObjectURL(blob),
     revokeObjectURL: (url) => revokeObjectURL(url),
@@ -126,7 +146,9 @@ export function createFakeRecitationEnvironment() {
   return {
     env,
     audio,
+    channels,
     createAudio,
+    unlock,
     fetch,
     createObjectURL,
     revokeObjectURL,
@@ -135,6 +157,10 @@ export function createFakeRecitationEnvironment() {
     },
     setSaveData(value: boolean) {
       saveData = value;
+    },
+    /** The platform silences the audio mixer (an iOS lock screen, a call). */
+    interruptMixer() {
+      for (const listener of interruptions) listener();
     },
   };
 }

@@ -73,8 +73,10 @@ Component recipes:
   bar, its border, the safe area and a 12px gap on mobile; beside the 96px rail
   and 24px up on desktop — and renders an in-flow spacer so page content and the
   finish button stay reachable. Verse buttons follow the page nav's book order
-  (previous on the right) with mirrored skip icons. `QariPicker` and
-  `RecitationUnavailableDialog` are its Settings and failure companions.
+  (previous on the right) with mirrored skip icons. `QariPicker`,
+  `VerseOverlapControl` (the advanced per-voice overlap slider with its test and
+  reset), and `RecitationUnavailableDialog` are its Settings and failure
+  companions.
 
 Hard rules:
 

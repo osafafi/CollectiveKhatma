@@ -42,6 +42,17 @@ export const DEFAULT_QARI_ID: QariId = 'alafasy';
 /** Every surah's ayah-1 file starts after the basmala; 1:1 is the basmala itself. */
 export const BASMALA_REF = { surah: 1, ayah: 1 } as const;
 
+/**
+ * The tail overlap between ayat, in ms. Files are cut differently per voice,
+ * so members can tune it per qari in Settings; 0 turns the overlap off.
+ */
+export const VERSE_OVERLAP_MS = { default: 200, min: 0, max: 600, step: 25 } as const;
+
+export function clampVerseOverlapMs(value: number): number {
+  const stepped = Math.round(value / VERSE_OVERLAP_MS.step) * VERSE_OVERLAP_MS.step;
+  return Math.min(VERSE_OVERLAP_MS.max, Math.max(VERSE_OVERLAP_MS.min, stepped));
+}
+
 /** Ayat al-Kursi, the Settings preview. */
 export const PREVIEW_REF = { surah: 2, ayah: 255, page: 42 } as const;
 

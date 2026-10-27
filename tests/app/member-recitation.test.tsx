@@ -310,6 +310,23 @@ describe('the recited verse on the page', () => {
     expect(reciting()).toEqual(['2:61']);
   });
 
+  it('moves the glow as the next ayah takes over in the overlap', async () => {
+    const { user } = renderAssigned([30, 31]);
+    await user.click(await playButton());
+    const [first, second] = fake.channels;
+    act(() => first.startPlaying());
+    expect(reciting()).toEqual(['2:60']);
+
+    // Just inside the tail: the next ayah starts on the other channel.
+    first.duration = 5;
+    first.currentTime = 4.9;
+    await waitFor(() => expect(second.src).toBe(url(2, 61)));
+    expect(first.paused).toBe(false);
+    act(() => second.startPlaying());
+    expect(reciting()).toEqual(['2:61']);
+    expect(screen.getByRole('status')).toHaveTextContent('البقرة · 61');
+  });
+
   it('lights the bismillah line while the basmala plays', async () => {
     const { user } = renderMember('/quran/50', { data: { roster: [amina] } });
     await screen.findByText(/نص-3-1/);

@@ -5,8 +5,9 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { useQariPreference } from '@/app/persistence';
+import { useQariPreference, useVerseOverlapPreferences } from '@/app/persistence';
 import { getSurahs } from '@/content/quran/loader';
+import { VERSE_OVERLAP_MS, type QariId } from '@/content/quran/recitation';
 import { strings } from '@/content/strings.ar';
 import { RecitationUnavailableDialog } from '@/components/recitation';
 import { browserRecitationEnvironment } from './browserRecitationEnvironment';
@@ -38,6 +39,7 @@ export function RecitationProvider({
   // so StrictMode's double initialisation is harmless.
   const [engine] = useState(() => createRecitationEngine(environment));
   const [qariId, setQariId] = useQariPreference();
+  const [overlaps, setOverlap] = useVerseOverlapPreferences();
   const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
 
   useEffect(() => () => engine.stop(), [engine]);
@@ -56,8 +58,18 @@ export function RecitationProvider({
   }, [engine]);
 
   const value = useMemo(
-    () => ({ engine, qariId, setQariId }),
-    [engine, qariId, setQariId],
+    () => ({
+      engine,
+      qariId,
+      setQariId,
+      overlapMsFor: (id: QariId) => overlaps[id] ?? VERSE_OVERLAP_MS.default,
+      setOverlapMs: (id: QariId, ms: number) => {
+        setOverlap(id, ms);
+        // A transition preview playing this voice follows the slider at once.
+        if (engine.getSnapshot().qariId === id) engine.setOverlap(ms / 1000);
+      },
+    }),
+    [engine, qariId, setQariId, overlaps, setOverlap],
   );
 
   return (

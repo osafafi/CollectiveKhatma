@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ayahAudioUrls,
+  clampVerseOverlapMs,
   DEFAULT_QARI_ID,
   isQariId,
   QARIS,
@@ -32,6 +33,12 @@ describe('recitation catalog', () => {
     expect(ayahAudioUrls('husary', 114, 6)[0]).toBe(
       'https://everyayah.com/data/Husary_128kbps/114006.mp3',
     );
+  });
+
+  it('keeps a tuned overlap on its 25ms steps between 0 and 600ms', () => {
+    expect(clampVerseOverlapMs(212)).toBe(200);
+    expect(clampVerseOverlapMs(-40)).toBe(0);
+    expect(clampVerseOverlapMs(5000)).toBe(600);
   });
 
   it('offers no mirror for the folders QuranicAudio does not carry', () => {

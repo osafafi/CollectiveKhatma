@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createRecitationEngine,
+  HANDOFF_POLL_MS,
   LOAD_TIMEOUT_MS,
   STALL_TIMEOUT_MS,
+  VERSE_FADE_IN_SECONDS,
+  VERSE_OVERLAP_SECONDS,
   type RecitationEngine,
 } from '@/app/member/recitation/recitationEngine';
 import {
@@ -39,7 +42,12 @@ describe('recitation engine', () => {
   let engine: RecitationEngine;
 
   const start = (
-    options: { qariId?: QariId; playlist?: RecitationPlaylist; startIndex?: number } = {},
+    options: {
+      qariId?: QariId;
+      playlist?: RecitationPlaylist;
+      startIndex?: number;
+      overlapSeconds?: number;
+    } = {},
   ): void =>
     engine.start({
       owner: 'reader-1',
@@ -47,12 +55,15 @@ describe('recitation engine', () => {
       qariId: options.qariId ?? 'alafasy',
       playlist: options.playlist ?? staticPlaylist(ayat),
       startIndex: options.startIndex,
+      overlapSeconds: options.overlapSeconds,
     });
 
   const status = () => engine.getSnapshot().status;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+    });
     fake = createFakeRecitationEnvironment();
     engine = createRecitationEngine(fake.env);
   });
@@ -62,7 +73,7 @@ describe('recitation engine', () => {
     vi.useRealTimers();
   });
 
-  it('plays synchronously from start and reuses one element across sessions', () => {
+  it('plays synchronously from start and reuses its two channels across sessions', () => {
     expect(fake.createAudio).not.toHaveBeenCalled();
     start();
 
@@ -85,7 +96,8 @@ describe('recitation engine', () => {
 
     start({ startIndex: 2 });
     expect(fake.audio.src).toBe(`${PRIMARY}002003.mp3`);
-    expect(fake.createAudio).toHaveBeenCalledTimes(1);
+    expect(fake.createAudio).toHaveBeenCalledTimes(2);
+    expect(fake.unlock).toHaveBeenCalled();
   });
 
   it('falls back to the mirror on an error and keeps it for later ayat', () => {
@@ -308,6 +320,134 @@ describe('recitation engine', () => {
       expect(signal?.aborted).toBe(false);
       engine.stop();
       expect(signal?.aborted).toBe(true);
+    });
+  });
+
+  describe('overlapped handoff', () => {
+    const [first, second] = [0, 1] as const;
+
+    /** Play the current channel up to just inside the overlap window. */
+    function nearEnd(channel: 0 | 1, duration = 5): void {
+      const audio = fake.channels[channel];
+      audio.duration = duration;
+      audio.currentTime = duration - VERSE_OVERLAP_SECONDS + 0.05;
+      vi.advanceTimersByTime(HANDOFF_POLL_MS);
+    }
+
+    it('starts the next ayah on the other channel while the tail fades out', () => {
+      start();
+      fake.channels[first].startPlaying();
+      fake.channels[first].duration = 5;
+      fake.channels[first].currentTime = 3;
+      vi.advanceTimersByTime(HANDOFF_POLL_MS * 4);
+      expect(fake.channels[second].src).toBe('');
+
+      nearEnd(first);
+      expect(fake.channels[second].src).toBe(`${PRIMARY}002002.mp3`);
+      expect(engine.getSnapshot()).toMatchObject({ status: 'loading', index: 1 });
+      // The incoming ayah starts silent; the outgoing tail is still sounding.
+      expect(fake.channels[second].gain).toBe(0);
+      expect(fake.channels[first].paused).toBe(false);
+      expect(fake.channels[first].fades.at(-1)!.level).toBe(0);
+      expect(fake.channels[first].fades.at(-1)!.seconds).toBeLessThanOrEqual(
+        VERSE_OVERLAP_SECONDS,
+      );
+
+      fake.channels[second].startPlaying();
+      expect(fake.channels[second].fades.at(-1)).toEqual({
+        level: 1,
+        seconds: VERSE_FADE_IN_SECONDS,
+      });
+      expect(engine.getSnapshot()).toMatchObject({ status: 'playing', index: 1 });
+
+      // The tail's own end changes nothing.
+      fake.channels[first].finish();
+      expect(engine.getSnapshot()).toMatchObject({ status: 'playing', index: 1 });
+
+      // And the chain carries on back onto the first channel.
+      nearEnd(second);
+      expect(fake.channels[first].src).toBe(`${PRIMARY}002003.mp3`);
+      expect(fake.channels[first].gain).toBe(0);
+    });
+
+    it('waits for the end instead when the next ayah is not known yet', async () => {
+      const items = [ayat[0]!];
+      const playlist: RecitationPlaylist = {
+        items,
+        complete: false,
+        ensure: () => new Promise(() => undefined),
+      };
+      start({ playlist });
+      fake.channels[first].startPlaying();
+      nearEnd(first);
+      expect(fake.channels[second].src).toBe('');
+      expect(engine.getSnapshot()).toMatchObject({ status: 'playing', index: 0 });
+    });
+
+    it('never overlaps the opening of a very short file', () => {
+      start();
+      fake.channels[first].startPlaying();
+      fake.channels[first].duration = VERSE_OVERLAP_SECONDS;
+      fake.channels[first].currentTime = 0.05;
+      vi.advanceTimersByTime(HANDOFF_POLL_MS);
+      expect(fake.channels[second].src).toBe('');
+    });
+
+    it('cuts the fading tail when the member pauses, skips, or stops', () => {
+      start();
+      fake.channels[first].startPlaying();
+      nearEnd(first);
+      engine.pause();
+      expect(fake.channels[first].paused).toBe(true);
+      expect(fake.channels[first].src).toBe('');
+      expect(fake.channels[second].paused).toBe(true);
+
+      engine.resume();
+      expect(fake.channels[second].gain).toBe(1);
+      fake.channels[second].startPlaying();
+      engine.stop();
+      expect(fake.channels[second].src).toBe('');
+
+      // A fresh session starts on the first channel at full volume.
+      start();
+      expect(fake.channels[first].src).toBe(`${PRIMARY}002001.mp3`);
+      expect(fake.channels[first].gain).toBe(1);
+    });
+
+    it("uses the voice's own overlap, retunes live, and can turn it off", () => {
+      start({ overlapSeconds: 0.5 });
+      fake.channels[first].startPlaying();
+      fake.channels[first].duration = 5;
+      fake.channels[first].currentTime = 4.6;
+      vi.advanceTimersByTime(HANDOFF_POLL_MS);
+      expect(fake.channels[second].src).toBe(`${PRIMARY}002002.mp3`);
+      fake.channels[second].startPlaying();
+
+      engine.setOverlap(0);
+      fake.channels[second].duration = 5;
+      fake.channels[second].currentTime = 4.99;
+      vi.advanceTimersByTime(HANDOFF_POLL_MS * 2);
+      expect(fake.channels[first].src).not.toBe(`${PRIMARY}002003.mp3`);
+      // With no overlap the plain end of the file moves on.
+      fake.channels[second].finish();
+      expect(fake.channels[second].src).toBe(`${PRIMARY}002003.mp3`);
+    });
+
+    it('holds paused when the platform silences the mixer', () => {
+      start();
+      fake.channels[first].startPlaying();
+      fake.interruptMixer();
+      expect(engine.getSnapshot()).toMatchObject({ status: 'paused', interrupted: true });
+      expect(fake.channels[first].paused).toBe(true);
+
+      fake.unlock.mockClear();
+      engine.resume();
+      expect(fake.unlock).toHaveBeenCalled();
+      fake.channels[first].startPlaying();
+      expect(engine.getSnapshot()).toMatchObject({
+        status: 'playing',
+        interrupted: false,
+      });
     });
   });
 

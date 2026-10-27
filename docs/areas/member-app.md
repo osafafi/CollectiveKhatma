@@ -115,7 +115,8 @@ Hard rules:
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage` (browse
   reader), `khatma.assignedReaderPage.${khatmaId}.${memberId}` (assigned reader),
   `khatma.themeMode` (shared with the admin entry), `khatma.qari` (recitation
-  voice, this device only), `khatma.du3aAck.${khatmaId}`,
+  voice, this device only), `khatma.verseOverlap` (per-voice overlap in ms, a
+  JSON map of tuned voices only), `khatma.du3aAck.${khatmaId}`,
   `khatma.pendingFinishes` (the offline finish queue, owned by
   `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
@@ -170,10 +171,19 @@ Hard rules:
   stall all end there — never a crash, never a technical message — because
   some members' bundles reach only certain apps while `navigator.onLine` stays
   true. Closing it leaves the ayah paused if anything had played, else idle.
-- The engine reaches `audio.play()` synchronously from the tap (iOS unlock),
-  reuses one lazily created element, and never sets `crossOrigin`. The primary
-  host is tried first; once the mirror answers, it is preferred for the rest of
-  the session. The next ayah is prefetched into an in-memory blob (skipped
+- The engine reaches `audio.play()` synchronously from the tap (iOS unlock)
+  and reuses two lazily created channels. Ayat are joined with a short tail
+  overlap: the voice's overlap (default 200ms, tunable 0–600ms in Settings,
+  where 0 turns it off) before an ayah ends, the next one
+  starts on the other channel with a 40ms fade-in while the outgoing tail fades
+  out — only the quiet tail overlaps, never two ayat's words. When the next
+  item is not known in time it falls back to waiting for `ended`. Pausing,
+  skipping, or stopping cuts a fading tail. Fades ramp `element.volume`; on iOS,
+  where volume is read-only, channels route through one Web Audio context
+  (`crossOrigin="anonymous"`, which both hosts allow) and a mixer interruption
+  holds the ayah paused. Elsewhere `crossOrigin` is never set. The primary host
+  is tried first; once the mirror answers, it is preferred for the rest of the
+  session. The next ayah is prefetched into an in-memory blob (skipped
   under Data Saver, `audio/*` responses only) and released after use. Nothing
   is persisted.
 - Every Quran reader (assigned, Quran Wird, free browse) shows a floating
@@ -208,7 +218,11 @@ Hard rules:
 - The Settings recitation card lists the 15 voices as radios; tapping one saves
   it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
   preview plays at a time and it stops when the card closes or Settings
-  unmounts.
+  unmounts. A collapsed `إعدادات متقدمة` subsection tunes the chosen voice's
+  overlap between ayat (25ms steps, reset to the 200ms default), and its test
+  plays Al-Fatiha 1–4 with that value so three transitions can be heard; moving
+  the slider retunes a playing test at once. Readers start each session with
+  the voice's tuned value.
 - Reader chrome is the slim gradient hero; group progress opens and series
   history collapses by default on the khatma landing (local state). Inside
   group progress, pending readers have their own collapsed, count-labelled

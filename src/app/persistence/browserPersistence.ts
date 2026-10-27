@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_QARI_ID, isQariId, type QariId } from '@/content/quran/recitation';
+import {
+  clampVerseOverlapMs,
+  DEFAULT_QARI_ID,
+  isQariId,
+  type QariId,
+} from '@/content/quran/recitation';
 import { DEFAULT_READING_SCALE, type ReadingScale } from '@/theme/reading';
 import type { ThemeMode } from '@/theme/tokens';
 
@@ -8,6 +13,7 @@ const READING_SCALE_KEY = 'khatma.readingScale';
 const LAST_READ_PAGE_KEY = 'khatma.lastReadPage';
 const THEME_MODE_KEY = 'khatma.themeMode';
 const QARI_KEY = 'khatma.qari';
+const VERSE_OVERLAP_KEY = 'khatma.verseOverlap';
 const REMAINDER_ASSIGNEE_KEY = 'khatma.admin.remainderAssigneeId';
 const DU3A_ACK_PREFIX = 'khatma.du3aAck.';
 const ASSIGNED_READER_PAGE_PREFIX = 'khatma.assignedReaderPage.';
@@ -93,6 +99,31 @@ export function useQariPreference(): PersistentValue<QariId> {
   return [qariId, setQariId];
 }
 
+export type VerseOverlapPreferences = Partial<Record<QariId, number>>;
+
+/**
+ * Per-voice tail overlap (ms) tuned in Settings on this device. Voices never
+ * tuned are absent, so the catalog default applies to them.
+ */
+export function useVerseOverlapPreferences(): readonly [
+  overlaps: VerseOverlapPreferences,
+  setOverlap: (qariId: QariId, ms: number) => void,
+] {
+  const [overlaps, setOverlaps] = useState<VerseOverlapPreferences>(() =>
+    parseVerseOverlaps(read(VERSE_OVERLAP_KEY)),
+  );
+
+  const setOverlap = useCallback((qariId: QariId, ms: number): void => {
+    setOverlaps((current) => {
+      const next = { ...current, [qariId]: clampVerseOverlapMs(ms) };
+      write(VERSE_OVERLAP_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return [overlaps, setOverlap];
+}
+
 /** Resume and update the browse reader's last valid mushaf page. */
 export function useLastReadPage(): PersistentValue<number> {
   const [page, setPageState] = useState(() =>
@@ -156,6 +187,23 @@ function parseThemeMode(value: string | null): ThemeMode {
 
 function parseQariId(value: string | null): QariId {
   return isQariId(value) ? value : DEFAULT_QARI_ID;
+}
+
+function parseVerseOverlaps(value: string | null): VerseOverlapPreferences {
+  let stored: unknown;
+  try {
+    stored = value === null ? null : JSON.parse(value);
+  } catch {
+    return {};
+  }
+  if (typeof stored !== 'object' || stored === null) return {};
+  const overlaps: VerseOverlapPreferences = {};
+  for (const [qariId, ms] of Object.entries(stored)) {
+    if (isQariId(qariId) && typeof ms === 'number' && Number.isFinite(ms)) {
+      overlaps[qariId] = clampVerseOverlapMs(ms);
+    }
+  }
+  return overlaps;
 }
 
 function parseReadingScale(value: string | null): ReadingScale {

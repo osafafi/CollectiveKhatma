@@ -50,6 +50,13 @@ export function staticPlaylist(items: readonly RecitationItem[]): RecitationPlay
   };
 }
 
+/** Al-Fatiha 1–4: short ayat, so the overlap setting is heard three times. */
+export function transitionPreviewPlaylist(): RecitationPlaylist {
+  return staticPlaylist(
+    [1, 2, 3, 4].map((ayah) => ({ kind: 'ayah', surah: 1, ayah, page: 1 })),
+  );
+}
+
 /** The single-ayah Settings preview: Ayat al-Kursi. */
 export function previewPlaylist(): RecitationPlaylist {
   return staticPlaylist([{ kind: 'ayah', ...PREVIEW_REF }]);

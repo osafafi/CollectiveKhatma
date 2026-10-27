@@ -1,4 +1,9 @@
-import { ayahAudioUrls, BASMALA_REF, type QariId } from '@/content/quran/recitation';
+import {
+  ayahAudioUrls,
+  BASMALA_REF,
+  VERSE_OVERLAP_MS,
+  type QariId,
+} from '@/content/quran/recitation';
 import {
   previousTarget,
   type RecitationItem,
@@ -6,15 +11,21 @@ import {
 } from './recitationPlaylist';
 
 /**
- * Framework-free recitation transport: one media element, a playlist, and the
+ * Framework-free recitation transport: two media channels, a playlist, and the
  * failure rules that keep a member on a WhatsApp-only bundle (online, yet
  * unable to reach the audio hosts) from ever seeing a crash or a misleading
  * error — every dead end becomes the single `unavailable` state.
  *
+ * Ayat are joined with a short tail overlap: just before an ayah ends, the next
+ * one starts on the other channel while the outgoing ayah's quiet tail fades
+ * out beneath it, so the recitation flows instead of cutting to silence. Only
+ * the tail overlaps (never the next ayah's words with this one's), and when the
+ * next ayah is not known in time the player simply waits for `ended`.
+ *
  * iOS rules shape it: `start` reaches `audio.play()` synchronously so the tap
- * that called it unlocks the element, and the element is created once and
- * reused for every ayah (later programmatic `play()` calls on an unlocked
- * element are allowed). React reads it through `useSyncExternalStore`.
+ * that called it unlocks the channels, which are created once and reused for
+ * every ayah (later programmatic `play()` calls on an unlocked element are
+ * allowed). React reads it through `useSyncExternalStore`.
  */
 
 /** A host gets this long to start playing an ayah before the next one is tried. */
@@ -23,14 +34,22 @@ export const LOAD_TIMEOUT_MS = 7000;
 export const STALL_TIMEOUT_MS = 12000;
 /** Ceiling on the in-memory prefetch of the next ayah. */
 export const PREFETCH_TIMEOUT_MS = 20000;
+/** Default for how early the next ayah starts; the outgoing tail fades over it. */
+export const VERSE_OVERLAP_SECONDS = VERSE_OVERLAP_MS.default / 1000;
+/** The incoming ayah's fade-in: only long enough to avoid a click. */
+export const VERSE_FADE_IN_SECONDS = 0.04;
+/** How often the playing ayah is checked for its handoff point. */
+export const HANDOFF_POLL_MS = 50;
 
 export type RecitationAudioEvent =
   'playing' | 'pause' | 'ended' | 'error' | 'waiting' | 'timeupdate';
 
-/** The slice of `HTMLAudioElement` the engine uses, so tests can fake it. */
+/** The slice of `HTMLAudioElement` the engine uses, plus a fade, so tests can fake it. */
 export interface RecitationAudio {
   src: string;
   currentTime: number;
+  /** Seconds, or NaN until the file's length is known. */
+  readonly duration: number;
   readonly paused: boolean;
   readonly ended: boolean;
   play(): Promise<void> | undefined;
@@ -38,11 +57,17 @@ export interface RecitationAudio {
   load(): void;
   removeAttribute(name: 'src'): void;
   addEventListener(type: RecitationAudioEvent, listener: () => void): void;
+  /** Ramp this channel's loudness to `level` (0–1) over `seconds`; 0 sets it at once. */
+  fadeTo(level: number, seconds: number): void;
 }
 
 export interface RecitationEnvironment {
-  /** Called at most once, lazily, on the first start. */
+  /** Called lazily on the first start, once per channel (twice in all). */
   createAudio(): RecitationAudio;
+  /** Inside the member's tap: let the audio mixer run (iOS needs a gesture). */
+  unlock?(): void;
+  /** The platform stopped the audio mixer on its own (iOS screen lock, a call). */
+  onInterrupted?(listener: () => void): void;
   fetch(url: string, init: { signal: AbortSignal }): Promise<Response>;
   createObjectURL(blob: Blob): string;
   revokeObjectURL(url: string): void;
@@ -63,6 +88,8 @@ export interface RecitationSession {
   qariId: QariId;
   playlist: RecitationPlaylist;
   startIndex?: number;
+  /** Tail overlap for this voice, in seconds; 0 waits for each ayah to end. */
+  overlapSeconds?: number;
 }
 
 export interface RecitationSnapshot {
@@ -93,6 +120,8 @@ export interface RecitationEngine {
   stop(owner?: string): void;
   /** Close the unavailable state: paused where it stopped, or idle if nothing played. */
   acknowledgeUnavailable(): void;
+  /** Retune the running session's tail overlap (the Settings slider). */
+  setOverlap(seconds: number): void;
 }
 
 const IDLE_SNAPSHOT: RecitationSnapshot = {
@@ -109,11 +138,17 @@ const IDLE_SNAPSHOT: RecitationSnapshot = {
 export function createRecitationEngine(env: RecitationEnvironment): RecitationEngine {
   const listeners = new Set<() => void>();
   let snapshot = IDLE_SNAPSHOT;
-  let audio: RecitationAudio | undefined;
+  /** Two channels, so an ayah can start while the previous one's tail fades. */
+  let channels: [RecitationAudio, RecitationAudio] | undefined;
+  /** The channel reciting the current item. */
+  let active = 0;
+  /** The previous item's channel while its tail fades out, if any. */
+  let tail: number | undefined;
   let session: RecitationSession | undefined;
   let sessionId = 0;
 
   // Per session.
+  let overlapSeconds = VERSE_OVERLAP_SECONDS;
   let mirrorPreferred = false;
   let hasPlayed = false;
   /** The element no longer holds a playable source for the current item. */
@@ -135,30 +170,61 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
   let expectedSrc: string | undefined;
   let loadTimer: ReturnType<typeof setTimeout> | undefined;
   let stallTimer: ReturnType<typeof setTimeout> | undefined;
+  let handoffTimer: ReturnType<typeof setInterval> | undefined;
   let lastProgressTime = 0;
-  /** Our own `pause()` call; its event is not an interruption. */
-  let selfPause = false;
+  /** The incoming ayah fades in once it actually sounds. */
+  let fadeInPending = false;
+  /** Our own `pause()` call per channel; its event is not an interruption. */
+  const selfPause = [false, false];
 
   function emit(patch: Partial<RecitationSnapshot>): void {
     snapshot = { ...snapshot, ...patch };
     for (const listener of [...listeners]) listener();
   }
 
-  function media(): RecitationAudio {
-    if (audio) return audio;
+  function wire(channel: number): RecitationAudio {
     const created = env.createAudio();
-    created.addEventListener('playing', onPlaying);
-    created.addEventListener('pause', onPause);
-    created.addEventListener('ended', onEnded);
-    created.addEventListener('error', onError);
-    created.addEventListener('waiting', onWaiting);
-    created.addEventListener('timeupdate', onTimeUpdate);
-    audio = created;
+    // Only the active channel drives the state; a fading tail just finishes.
+    const when = (handler: () => void, onTail?: () => void) => (): void => {
+      if (channel === active) handler();
+      else if (channel === tail) onTail?.();
+    };
+    created.addEventListener('playing', when(onPlaying));
+    created.addEventListener('pause', () => onPause(channel));
+    created.addEventListener(
+      'ended',
+      when(onEnded, () => {
+        tail = undefined;
+      }),
+    );
+    created.addEventListener('error', when(onError, dropTail));
+    created.addEventListener('waiting', when(onWaiting));
+    created.addEventListener('timeupdate', when(onTimeUpdate));
     return created;
   }
 
-  const isCurrentSource = (): boolean =>
-    audio !== undefined && expectedSrc !== undefined && audio.src === expectedSrc;
+  function allChannels(): [RecitationAudio, RecitationAudio] {
+    if (!channels) {
+      channels = [wire(0), wire(1)];
+      env.onInterrupted?.(onInterrupted);
+    }
+    return channels;
+  }
+
+  /** The active channel, created on first use. */
+  function media(): RecitationAudio {
+    return allChannels()[active]!;
+  }
+
+  /** The active channel if it exists yet. */
+  const audio = (): RecitationAudio | undefined => channels?.[active];
+
+  const isCurrentSource = (): boolean => {
+    const current = audio();
+    return (
+      current !== undefined && expectedSrc !== undefined && current.src === expectedSrc
+    );
+  };
 
   function urlsFor(item: RecitationItem, qariId: QariId): string[] {
     const ref = item.kind === 'basmala' ? BASMALA_REF : item;
@@ -187,9 +253,15 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     stallTimer = undefined;
   }
 
+  function clearHandoffWatch(): void {
+    if (handoffTimer !== undefined) clearInterval(handoffTimer);
+    handoffTimer = undefined;
+  }
+
   function clearTimers(): void {
     clearLoadTimer();
     clearStallTimer();
+    clearHandoffWatch();
   }
 
   function cancelPrefetch(): void {
@@ -214,16 +286,31 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     blobs.clear();
   }
 
-  function pauseMedia(): void {
-    if (audio && !audio.paused) {
-      selfPause = true;
-      audio.pause();
+  function pauseChannel(channel: number): void {
+    const element = channels?.[channel];
+    if (element && !element.paused) {
+      selfPause[channel] = true;
+      element.pause();
     }
+  }
+
+  function pauseMedia(): void {
+    pauseChannel(active);
+  }
+
+  /** Cut a still-fading tail short: the member moved on, paused, or it failed. */
+  function dropTail(): void {
+    if (tail === undefined || !channels) return;
+    const fading = channels[tail]!;
+    pauseChannel(tail);
+    fading.removeAttribute('src');
+    fading.load();
+    tail = undefined;
   }
 
   // --- loading ----------------------------------------------------------------
 
-  function loadItem(index: number): void {
+  function loadItem(index: number, { fadeIn = false } = {}): void {
     if (!session) return;
     const item = session.playlist.items[index];
     if (!item) {
@@ -233,6 +320,7 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     advanceToken += 1;
     pendingAdvance = undefined;
     needsReload = false;
+    fadeInPending = fadeIn;
     clearTimers();
     cancelPrefetch();
 
@@ -255,6 +343,8 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     }
     const id = (attemptId += 1);
     const element = media();
+    // A handed-over ayah starts silent and fades in once it sounds.
+    element.fadeTo(fadeInPending ? 0 : 1, 0);
     expectedSrc = url;
     element.src = url;
     // Read back what the element stores, which may be a normalised form.
@@ -329,6 +419,7 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
   function finish(): void {
     clearTimers();
     cancelPrefetch();
+    dropTail();
     pauseMedia();
     advanceToken += 1;
     pendingAdvance = undefined;
@@ -338,10 +429,40 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
   function becomeUnavailable(): void {
     clearTimers();
     cancelPrefetch();
+    dropTail();
     pauseMedia();
     advanceToken += 1;
     needsReload = true;
     emit({ status: 'unavailable', interrupted: false });
+  }
+
+  // --- overlapped handoff ------------------------------------------------------
+
+  function watchHandoff(): void {
+    clearHandoffWatch();
+    handoffTimer = setInterval(checkHandoff, HANDOFF_POLL_MS);
+  }
+
+  /**
+   * Near the end of the playing ayah, start the next one on the other channel
+   * and let this one's tail fade out. Skipped in an ayah's opening moment (a
+   * very short file) and whenever the next item is not known yet: then the
+   * plain `ended` path carries on, with a short gap instead of an overlap.
+   */
+  function checkHandoff(): void {
+    if (!session || snapshot.status !== 'playing') return;
+    const current = media();
+    const remaining = current.duration - current.currentTime;
+    if (overlapSeconds <= 0) return;
+    if (!Number.isFinite(remaining) || remaining > overlapSeconds) return;
+    if (current.currentTime < overlapSeconds) return;
+    const nextIndex = snapshot.index + 1;
+    if (!session.playlist.items[nextIndex]) return;
+    dropTail();
+    current.fadeTo(0, Math.max(remaining, 0));
+    tail = active;
+    active = 1 - active;
+    loadItem(nextIndex, { fadeIn: true });
   }
 
   // --- prefetch ---------------------------------------------------------------
@@ -400,21 +521,40 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
       mirrorPreferred = true;
     }
     hasPlayed = true;
-    lastProgressTime = audio?.currentTime ?? 0;
+    lastProgressTime = media().currentTime;
+    if (fadeInPending) {
+      fadeInPending = false;
+      media().fadeTo(1, VERSE_FADE_IN_SECONDS);
+    }
     emit({ status: 'playing', interrupted: false });
+    watchHandoff();
     schedulePrefetch(snapshot.index + 1);
   }
 
-  function onPause(): void {
-    if (selfPause) {
-      selfPause = false;
+  function onPause(channel: number): void {
+    if (selfPause[channel]) {
+      selfPause[channel] = false;
       return;
     }
+    if (channel !== active) return;
+    const current = media();
     // The spec fires `pause` just before `ended`; that is not an interruption,
     // and neither is a stale event once `play()` has been called again.
-    if (!audio || audio.ended || !audio.paused || !isCurrentSource()) return;
+    if (current.ended || !current.paused || !isCurrentSource()) return;
     if (snapshot.status !== 'playing' && snapshot.status !== 'loading') return;
     clearTimers();
+    dropTail();
+    emit({ status: 'paused', interrupted: true });
+  }
+
+  /** The platform silenced the mixer (iOS lock, a call): hold where we are. */
+  function onInterrupted(): void {
+    if (snapshot.status !== 'playing' && snapshot.status !== 'loading') return;
+    clearTimers();
+    cancelPrefetch();
+    advanceToken += 1;
+    dropTail();
+    pauseMedia();
     emit({ status: 'paused', interrupted: true });
   }
 
@@ -440,7 +580,7 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
   }
 
   function onTimeUpdate(): void {
-    const time = audio?.currentTime ?? 0;
+    const time = media().currentTime;
     if (time === lastProgressTime) return;
     lastProgressTime = time;
     clearStallTimer();
@@ -453,11 +593,15 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     cancelPrefetch();
     advanceToken += 1;
     pendingAdvance = undefined;
-    if (audio) {
+    dropTail();
+    if (channels) {
       pauseMedia();
-      audio.removeAttribute('src');
-      audio.load();
+      channels[active]!.removeAttribute('src');
+      channels[active]!.load();
+      channels[active]!.fadeTo(1, 0);
     }
+    active = 0;
+    fadeInPending = false;
     expectedSrc = undefined;
     candidates = [];
     revokeAllBlobs();
@@ -478,7 +622,9 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
 
   function start(next: RecitationSession): void {
     release();
+    env.unlock?.();
     session = next;
+    overlapSeconds = next.overlapSeconds ?? VERSE_OVERLAP_SECONDS;
     sessionId += 1;
     const index = next.startIndex ?? 0;
     snapshot = {
@@ -504,39 +650,48 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     cancelPrefetch();
     // A pending advance stays recorded so resume carries on to it.
     advanceToken += 1;
+    dropTail();
     pauseMedia();
     emit({ status: 'paused', interrupted: false });
   }
 
   function resume(): void {
     if (!session || snapshot.status !== 'paused') return;
+    env.unlock?.();
     if (pendingAdvance !== undefined) {
       advance(pendingAdvance);
       return;
     }
-    if (needsReload || !audio) {
+    const current = audio();
+    if (needsReload || !current) {
       loadItem(snapshot.index);
       return;
     }
     const id = (attemptId += 1);
+    current.fadeTo(1, 0);
     emit({ status: 'loading', interrupted: false });
     loadTimer = setTimeout(() => failAttempt(id), LOAD_TIMEOUT_MS);
-    playElement(audio, id);
+    playElement(current, id);
   }
 
   function next(): void {
     if (!session || snapshot.status === 'idle' || snapshot.status === 'unavailable')
       return;
+    env.unlock?.();
+    dropTail();
     advance((pendingAdvance ?? snapshot.index) + 1);
   }
 
   function previous(): void {
     if (!session || snapshot.status === 'idle' || snapshot.status === 'unavailable')
       return;
-    const loaded = audio !== undefined && !needsReload && pendingAdvance === undefined;
-    const target = previousTarget(snapshot.index, loaded ? audio!.currentTime : 0);
+    env.unlock?.();
+    dropTail();
+    const current = audio();
+    const loaded = current !== undefined && !needsReload && pendingAdvance === undefined;
+    const target = previousTarget(snapshot.index, loaded ? current.currentTime : 0);
     if (target === snapshot.index && loaded && snapshot.status !== 'ended') {
-      audio!.currentTime = 0;
+      current.currentTime = 0;
       // ±1 always plays: restarting a paused item resumes it.
       if (snapshot.status === 'paused') resume();
       return;
@@ -559,11 +714,16 @@ export function createRecitationEngine(env: RecitationEnvironment): RecitationEn
     previous,
     playIndex(index) {
       if (!session || !session.playlist.items[index]) return;
+      env.unlock?.();
+      dropTail();
       loadItem(index);
     },
     stop(owner) {
       if (owner !== undefined && snapshot.owner !== owner) return;
       resetToIdle();
+    },
+    setOverlap(seconds) {
+      if (session) overlapSeconds = seconds;
     },
     acknowledgeUnavailable() {
       if (snapshot.status !== 'unavailable') return;

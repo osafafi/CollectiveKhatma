@@ -8,3 +8,7 @@ export {
   RecitationUnavailableDialog,
   type RecitationUnavailableDialogProps,
 } from './RecitationUnavailableDialog';
+export {
+  VerseOverlapControl,
+  type VerseOverlapControlProps,
+} from './VerseOverlapControl';

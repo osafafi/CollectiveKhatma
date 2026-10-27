@@ -52,7 +52,7 @@ export function useReaderRecitation({
   turnTo,
 }: ReaderRecitationOptions): ReaderRecitation {
   const owner = useId();
-  const { engine, qariId } = useRecitation();
+  const { engine, qariId, overlapMsFor } = useRecitation();
   const snapshot = useRecitationSnapshot();
   const surahsById = useSurahTable();
   const mine = snapshot.owner === owner && snapshot.status !== 'idle';
@@ -71,6 +71,7 @@ export function useReaderRecitation({
       kind: 'reader',
       qariId,
       startIndex,
+      overlapSeconds: overlapMsFor(qariId) / 1000,
       playlist: createPagePlaylist({
         pages: playPagesFrom(loaded.page),
         seed: loaded.data,
