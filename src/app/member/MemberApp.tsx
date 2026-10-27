@@ -13,6 +13,8 @@ import { MemberAssignmentsSubscriptions } from './MemberAssignmentsSubscriptions
 import { MemberWirdCompletionSubscriptions } from './MemberWirdCompletionSubscriptions';
 import { PersonalPage } from './PersonalPage';
 import { AssignedReaderPage, BrowseReaderPage } from './reader';
+import { RecitationProvider } from './recitation/RecitationProvider';
+import type { RecitationEnvironment } from './recitation/recitationEngine';
 
 const SettingsPage = lazy(() =>
   import('./SettingsPage').then((module) => ({ default: module.SettingsPage })),
@@ -28,7 +30,12 @@ export function MemberApp() {
   );
 }
 
-export function MemberExperience() {
+export function MemberExperience({
+  recitationEnvironment,
+}: {
+  /** Test seam for the recitation engine's audio and network. */
+  recitationEnvironment?: RecitationEnvironment;
+} = {}) {
   // Sits above the routes so a finish tap saved offline on one screen still
   // reaches Firestore when the connection returns, wherever the member is then.
   useFinishQueueReplay();
@@ -37,13 +44,15 @@ export function MemberExperience() {
     <>
       <MemberAssignmentsSubscriptions />
       <MemberWirdCompletionSubscriptions />
-      <DailyDuaProvider>
-        <MemberCompletionInterrupt>
-          <MemberShell>
-            <MemberRouteContent />
-          </MemberShell>
-        </MemberCompletionInterrupt>
-      </DailyDuaProvider>
+      <RecitationProvider environment={recitationEnvironment}>
+        <DailyDuaProvider>
+          <MemberCompletionInterrupt>
+            <MemberShell>
+              <MemberRouteContent />
+            </MemberShell>
+          </MemberCompletionInterrupt>
+        </DailyDuaProvider>
+      </RecitationProvider>
     </>
   );
 }
@@ -52,6 +61,7 @@ export function MemberRouteContent() {
   const route = useMemberRoute();
   const [readingScale, setReadingScale] = useReadingScale();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [qariOpen, setQariOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   if (route.name === 'khatmas') return <KhatmasListPage />;
@@ -69,6 +79,8 @@ export function MemberRouteContent() {
           onReadingScaleChange={setReadingScale}
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
+          qariOpen={qariOpen}
+          onQariOpenChange={setQariOpen}
           feedbackOpen={feedbackOpen}
           onFeedbackOpenChange={setFeedbackOpen}
         />

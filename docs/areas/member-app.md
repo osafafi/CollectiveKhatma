@@ -10,6 +10,7 @@ Start files:
   `src/app/member/khatma/`
 - Wird UI: `src/app/member/wird/`
 - Reader: `src/app/member/reader/`
+- Recitation: `src/app/member/recitation/` (engine, provider, Settings card)
 - Completion: `src/app/member/MemberCompletionInterrupt.tsx`
 - Feedback form: `src/app/member/MemberFeedbackSection.tsx`
 - Persistence: `src/app/persistence/browserPersistence.ts`
@@ -18,7 +19,8 @@ Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 `member-completion`, `member-personal-settings`, `member-integration`,
-`member-offline`, `finish-queue`.
+`member-offline`, `finish-queue`, `recitation-engine`,
+`member-recitation-settings`.
 
 Hard rules:
 
@@ -111,7 +113,8 @@ Hard rules:
   document with the selected member id and current name on every submission.
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage` (browse
   reader), `khatma.assignedReaderPage.${khatmaId}.${memberId}` (assigned reader),
-  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`,
+  `khatma.themeMode` (shared with the admin entry), `khatma.qari` (recitation
+  voice, this device only), `khatma.du3aAck.${khatmaId}`,
   `khatma.pendingFinishes` (the offline finish queue, owned by
   `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
@@ -153,11 +156,29 @@ Hard rules:
   with partial khatmas; the line below names the next shield and the whole
   khatmas left. Earned shields glint periodically (reduced motion: none).
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
-  together with admin Settings) → reading size → avatar → app install →
-  feedback. The install card invokes Chromium's retained native install prompt
+  together with admin Settings) → reading size → recitation voice → avatar →
+  app install → feedback. The install card invokes Chromium's retained native install prompt
   when available; otherwise it detects iOS/Android and Safari, Chrome, Samsung
   Internet, Firefox, or Edge to show matching home-screen steps. It is hidden
   while the app runs in standalone mode.
+- Recitation runs on one engine (`recitationEngine.ts`) provided above every
+  member route by `RecitationProvider`, which also hoists the voice preference
+  and renders the only failure UI: one dialog saying recitation is not
+  available on this device or connection. Offline, a host error, a
+  non-audio response, no playback within 7s on every host, or a 12s mid-play
+  stall all end there — never a crash, never a technical message — because
+  some members' bundles reach only certain apps while `navigator.onLine` stays
+  true. Closing it leaves the ayah paused if anything had played, else idle.
+- The engine reaches `audio.play()` synchronously from the tap (iOS unlock),
+  reuses one lazily created element, and never sets `crossOrigin`. The primary
+  host is tried first; once the mirror answers, it is preferred for the rest of
+  the session. The next ayah is prefetched into an in-memory blob (skipped
+  under Data Saver, `audio/*` responses only) and released after use. Nothing
+  is persisted.
+- The Settings recitation card lists the 15 voices as radios; tapping one saves
+  it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
+  preview plays at a time and it stops when the card closes or Settings
+  unmounts.
 - Reader chrome is the slim gradient hero; group progress opens and series
   history collapses by default on the khatma landing (local state). Inside
   group progress, pending readers have their own collapsed, count-labelled

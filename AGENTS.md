@@ -14,7 +14,7 @@ For feature, fix, or refactor work, use `$ship-ranqur-change` from
 | assign, distribute, round, warning, release, rollover   | `docs/areas/distribution.md` | `src/domain/distribution.ts`          |
 | member, my pages, finish, completion, history           | `docs/areas/member-app.md`   | `src/app/member/MemberApp.tsx`        |
 | admin, dashboard, form, manage                          | `docs/areas/admin-app.md`    | `src/app/admin/AdminApp.tsx`          |
-| reader, Quran page, surah, mushaf data                  | `docs/areas/quran-data.md`   | `src/app/member/reader/`              |
+| reader, Quran page, surah, mushaf data, audio, qari     | `docs/areas/quran-data.md`   | `src/app/member/reader/`              |
 | button, card, chart, theme, RTL, icon, global copy rule | `docs/areas/shared-ui.md`    | `src/components/`                     |
 | Firebase, schema, test, build, deploy, CI               | `docs/areas/operations.md`   | `src/data/` or `package.json`         |
 

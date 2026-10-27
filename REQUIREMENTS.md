@@ -20,8 +20,9 @@ no passwords, no app-store installs for members.
 - No push notifications in v1 (reminders continue to happen via WhatsApp,
   outside the app, at the admin's discretion — the admin dashboard exists to
   tell her *who* to message, not to message them automatically).
-- No translations/tafsir/audio recitation in v1 — classic Arabic Uthmani text
-  only.
+- No translations or tafsir in v1 — classic Arabic Uthmani text only. Optional
+  verse-by-verse audio recitation streams on demand (see §3); it is never
+  downloaded or stored on the device.
 - No per-page checkboxes or granular reading UI — see §6.
 - No custom server/API. No serverless functions (see §3). All logic runs in
   the browser (member app and admin app), talking directly to the database.
@@ -68,6 +69,10 @@ no passwords, no app-store installs for members.
     given the trust level and stakes of the group.
 - **Quran text**: a static Arabic (Uthmani script) Quran dataset bundled
   directly into the app (no runtime dependency on a third-party API).
+- **Quran audio**: optional per-ayah recitation streamed from EveryAyah, with
+  the QuranicAudio mirror as fallback. It is the app's only runtime third-party
+  dependency, so every failure degrades to a single "not available" message and
+  reading is never affected.
 - **Client-side identity cache**: localStorage remembers which roster member
   a given browser/device belongs to, so the person only picks their name
   once per device (see §5).
@@ -175,4 +180,4 @@ The admin app is a routed SPA with five main views:
 - Consistency/reliability statistics.
 - Push notifications or automated messaging (nudging remains manual via WhatsApp).
 - Authentication (uses unguessable admin entry filename).
-- Translations, tafsir, or audio.
+- Translations or tafsir.

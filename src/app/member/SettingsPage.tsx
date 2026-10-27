@@ -16,12 +16,15 @@ import { MemberHero } from './MemberHero';
 import { useMemberIdentity } from './memberIdentityContext';
 import { MemberFeedbackSection } from './MemberFeedbackSection';
 import { InstallAppCard } from './install/InstallAppCard';
+import { QariSettingsCard } from './recitation/QariSettingsCard';
 
 interface SettingsPageProps {
   readingScale: ReadingScale;
   onReadingScaleChange: (scale: ReadingScale) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  qariOpen: boolean;
+  onQariOpenChange: (open: boolean) => void;
   feedbackOpen: boolean;
   onFeedbackOpenChange: (open: boolean) => void;
 }
@@ -32,6 +35,8 @@ export function SettingsPage({
   onReadingScaleChange,
   open,
   onOpenChange,
+  qariOpen,
+  onQariOpenChange,
   feedbackOpen,
   onFeedbackOpenChange,
 }: SettingsPageProps) {
@@ -40,7 +45,7 @@ export function SettingsPage({
   return (
     <Stack spacing={4}>
       <MemberHero title={strings.nav.settings} />
-      {/* Design order (mock 2c): appearance → reading size → avatar → feedback. */}
+      {/* Order: appearance → reading size → recitation voice → avatar → install → feedback. */}
       <AppearanceSettingsCard />
       <ReadingScaleControl
         readingScale={readingScale}
@@ -48,6 +53,7 @@ export function SettingsPage({
         open={open}
         onOpenChange={onOpenChange}
       />
+      <QariSettingsCard open={qariOpen} onOpenChange={onQariOpenChange} />
       {member ? <AvatarEditor key={member.id} person={member} /> : null}
       <InstallAppCard />
       <MemberFeedbackSection open={feedbackOpen} onOpenChange={onFeedbackOpenChange} />

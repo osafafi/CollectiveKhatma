@@ -6,6 +6,7 @@ import {
   rememberAssignedReaderPage,
   useDu3aAcknowledgement,
   useLastReadPage,
+  useQariPreference,
   useReadingScale,
   useRememberedMemberId,
   useRememberedRemainderAssigneeId,
@@ -44,6 +45,20 @@ describe('React browser-persistence hooks', () => {
 
     const resumed = renderHook(() => useRememberedRemainderAssigneeId('admin'));
     expect(resumed.result.current[0]).toBe('reader');
+  });
+
+  it('defaults the recitation voice, remembers a choice, and drops unknown ids', () => {
+    const first = renderHook(() => useQariPreference());
+    expect(first.result.current[0]).toBe('alafasy');
+    act(() => first.result.current[1]('husary'));
+    expect(first.result.current[0]).toBe('husary');
+    expect(localStorage.getItem('khatma.qari')).toBe('husary');
+    first.unmount();
+
+    expect(renderHook(() => useQariPreference()).result.current[0]).toBe('husary');
+
+    localStorage.setItem('khatma.qari', 'retired-voice');
+    expect(renderHook(() => useQariPreference()).result.current[0]).toBe('alafasy');
   });
 
   it('falls back from an invalid reading scale, then applies and persists updates', () => {

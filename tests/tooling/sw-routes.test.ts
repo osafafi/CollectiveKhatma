@@ -30,6 +30,16 @@ describe('service worker route patterns', () => {
     expect(quranDatasetRoute('/').test(`${ORIGIN}/quran/pages/001.json`)).toBe(true);
   });
 
+  it('never caches streamed recitation audio', () => {
+    const audio = [
+      'https://everyayah.com/data/Alafasy_128kbps/002255.mp3',
+      'https://mirrors.quranicaudio.com/everyayah/Alafasy_128kbps/002255.mp3',
+    ];
+    for (const base of ['/', PROJECT_BASE]) {
+      for (const url of audio) expect(quranDatasetRoute(base).test(url)).toBe(false);
+    }
+  });
+
   it('allows the navigation fallback on the base path alone', () => {
     const fallback = basePathOnly(PROJECT_BASE);
 

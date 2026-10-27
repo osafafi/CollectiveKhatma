@@ -5,6 +5,7 @@ export {
   rememberAssignedReaderPage,
   useDu3aAcknowledgement,
   useLastReadPage,
+  useQariPreference,
   useReadingScale,
   useRememberedMemberId,
   useRememberedRemainderAssigneeId,

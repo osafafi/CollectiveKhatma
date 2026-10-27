@@ -15,7 +15,14 @@ Tests: `member-reader`, `domain/assignment`, Quran grid model and chart tests.
 Hard rules:
 
 - Assignment unit is mushaf page 1..604.
-- App reads committed data. No runtime Quran API.
+- App reads committed data. No runtime Quran text API.
+- Recitation audio is the one runtime dependency: per-ayah MP3s stream from
+  `https://everyayah.com/data/{folder}/{SSS}{AAA}.mp3`, falling back to
+  `https://mirrors.quranicaudio.com/everyayah/` (same names; not every folder).
+  `src/content/quran/recitation.ts` owns the hardcoded 15-voice catalog under
+  stable short ids (`qari` in code: "reciter" already names the du'a al-khatma
+  reader) and builds both URLs. Ayah-1 files never include the basmala; `001001`
+  is the basmala.
 - The dataset is offline-first. The service worker holds `public/quran/` in a
   cache-first runtime cache and the app sweeps every page into it in the
   background, so a reader that has been opened once survives a lost

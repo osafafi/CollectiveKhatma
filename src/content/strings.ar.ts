@@ -225,6 +225,38 @@ export const strings = {
     feedbackSent: 'تم إرسال ملاحظتك للمشرف.',
     feedbackSendError: 'تعذّر إرسال ملاحظتك، حاول مرة أخرى.',
   },
+  // Streamed verse-by-verse recitation. "Qari" in code, never "reciter": that
+  // word already names the member who reads du3a2 al-khatma.
+  recitation: {
+    title: 'صوت التلاوة',
+    description:
+      'اختر القارئ الذي تستمع إليه في صفحات القراءة. يُحفظ اختيارك على هذا الجهاز.',
+    pickerLabel: 'القارئ',
+    preview: 'استمع إلى {name}',
+    stopPreview: 'إيقاف الاستماع إلى {name}',
+    credit: 'التلاوات من EveryAyah.com',
+    qariNames: {
+      alafasy: 'مشاري راشد العفاسي',
+      abdulbasit: 'عبد الباسط عبد الصمد',
+      husary: 'محمود خليل الحصري',
+      minshawi: 'محمد صديق المنشاوي',
+      maher: 'ماهر المعيقلي',
+      sudais: 'عبد الرحمن السديس',
+      shuraim: 'سعود الشريم',
+      shatri: 'أبو بكر الشاطري',
+      rifai: 'هاني الرفاعي',
+      ayyub: 'محمد أيوب',
+      dossari: 'ياسر الدوسري',
+      qatami: 'ناصر القطامي',
+      ajmi: 'أحمد بن علي العجمي',
+      hudhaify: 'علي بن عبد الرحمن الحذيفي',
+      jibreel: 'محمد جبريل',
+    },
+    unavailableTitle: 'التلاوة غير متاحة',
+    unavailableBody:
+      'لا يمكن تشغيل التلاوة على جهازك أو شبكتك حاليًا. يمكنك متابعة القراءة كالمعتاد.',
+    dismiss: 'حسنًا',
+  },
   admin: {
     title: 'خَتْمة — لوحة التحكم',
     heading: 'لوحة تحكم المشرف',
