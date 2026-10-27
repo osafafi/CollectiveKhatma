@@ -20,7 +20,8 @@ Theme contract (redesign):
   `primaryBtnGradient(mode)`, the gold `goldCardBg` variant, separate blue Wird
   tokens (`wird`/`wirdSoft`/`wirdInk`, `wirdHeroGrad`/`wirdCardBg`, and blue hero
   glow/shimmer),
-  and the per-mode `MEDALS` bronze/silver/gold
+  the recited-ayah glow stops `ayahGlowTop`/`ayahGlowBottom` with
+  `RADII.ayah`, and the per-mode `MEDALS` bronze/silver/gold
   hi/mid/lo stops (`theme.custom.medals`; decorative fills only, so no
   contrast floor). No literal colors/radii/shadows/durations in component code —
   components read `theme.palette` and `theme.custom` only.
@@ -86,6 +87,14 @@ Hard rules:
 - RTL theme and Emotion cache cover portals.
 - Keep visible focus, semantic status contrast, mobile nav clearance, desktop RTL rail.
 - Reading scale is shared and persisted.
+- `.ayah.is-reciting` glows with a vertical gradient of two registered
+  `@property` colors (`--ayah-glow-top/-bottom`), so the outgoing and incoming
+  ayah crossfade at `MOTION.base`; without `@property`, or under reduced
+  motion, it snaps. `box-decoration-break: clone` rounds each wrapped line
+  separately; only block padding is used so justified lines never reflow. The
+  active medallion turns `goldInk` and an active bismillah turns ink (gold on
+  the glow is too faint); theme tests guard ink ≥ 4.5:1 and the medallion
+  ≥ 3:1 on both glow stops in both modes.
 - `.sajda-overline` decorates exact Quran phrases with a thin, text-colored upper
   line that scales with the reading font and follows natural line wrapping.
 

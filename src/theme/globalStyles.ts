@@ -84,7 +84,46 @@ export function retainedGlobalStyles(theme: Theme) {
       color: theme.custom.gold,
       fontFamily: 'var(--font-quran)',
       whiteSpace: 'nowrap',
+      transition: `color ${theme.custom.motion.base} ${theme.custom.motion.easing}`,
     },
+
+    // The recited ayah (`.ayah.is-reciting`, see the reader) glows gold. The two
+    // stops are registered custom properties so the gradient itself can
+    // transition: the outgoing ayah fades out while the incoming one fades in.
+    // Browsers without `@property` (and reduced motion) simply snap. Vertical,
+    // so the RTL stylis pass has nothing to flip; block padding only, so a
+    // highlight never reflows the justified lines.
+    '@property --ayah-glow-top': {
+      syntax: "'<color>'",
+      inherits: 'false',
+      initialValue: 'transparent',
+    },
+    '@property --ayah-glow-bottom': {
+      syntax: "'<color>'",
+      inherits: 'false',
+      initialValue: 'transparent',
+    },
+    '.ayah': {
+      backgroundImage:
+        'linear-gradient(180deg, var(--ayah-glow-top), var(--ayah-glow-bottom))',
+      borderRadius: `${theme.custom.radii.ayah}px`,
+      paddingBlock: '0.08em',
+      WebkitBoxDecorationBreak: 'clone',
+      boxDecorationBreak: 'clone',
+      transition: [
+        `--ayah-glow-top ${theme.custom.motion.base} ${theme.custom.motion.easing}`,
+        `--ayah-glow-bottom ${theme.custom.motion.base} ${theme.custom.motion.easing}`,
+        `color ${theme.custom.motion.base} ${theme.custom.motion.easing}`,
+      ].join(', '),
+    },
+    '.ayah.is-reciting': {
+      '--ayah-glow-top': theme.custom.ayahGlowTop,
+      '--ayah-glow-bottom': theme.custom.ayahGlowBottom,
+    },
+    // Gold on gold is too faint: the active medallion and bismillah darken.
+    '.ayah.is-reciting .ayah-marker': { color: theme.custom.goldInk },
+    '.ayah.is-reciting[data-basmala]': { color: theme.palette.text.primary },
+    '[data-recitation-tappable] .ayah': { cursor: 'pointer' },
 
     // Icons are image files painted with currentColor through a CSS mask so
     // monochrome SVGs and PNGs-with-alpha both tint to the active color. The

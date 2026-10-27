@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type MouseEvent, type ReactNode } from 'react';
 import { Box, GlobalStyles, Stack, Typography } from '@mui/material';
 import { AppButton } from '@/components/primitives';
 import type { QuranPage, Surah } from '@/content/quran/types';
@@ -159,23 +159,46 @@ function ReaderMessage({ text, danger = false }: { text: string; danger?: boolea
 export function QuranPageContent({
   loaded,
   showSurahName = false,
+  activeKey,
+  onAyahTap,
 }: {
   loaded: LoadedQuranPage;
   showSurahName?: boolean;
+  /** The recited item (`S:A`, or `b:S` for a basmala) to highlight. */
+  activeKey?: string;
+  /** While set, tapping an ayah or bismillah reports its key. */
+  onAyahTap?: (key: string) => void;
 }) {
   const blocks = useMemo(
     () =>
       loaded.status === 'ready'
-        ? composePageBlocks(loaded.data, loaded.surahsById)
+        ? composePageBlocks(loaded.data, loaded.surahsById, activeKey)
         : null,
-    [loaded],
+    [loaded, activeKey],
   );
+
+  const onClick = (event: MouseEvent<HTMLElement>): void => {
+    if (!onAyahTap) return;
+    // Selecting text to copy is not a request to recite.
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) return;
+    const target = (event.target as Element | null)?.closest<HTMLElement>(
+      '[data-ayah], [data-basmala]',
+    );
+    if (!target) return;
+    const { ayah, basmala } = target.dataset;
+    onAyahTap(ayah ?? `b:${basmala}`);
+  };
 
   if (loaded.status === 'loading') return <ReaderMessage text={strings.common.loading} />;
   if (loaded.status === 'error')
     return <ReaderMessage text={strings.quran.loadError} danger />;
   return (
-    <Stack spacing={2}>
+    <Stack
+      spacing={2}
+      onClick={onAyahTap ? onClick : undefined}
+      data-recitation-tappable={onAyahTap ? '' : undefined}
+    >
       {showSurahName && loaded.firstSurah ? (
         <Typography
           component="h2"
@@ -224,6 +247,7 @@ export function QuranPageContent({
 function composePageBlocks(
   page: QuranPage,
   surahs: ReadonlyMap<number, Surah>,
+  activeKey: string | undefined,
 ): ReactNode[] {
   const blocks: ReactNode[] = [];
   let run: ReactNode[] = [];
@@ -246,26 +270,36 @@ function composePageBlocks(
       runSurah = ayah.surah;
       // A new surah begins on this page when its first ayah appears here.
       if (ayah.ayah === 1)
-        blocks.push(<SurahHeader key={`head-${key++}`} surah={surahs.get(ayah.surah)} />);
+        blocks.push(
+          <SurahHeader
+            key={`head-${key++}`}
+            surah={surahs.get(ayah.surah)}
+            reciting={activeKey === `b:${ayah.surah}`}
+          />,
+        );
     }
-    // The ayah-end medallion is the font glyph `۝` + Western-digit number, colored gold via
-    // the retained `.ayah-marker` rule — never an SVG (design decision).
+    // One span per ayah (text + medallion) so the recitation can highlight it;
+    // the wrapper leaves the text content unchanged. The ayah-end medallion is
+    // the font glyph `۝` + Western-digit number, colored gold via the retained
+    // `.ayah-marker` rule — never an SVG (design decision).
+    const ayahKey = `${ayah.surah}:${ayah.ayah}`;
     const sajda = splitSajdaPhrase(ayah);
-    if (sajda) {
-      run.push(
-        sajda.before,
-        <span key={`sajda-${ayah.surah}-${ayah.ayah}`} className="sajda-overline">
-          {sajda.phrase}
-        </span>,
-        sajda.after,
-      );
-    } else {
-      run.push(ayah.text);
-    }
     run.push(
-      ' ',
-      <span key={`marker-${ayah.surah}-${ayah.ayah}`} className="ayah-marker">
-        {ayahEndMarker(ayah.ayah)}
+      <span
+        key={`ayah-${ayahKey}`}
+        className={activeKey === ayahKey ? 'ayah is-reciting' : 'ayah'}
+        data-ayah={ayahKey}
+      >
+        {sajda ? (
+          <>
+            {sajda.before}
+            <span className="sajda-overline">{sajda.phrase}</span>
+            {sajda.after}
+          </>
+        ) : (
+          ayah.text
+        )}{' '}
+        <span className="ayah-marker">{ayahEndMarker(ayah.ayah)}</span>
       </span>,
       ' ',
     );
@@ -279,7 +313,14 @@ function composePageBlocks(
  * stars and the surah name in the Quran font; the bismillah follows as its own
  * centered gold line, outside the band.
  */
-function SurahHeader({ surah }: { surah: Surah | undefined }) {
+function SurahHeader({
+  surah,
+  reciting,
+}: {
+  surah: Surah | undefined;
+  /** The reciter's basmala for this surah is playing. */
+  reciting: boolean;
+}) {
   return (
     <Box sx={{ my: 2 }}>
       <Box
@@ -342,7 +383,12 @@ function SurahHeader({ surah }: { surah: Surah | undefined }) {
             color: theme.custom.goldInk,
           })}
         >
-          {strings.reader.bismillah}
+          <span
+            className={reciting ? 'ayah is-reciting' : 'ayah'}
+            data-basmala={surah.id}
+          >
+            {strings.reader.bismillah}
+          </span>
         </Box>
       ) : null}
     </Box>

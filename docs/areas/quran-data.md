@@ -44,6 +44,11 @@ Hard rules:
 - Sajda overline fixes ship in the versioned app shell, not the cached page JSON.
   Automatic service-worker shell updates deliver rendering changes while keeping
   the existing `quran-mushaf-v1` offline dataset intact.
+- Each ayah renders as one `<span class="ayah" data-ayah="S:A">` holding its
+  text and medallion (text content unchanged), and each bismillah line's text
+  as `<span class="ayah" data-basmala="S">`. These are the recitation's
+  highlight (`is-reciting`) and tap-to-start targets; the sajda overline sits
+  inside the ayah span.
 - Reader page, juz, surah, progress, and ayah-marker numbers use Western digits
   (`0–9`).
 - Both mushaf readers place previous on the right and next on the left, with

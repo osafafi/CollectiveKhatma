@@ -20,7 +20,8 @@ Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 `member-completion`, `member-personal-settings`, `member-integration`,
 `member-offline`, `finish-queue`, `recitation-engine`,
-`member-recitation-settings`, `member-recitation`, `recitation-playlist`.
+`member-recitation-settings`, `member-recitation`, `recitation-playlist`,
+`recitation-bridges`.
 
 Hard rules:
 
@@ -191,6 +192,19 @@ Hard rules:
   redistribution, the Wird's midnight key), stops playback.
 - Previous restarts the current ayah after 2s, else steps back one item; next
   on the last item ends the session. Both always play.
+- The recited ayah (or bismillah line, during a basmala) glows gold and the
+  glow crossfades to the next one. While the bar is open, tapping an ayah
+  restarts the recitation there (a surah's first ayah starts from its basmala);
+  a tap that ends a text selection is ignored. The reader scrolls the recited
+  ayah to the centre when it leaves the comfortable part of the viewport, but
+  not within 4s of the member scrolling by wheel, touch, or scroll keys.
+- While a reader recites and the page is visible, `RecitationProvider` holds a
+  Screen Wake Lock (requested again when the member returns), and mirrors the
+  session onto the OS media controls: verse and voice as metadata, play,
+  pause, next, previous; seek actions cleared so iOS shows verse buttons. Both
+  are best effort and silent where unsupported. Playback is foreground-first:
+  if the OS pauses it, the reader shows the same ayah paused and one tap
+  resumes.
 - The Settings recitation card lists the 15 voices as radios; tapping one saves
   it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
   preview plays at a time and it stops when the card closes or Settings

@@ -4,6 +4,7 @@ import { createKhatmaTheme } from '@/theme/muiTheme';
 import { retainedGlobalStyles } from '@/theme/globalStyles';
 import {
   MEDALS,
+  MOTION,
   TOKENS,
   cardGradient,
   primaryBtnGradient,
@@ -180,6 +181,53 @@ describe('MUI theme — token mapping', () => {
     expect(contrastRatio(rgb(t.wirdInk), rgb(t.wirdSoft))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each(MODES)('keeps %s text legible on the recited-ayah glow', (mode) => {
+    const t = TOKENS[mode];
+    const glow = (value: string): Rgb => {
+      const channels = value
+        .match(/rgba\(([^)]+)\)/)![1]!
+        .split(',')
+        .map(Number);
+      return composite(
+        channels.slice(0, 3) as unknown as Rgb,
+        rgb(t.readerBg),
+        channels[3]!,
+      );
+    };
+    for (const stop of [glow(t.ayahGlowTop), glow(t.ayahGlowBottom)]) {
+      // Ayah text and the active bismillah use ink; the active medallion darkens
+      // to goldInk because plain gold vanishes into the glow.
+      expect(contrastRatio(rgb(t.ink), stop)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(rgb(t.goldInk), stop)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('declares the crossfading ayah highlight in the retained globals', () => {
+    for (const mode of MODES) {
+      const theme = createKhatmaTheme(mode);
+      const styles = retainedGlobalStyles(theme) as unknown as Record<
+        string,
+        Record<string, string>
+      >;
+      expect(styles['@property --ayah-glow-top']).toMatchObject({
+        syntax: "'<color>'",
+        initialValue: 'transparent',
+      });
+      expect(styles['@property --ayah-glow-bottom']).toBeDefined();
+      expect(styles['.ayah']).toMatchObject({
+        WebkitBoxDecorationBreak: 'clone',
+        boxDecorationBreak: 'clone',
+      });
+      expect(styles['.ayah']!.backgroundImage).toContain('180deg');
+      expect(styles['.ayah']!.transition).toContain(`--ayah-glow-top ${MOTION.base}`);
+      expect(styles['.ayah.is-reciting']).toEqual({
+        '--ayah-glow-top': TOKENS[mode].ayahGlowTop,
+        '--ayah-glow-bottom': TOKENS[mode].ayahGlowBottom,
+      });
+      expect(styles['.ayah.is-reciting .ayah-marker']!.color).toBe(TOKENS[mode].goldInk);
+    }
+  });
+
   it('derives the focus ring from the mode primary in the retained globals', () => {
     for (const mode of MODES) {
       const theme = createKhatmaTheme(mode);
@@ -250,6 +298,9 @@ describe('MUI theme — token mapping', () => {
       expect(theme.custom.readerBg).toBe(t.readerBg);
       expect(theme.custom.cardShadow).toBe(t.cardShadow);
       expect(theme.custom.btnShadow).toBe(t.btnShadow);
+      expect(theme.custom.ayahGlowTop).toBe(t.ayahGlowTop);
+      expect(theme.custom.ayahGlowBottom).toBe(t.ayahGlowBottom);
+      expect(theme.custom.radii.ayah).toBe(8);
       expect(theme.custom.primaryBtnGradient).toBe(primaryBtnGradient(mode));
       expect(theme.custom.cardBg).toBe(cardGradient(mode, 'subtle', 160));
       expect(theme.custom.medals).toEqual(MEDALS[mode]);

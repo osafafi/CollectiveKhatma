@@ -6,10 +6,20 @@ import {
   type ReactNode,
 } from 'react';
 import { useQariPreference } from '@/app/persistence';
+import { getSurahs } from '@/content/quran/loader';
+import { strings } from '@/content/strings.ar';
 import { RecitationUnavailableDialog } from '@/components/recitation';
 import { browserRecitationEnvironment } from './browserRecitationEnvironment';
 import { RecitationContext } from './recitationContext';
 import { createRecitationEngine, type RecitationEnvironment } from './recitationEngine';
+import {
+  browserMediaSessionPorts,
+  browserWakeLockPorts,
+  connectMediaSession,
+  connectWakeLock,
+  type DescribeRecitation,
+} from './recitationBridges';
+import { verseLabel } from './recitationLabels';
 
 /**
  * One recitation engine for the member app, above every route, plus the single
@@ -32,6 +42,19 @@ export function RecitationProvider({
 
   useEffect(() => () => engine.stop(), [engine]);
 
+  useEffect(() => {
+    const disconnectWakeLock = connectWakeLock(engine, browserWakeLockPorts());
+    const disconnectMediaSession = connectMediaSession(
+      engine,
+      browserMediaSessionPorts(),
+      describeForLockScreen,
+    );
+    return () => {
+      disconnectWakeLock();
+      disconnectMediaSession();
+    };
+  }, [engine]);
+
   const value = useMemo(
     () => ({ engine, qariId, setQariId }),
     [engine, qariId, setQariId],
@@ -47,3 +70,25 @@ export function RecitationProvider({
     </RecitationContext.Provider>
   );
 }
+
+/** Surah names for the lock screen, fetched the first time a reader recites. */
+let surahNames: ReadonlyMap<number, string> | undefined;
+let surahNamesRequested = false;
+
+const describeForLockScreen: DescribeRecitation = (item, qariId) => {
+  if (!surahNamesRequested) {
+    surahNamesRequested = true;
+    getSurahs()
+      .then((surahs) => {
+        surahNames = new Map(surahs.map((surah) => [surah.id, surah.name]));
+      })
+      .catch(() => {
+        surahNamesRequested = false;
+      });
+  }
+  return {
+    title: verseLabel(item, surahNames?.get(item.surah)),
+    artist: strings.recitation.qariNames[qariId],
+    album: strings.common.appName,
+  };
+};

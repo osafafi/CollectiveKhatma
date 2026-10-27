@@ -54,6 +54,12 @@ export interface ColorTokens {
   heroShimmer: string;
   cardShadow: string;
   btnShadow: string;
+  /**
+   * The recited ayah's gold glow, top → bottom stop of a vertical gradient
+   * over the reader background (ink and the active marker contrast-guarded).
+   */
+  ayahGlowTop: string;
+  ayahGlowBottom: string;
 }
 
 export const TOKENS: Record<ThemeMode, ColorTokens> = {
@@ -104,6 +110,8 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     heroShimmer: 'rgba(255,255,255,.2)',
     cardShadow: '0 12px 32px rgba(38,49,43,.10), 0 2px 6px rgba(38,49,43,.05)',
     btnShadow: '0 8px 20px rgba(14,111,97,.28)',
+    ayahGlowTop: 'rgba(201,162,74,.14)',
+    ayahGlowBottom: 'rgba(201,162,74,.36)',
   },
   dark: {
     bg: '#0e1613',
@@ -147,6 +155,8 @@ export const TOKENS: Record<ThemeMode, ColorTokens> = {
     heroShimmer: 'rgba(255,255,255,.15)',
     cardShadow: '0 14px 36px rgba(0,0,0,.5)',
     btnShadow: '0 8px 22px rgba(55,184,159,.3)',
+    ayahGlowTop: 'rgba(217,180,95,.10)',
+    ayahGlowBottom: 'rgba(217,180,95,.26)',
   },
 };
 
@@ -184,6 +194,7 @@ export const RADII = {
   button: 14,
   pill: 10,
   tabPill: 16,
+  ayah: 8,
 } as const;
 
 /**

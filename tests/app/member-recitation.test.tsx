@@ -1,5 +1,5 @@
-import { act, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemberIdentityBoundary } from '@/app/member/MemberIdentityBoundary';
 import { MemberExperience } from '@/app/member/MemberApp';
 import { strings } from '@/content/strings.ar';
@@ -272,5 +272,101 @@ describe('member recitation in the readers', () => {
     });
     await screen.findByText('اللهم افتح لنا أبواب رحمتك');
     expect(screen.queryByRole('button', { name: strings.recitation.play })).toBeNull();
+  });
+});
+
+describe('the recited verse on the page', () => {
+  const ayahSpan = (key: string) =>
+    document.querySelector<HTMLElement>(`[data-ayah="${key}"]`)!;
+  const reciting = () =>
+    [...document.querySelectorAll<HTMLElement>('.is-reciting')].map(
+      (element) => element.dataset.ayah ?? `b:${element.dataset.basmala}`,
+    );
+  let scrollIntoView: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView =
+      scrollIntoView as unknown as Element['scrollIntoView'];
+  });
+
+  afterEach(() => {
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
+    vi.restoreAllMocks();
+  });
+
+  it('wraps every ayah and moves the highlight with the recitation', async () => {
+    const { user } = renderAssigned([30, 31]);
+    await screen.findByText(/نص-2-60/);
+    expect(ayahSpan('2:60')).toHaveClass('ayah');
+    expect(ayahSpan('2:60').textContent).toBe('نص-2-60 ۝60');
+    expect(reciting()).toEqual([]);
+
+    await user.click(await playButton());
+    act(() => fake.audio.startPlaying());
+    expect(reciting()).toEqual(['2:60']);
+
+    await act(async () => fake.audio.finish());
+    expect(reciting()).toEqual(['2:61']);
+  });
+
+  it('lights the bismillah line while the basmala plays', async () => {
+    const { user } = renderMember('/quran/50', { data: { roster: [amina] } });
+    await screen.findByText(/نص-3-1/);
+
+    await user.click(await playButton());
+    expect(fake.audio.src).toBe(url(1, 1));
+    act(() => fake.audio.startPlaying());
+    expect(reciting()).toEqual(['b:3']);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      `آل عمران · ${strings.recitation.basmala}`,
+    );
+
+    await act(async () => fake.audio.finish());
+    expect(fake.audio.src).toBe(url(3, 1));
+    expect(reciting()).toEqual(['3:1']);
+  });
+
+  it('starts from a tapped verse only while the player is open', async () => {
+    const { user } = renderAssigned([30, 31]);
+    await screen.findByText(/نص-2-61/);
+
+    await user.click(ayahSpan('2:61'));
+    expect(fake.createAudio).not.toHaveBeenCalled();
+
+    await user.click(await playButton());
+    act(() => fake.audio.startPlaying());
+    await user.click(ayahSpan('2:61'));
+    expect(fake.audio.src).toBe(url(2, 61));
+
+    // Selecting text to copy is not a tap.
+    vi.spyOn(window, 'getSelection').mockReturnValue({
+      isCollapsed: false,
+    } as Selection);
+    fireEvent.click(ayahSpan('2:60'));
+    expect(fake.audio.src).toBe(url(2, 61));
+  });
+
+  it('shows no glow behind the not-available dialog', async () => {
+    fake.setOnline(false);
+    const { user } = renderAssigned([30, 31]);
+    await user.click(await playButton());
+    expect(
+      await screen.findByRole('dialog', { name: strings.recitation.unavailableTitle }),
+    ).toBeVisible();
+    expect(reciting()).toEqual([]);
+  });
+
+  it('keeps the verse in view but backs off after a manual scroll', async () => {
+    const { user } = renderAssigned([30, 31]);
+    await user.click(await playButton());
+    act(() => fake.audio.startPlaying());
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    expect(scrollIntoView.mock.contexts[0]).toBe(ayahSpan('2:60'));
+
+    fireEvent.wheel(window);
+    await act(async () => fake.audio.finish());
+    expect(reciting()).toEqual(['2:61']);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 });

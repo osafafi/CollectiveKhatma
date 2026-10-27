@@ -98,7 +98,12 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
           </Typography>
           <JumpControls page={page} onJump={goToPage} />
         </StickyChrome>
-        <QuranPageContent loaded={loaded} showSurahName />
+        <QuranPageContent
+          loaded={loaded}
+          showSurahName
+          activeKey={recitation.activeKey}
+          onAyahTap={recitation.onAyahTap}
+        />
       </Box>
       <ReaderNav
         onPrev={() => goToPage(page - 1)}

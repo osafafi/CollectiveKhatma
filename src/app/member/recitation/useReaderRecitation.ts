@@ -1,12 +1,17 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { getPage, getSurahs } from '@/content/quran/loader';
 import type { Surah } from '@/content/quran/types';
-import { toWesternDigits } from '@/content/quran/symbols';
 import { strings } from '@/content/strings.ar';
 import type { RecitationDockProps } from '@/components/recitation';
 import type { LoadedQuranPage } from '../reader/useQuranPage';
-import type { RecitationItem } from './recitationPlaylist';
-import { createPagePlaylist, itemKey, pageRecitationItems } from './recitationPlaylist';
+import {
+  createPagePlaylist,
+  itemKey,
+  pageRecitationItems,
+  startIndexFor,
+} from './recitationPlaylist';
+import { verseLabel } from './recitationLabels';
+import { useFollowActiveAyah } from './useFollowActiveAyah';
 import type { RecitationSnapshot } from './recitationEngine';
 import { useRecitation, useRecitationSnapshot } from './useRecitation';
 
@@ -27,6 +32,8 @@ export interface ReaderRecitation {
   dock: RecitationDockProps;
   /** The playing item's key when it is on the displayed page. */
   activeKey: string | undefined;
+  /** Set while the bar is open: start reciting from a tapped verse. */
+  onAyahTap: ((key: string) => void) | undefined;
 }
 
 /**
@@ -127,13 +134,27 @@ export function useReaderRecitation({
 
   const item = mine ? snapshot.item : undefined;
   const status = mine ? snapshot.status : 'idle';
+  // No glow behind the "not available" dialog: nothing is being recited.
+  const activeKey =
+    item && item.page === displayedPage && status !== 'unavailable'
+      ? itemKey(item)
+      : undefined;
+  useFollowActiveAyah(activeKey, loaded.status === 'ready');
 
   return {
-    activeKey: item && item.page === displayedPage ? itemKey(item) : undefined,
+    activeKey,
+    // While the bar is open, tapping a verse starts the recitation there.
+    onAyahTap:
+      mine && loaded.status === 'ready'
+        ? (key) =>
+            startFromLoaded(
+              startIndexFor(pageRecitationItems(loaded.data, loaded.surahsById), key),
+            )
+        : undefined,
     dock: {
       status: status === 'unavailable' ? 'paused' : status,
       expanded: mine,
-      verseLabel: item ? verseLabel(item, surahsById) : undefined,
+      verseLabel: item ? verseLabel(item, surahsById?.get(item.surah)?.name) : undefined,
       qariName:
         strings.recitation.qariNames[mine && snapshot.qariId ? snapshot.qariId : qariId],
       disabled: loaded.status !== 'ready',
@@ -147,16 +168,6 @@ export function useReaderRecitation({
       onClose: () => engine.stop(owner),
     },
   };
-}
-
-function verseLabel(
-  item: RecitationItem,
-  surahsById: ReadonlyMap<number, Surah> | undefined,
-): string {
-  const surah = surahsById?.get(item.surah)?.name ?? '';
-  const ayah =
-    item.kind === 'basmala' ? strings.recitation.basmala : toWesternDigits(item.ayah);
-  return strings.recitation.verseLabel.replace('{surah}', surah).replace('{ayah}', ayah);
 }
 
 /** The surah table, for labelling an item on a page that is still loading. */

@@ -137,7 +137,12 @@ function WirdQuranReader({
       <ReaderBackground />
       <Box>
         <WirdReaderHeader wird={wird} memberName={memberName} />
-        <QuranPageContent loaded={loaded} showSurahName />
+        <QuranPageContent
+          loaded={loaded}
+          showSurahName
+          activeKey={recitation.activeKey}
+          onAyahTap={recitation.onAyahTap}
+        />
       </Box>
       <StickyChrome>
         <ReaderNav

@@ -226,7 +226,12 @@ function AssignedReaderCore({
           imageName={imageName}
           pageCount={pages.length}
         />
-        <QuranPageContent loaded={loaded} showSurahName />
+        <QuranPageContent
+          loaded={loaded}
+          showSurahName
+          activeKey={recitation.activeKey}
+          onAyahTap={recitation.onAyahTap}
+        />
       </Box>
       <StickyChrome>
         <ReaderNav
