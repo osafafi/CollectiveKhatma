@@ -251,6 +251,8 @@ export const strings = {
       ajmi: 'أحمد بن علي العجمي',
       hudhaify: 'علي بن عبد الرحمن الحذيفي',
       jibreel: 'محمد جبريل',
+      basfar: 'عبد الله بصفر',
+      ghamdi: 'سعد الغامدي',
     },
     advancedTitle: 'إعدادات متقدمة',
     overlapLabel: 'تداخل الانتقال بين الآيات',

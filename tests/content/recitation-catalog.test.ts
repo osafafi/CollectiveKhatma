@@ -9,10 +9,10 @@ import {
 import { strings } from '@/content/strings.ar';
 
 describe('recitation catalog', () => {
-  it('lists fifteen distinct voices with Alafasy as the default', () => {
-    expect(QARIS).toHaveLength(15);
-    expect(new Set(QARIS.map((qari) => qari.id)).size).toBe(15);
-    expect(new Set(QARIS.map((qari) => qari.folder)).size).toBe(15);
+  it('lists seventeen distinct voices with Alafasy as the default', () => {
+    expect(QARIS).toHaveLength(17);
+    expect(new Set(QARIS.map((qari) => qari.id)).size).toBe(17);
+    expect(new Set(QARIS.map((qari) => qari.folder)).size).toBe(17);
     expect(DEFAULT_QARI_ID).toBe('alafasy');
     expect(isQariId('alafasy')).toBe(true);
     expect(isQariId('Alafasy_128kbps')).toBe(false);

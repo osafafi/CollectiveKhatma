@@ -33,6 +33,9 @@ export const QARIS = [
   { id: 'ajmi', folder: 'ahmed_ibn_ali_al_ajamy_128kbps', mirror: false },
   { id: 'hudhaify', folder: 'Hudhaify_128kbps', mirror: true },
   { id: 'jibreel', folder: 'Muhammad_Jibreel_128kbps', mirror: true },
+  { id: 'basfar', folder: 'Abdullah_Basfar_192kbps', mirror: true },
+  // EveryAyah carries Saad Al-Ghamdi at 40kbps only.
+  { id: 'ghamdi', folder: 'Ghamadi_40kbps', mirror: true },
 ] as const satisfies readonly Qari[];
 
 export type QariId = (typeof QARIS)[number]['id'];

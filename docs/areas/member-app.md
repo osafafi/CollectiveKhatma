@@ -215,8 +215,9 @@ Hard rules:
   are best effort and silent where unsupported. Playback is foreground-first:
   if the OS pauses it, the reader shows the same ayah paused and one tap
   resumes.
-- The Settings recitation card lists the 15 voices as radios; tapping one saves
-  it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
+- The Settings recitation card lists the 17 voices as radios in Arabic
+  alphabetical order of their names; tapping one saves it immediately
+  (Alafasy until then). Each row previews Ayat al-Kursi; one
   preview plays at a time and it stops when the card closes or Settings
   unmounts. A collapsed `إعدادات متقدمة` subsection tunes the chosen voice's
   overlap between ayat (25ms steps, reset to the 200ms default), and its test

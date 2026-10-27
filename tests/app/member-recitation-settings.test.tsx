@@ -67,7 +67,26 @@ describe('member recitation voice settings', () => {
     const group = await openQariSection(harness);
 
     const radios = within(group).getAllByRole('radio');
-    expect(radios).toHaveLength(15);
+    // Arabic alphabetical order of the displayed names.
+    expect(radios.map((radio) => radio.getAttribute('value'))).toEqual([
+      'shatri',
+      'ajmi',
+      'ghamdi',
+      'shuraim',
+      'abdulbasit',
+      'sudais',
+      'basfar',
+      'hudhaify',
+      'maher',
+      'ayyub',
+      'jibreel',
+      'minshawi',
+      'husary',
+      'alafasy',
+      'qatami',
+      'rifai',
+      'dossari',
+    ]);
     expect(within(group).getByRole('radio', { name: names.alafasy })).toBeChecked();
 
     await harness.user.click(within(group).getByRole('radio', { name: names.husary }));

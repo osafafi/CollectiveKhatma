@@ -10,10 +10,12 @@ import { useRecitation, useRecitationSnapshot } from './useRecitation';
 const PREVIEW_OWNER = 'settings-preview';
 const TRANSITION_OWNER = 'settings-transition';
 
+// Listed in Arabic alphabetical order of the displayed name; the catalog's own
+// order (and its Alafasy default) stays untouched.
 const QARI_OPTIONS = QARIS.map((qari) => ({
   id: qari.id,
   name: strings.recitation.qariNames[qari.id],
-}));
+})).sort((left, right) => left.name.localeCompare(right.name, 'ar'));
 
 interface QariSettingsCardProps {
   open: boolean;
