@@ -26,6 +26,9 @@ import {
   StickyChrome,
 } from '../reader/readerParts';
 import { clampIndex, openingIndex, prefetchNeighbors } from '../reader/readerPaging';
+import { useQuranPage } from '../reader/useQuranPage';
+import { RecitationDock } from '@/components/recitation';
+import { useReaderRecitation } from '../recitation/useReaderRecitation';
 import { WirdFinishAction } from './WirdFinishAction';
 import { useLocalDate } from '../useLocalDate';
 
@@ -120,13 +123,26 @@ function WirdQuranReader({
   }, [memberId, page, storedDone, wird.id]);
   useEffect(() => prefetchNeighbors(pages, index), [index, pages]);
   useEffect(() => startMushafPrefetch(pages), [pages]);
+  const loaded = useQuranPage(page);
+  const recitation = useReaderRecitation({
+    displayedPage: page,
+    loaded,
+    playPagesFrom: (from) => pages.slice(Math.max(pages.indexOf(from), 0)),
+    bound: 'list-end',
+    turnTo: (to) => go(pages.indexOf(to)),
+  });
 
   return (
     <Stack spacing={4} data-react-surface="member" data-route="wirdRead">
       <ReaderBackground />
       <Box>
         <WirdReaderHeader wird={wird} memberName={memberName} />
-        <QuranPageContent page={page} showSurahName />
+        <QuranPageContent
+          loaded={loaded}
+          showSurahName
+          activeKey={recitation.activeKey}
+          onAyahTap={recitation.onAyahTap}
+        />
       </Box>
       <StickyChrome>
         <ReaderNav
@@ -147,6 +163,7 @@ function WirdQuranReader({
         storedDone={storedDone}
         showReadButton={false}
       />
+      <RecitationDock {...recitation.dock} />
     </Stack>
   );
 }

@@ -26,6 +26,9 @@ import {
   isReadablePage,
   prefetchNeighbors,
 } from './readerPaging';
+import { useQuranPage } from './useQuranPage';
+import { RecitationDock } from '@/components/recitation';
+import { useReaderRecitation } from '../recitation/useReaderRecitation';
 
 interface JumpOption {
   value: number;
@@ -48,13 +51,24 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
       : lastReadPage;
 
   const goToPage = useCallback(
-    (next: number): void => {
+    (next: number, options?: { replace?: boolean }): void => {
       if (!isReadablePage(next) || next === page) return;
       setLastReadPage(next);
-      navigate({ name: 'quran', page: next });
+      navigate({ name: 'quran', page: next }, options);
     },
     [page, navigate, setLastReadPage],
   );
+
+  const loaded = useQuranPage(page);
+  // A long listen turns many pages; replacing keeps Back one step out.
+  const recitation = useReaderRecitation({
+    displayedPage: page,
+    loaded,
+    playPagesFrom: (from) =>
+      Array.from({ length: TOTAL_PAGES - from + 1 }, (_, offset) => from + offset),
+    bound: 'surah-end',
+    turnTo: (to) => goToPage(to, { replace: true }),
+  });
 
   // Scroll to the top on each page change, matching the legacy `go()`.
   useEffect(() => {
@@ -84,7 +98,12 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
           </Typography>
           <JumpControls page={page} onJump={goToPage} />
         </StickyChrome>
-        <QuranPageContent page={page} showSurahName />
+        <QuranPageContent
+          loaded={loaded}
+          showSurahName
+          activeKey={recitation.activeKey}
+          onAyahTap={recitation.onAyahTap}
+        />
       </Box>
       <ReaderNav
         onPrev={() => goToPage(page - 1)}
@@ -93,6 +112,7 @@ export function BrowseReaderPage({ page: routePage }: { page: number | undefined
         atEnd={page >= TOTAL_PAGES}
         indicator={indicator}
       />
+      <RecitationDock {...recitation.dock} />
     </Stack>
   );
 }

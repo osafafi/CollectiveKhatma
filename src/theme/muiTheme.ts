@@ -51,6 +51,8 @@ export interface CustomThemeTokens {
   heroShimmer: string;
   cardShadow: string;
   btnShadow: string;
+  ayahGlowTop: string;
+  ayahGlowBottom: string;
   /** Resolved card background — a gradient string, or a solid color for strength "none". */
   cardBg: string;
   primaryBtnGradient: string;
@@ -114,6 +116,8 @@ export function createKhatmaTheme(
     heroShimmer: t.heroShimmer,
     cardShadow: t.cardShadow,
     btnShadow: t.btnShadow,
+    ayahGlowTop: t.ayahGlowTop,
+    ayahGlowBottom: t.ayahGlowBottom,
     cardBg: cardGradient(mode, opts.cardStrength ?? 'subtle', opts.cardAngle ?? 160),
     primaryBtnGradient: primaryBtnGradient(mode),
     medals: MEDALS[mode],

@@ -5,6 +5,8 @@ export {
   rememberAssignedReaderPage,
   useDu3aAcknowledgement,
   useLastReadPage,
+  useQariPreference,
+  useVerseOverlapPreferences,
   useReadingScale,
   useRememberedMemberId,
   useRememberedRemainderAssigneeId,

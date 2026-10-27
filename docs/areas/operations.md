@@ -148,6 +148,11 @@ Hard rules:
   `scripts/sw-routes.ts` and deleting the superseded cache by hand —
   `cleanupOutdatedCaches` prunes precaches, not this one.
   `npm run check:service-worker` fails the build if the route goes missing.
+- Streamed recitation audio is never cached. The MP3s come cross-origin from
+  EveryAyah and its mirror, which no worker route matches (the mushaf route is
+  scoped to the base path and to `.json`), so they go straight to the network;
+  `tests/tooling/sw-routes.test.ts` guards that. Offline audio would need Range
+  support and CORS-only responses, and is deliberately not offered.
 - The precache manifest is world-readable, so it must never name the hidden
   admin entry or the chunks only that entry reaches.
   `scripts/pwa-precache.ts` removes them from the graph in

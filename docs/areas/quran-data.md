@@ -15,7 +15,20 @@ Tests: `member-reader`, `domain/assignment`, Quran grid model and chart tests.
 Hard rules:
 
 - Assignment unit is mushaf page 1..604.
-- App reads committed data. No runtime Quran API.
+- App reads committed data. No runtime Quran text API.
+- Recitation audio is the one runtime dependency: per-ayah MP3s stream from
+  `https://everyayah.com/data/{folder}/{SSS}{AAA}.mp3`, falling back to
+  `https://mirrors.quranicaudio.com/everyayah/` (same names; not every folder).
+  `src/content/quran/recitation.ts` owns the hardcoded 15-voice catalog under
+  stable short ids (`qari` in code: "reciter" already names the du'a al-khatma
+  reader) and builds both URLs. Ayah-1 files never include the basmala; `001001`
+  is the basmala.
+- Readers load their page with `src/app/member/reader/useQuranPage.ts` and
+  hand the result to `QuranPageContent`, which composes blocks in render. The
+  recitation playlist (`src/app/member/recitation/recitationPlaylist.ts`) is
+  built from the same `QuranPage` data: a basmala item precedes ayah 1 wherever
+  `Surah.bismillahPre` is true (so never for 1 or 9), and later pages load one
+  at a time as playback reaches them.
 - The dataset is offline-first. The service worker holds `public/quran/` in a
   cache-first runtime cache and the app sweeps every page into it in the
   background, so a reader that has been opened once survives a lost
@@ -31,6 +44,11 @@ Hard rules:
 - Sajda overline fixes ship in the versioned app shell, not the cached page JSON.
   Automatic service-worker shell updates deliver rendering changes while keeping
   the existing `quran-mushaf-v1` offline dataset intact.
+- Each ayah renders as one `<span class="ayah" data-ayah="S:A">` holding its
+  text and medallion (text content unchanged), and each bismillah line's text
+  as `<span class="ayah" data-basmala="S">`. These are the recitation's
+  highlight (`is-reciting`) and tap-to-start targets; the sajda overline sits
+  inside the ayah span.
 - Reader page, juz, surah, progress, and ayah-marker numbers use Western digits
   (`0–9`).
 - Both mushaf readers place previous on the right and next on the left, with

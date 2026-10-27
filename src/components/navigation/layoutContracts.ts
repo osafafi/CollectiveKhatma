@@ -11,6 +11,8 @@ export const appNavLayout = {
     maxListWidth: 576,
     flexDirection: 'row',
     minTargetHeight: '3.5rem',
+    // Pinned (its natural height) so the recitation dock can stack above it.
+    barBlockSize: '4.5rem',
   },
   desktop: {
     insetInlineStart: 0,
@@ -19,6 +21,26 @@ export const appNavLayout = {
     railWidth: 96,
     flexDirection: 'column',
   },
+} as const;
+
+/**
+ * The floating recitation dock: above the mobile tab bar (same dynamic-viewport
+ * anchor, never `bottom: 0`), at the bottom of the content column beside the
+ * desktop rail. `clearance` is the in-flow space readers keep free beneath it.
+ */
+export const recitationDockLayout = {
+  mobile: {
+    insetInline: 0,
+    top: '100dvh',
+    transform: `translateY(calc(-100% - ${appNavLayout.mobile.barBlockSize} - ${appNavLayout.mobile.borderTopWidth} - env(safe-area-inset-bottom) - 12px))`,
+  },
+  desktop: {
+    insetInlineStart: appNavLayout.desktop.railWidth,
+    insetInlineEnd: 0,
+    transform: 'translateY(calc(-100% - 24px))',
+  },
+  maxWidth: appNavLayout.mobile.maxListWidth,
+  clearance: { xs: '5rem', lg: '6rem' },
 } as const;
 
 /** Responsive shell contracts shared by the implementation and layout tests. */

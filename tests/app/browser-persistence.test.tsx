@@ -6,7 +6,9 @@ import {
   rememberAssignedReaderPage,
   useDu3aAcknowledgement,
   useLastReadPage,
+  useQariPreference,
   useReadingScale,
+  useVerseOverlapPreferences,
   useRememberedMemberId,
   useRememberedRemainderAssigneeId,
   useThemeMode,
@@ -44,6 +46,46 @@ describe('React browser-persistence hooks', () => {
 
     const resumed = renderHook(() => useRememberedRemainderAssigneeId('admin'));
     expect(resumed.result.current[0]).toBe('reader');
+  });
+
+  it('defaults the recitation voice, remembers a choice, and drops unknown ids', () => {
+    const first = renderHook(() => useQariPreference());
+    expect(first.result.current[0]).toBe('alafasy');
+    act(() => first.result.current[1]('husary'));
+    expect(first.result.current[0]).toBe('husary');
+    expect(localStorage.getItem('khatma.qari')).toBe('husary');
+    first.unmount();
+
+    expect(renderHook(() => useQariPreference()).result.current[0]).toBe('husary');
+
+    localStorage.setItem('khatma.qari', 'retired-voice');
+    expect(renderHook(() => useQariPreference()).result.current[0]).toBe('alafasy');
+  });
+
+  it('remembers a tuned overlap per voice and ignores anything malformed', () => {
+    const first = renderHook(() => useVerseOverlapPreferences());
+    expect(first.result.current[0]).toEqual({});
+    act(() => first.result.current[1]('husary', 410));
+    expect(first.result.current[0]).toEqual({ husary: 400 });
+    first.unmount();
+
+    expect(JSON.parse(localStorage.getItem('khatma.verseOverlap')!)).toEqual({
+      husary: 400,
+    });
+    expect(renderHook(() => useVerseOverlapPreferences()).result.current[0]).toEqual({
+      husary: 400,
+    });
+
+    localStorage.setItem(
+      'khatma.verseOverlap',
+      JSON.stringify({ alafasy: 9000, retired: 100, husary: 'loud' }),
+    );
+    expect(renderHook(() => useVerseOverlapPreferences()).result.current[0]).toEqual({
+      alafasy: 600,
+    });
+
+    localStorage.setItem('khatma.verseOverlap', '{not json');
+    expect(renderHook(() => useVerseOverlapPreferences()).result.current[0]).toEqual({});
   });
 
   it('falls back from an invalid reading scale, then applies and persists updates', () => {

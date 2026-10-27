@@ -74,7 +74,7 @@ export function AppNav<R>({ tabs, route, toPath, label }: AppNavProps<R>) {
             lg: appNavLayout.desktop.flexDirection,
           },
           justifyContent: { xs: 'space-around', lg: 'flex-start' },
-          height: { lg: '100%' },
+          height: { xs: appNavLayout.mobile.barBlockSize, lg: '100%' },
           gap: { lg: 1 },
           pt: { lg: 6 },
         }}

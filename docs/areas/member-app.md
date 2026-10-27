@@ -10,6 +10,7 @@ Start files:
   `src/app/member/khatma/`
 - Wird UI: `src/app/member/wird/`
 - Reader: `src/app/member/reader/`
+- Recitation: `src/app/member/recitation/` (engine, provider, Settings card)
 - Completion: `src/app/member/MemberCompletionInterrupt.tsx`
 - Feedback form: `src/app/member/MemberFeedbackSection.tsx`
 - Persistence: `src/app/persistence/browserPersistence.ts`
@@ -18,7 +19,9 @@ Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 `member-completion`, `member-personal-settings`, `member-integration`,
-`member-offline`, `finish-queue`.
+`member-offline`, `finish-queue`, `recitation-engine`,
+`member-recitation-settings`, `member-recitation`, `recitation-playlist`,
+`recitation-bridges`.
 
 Hard rules:
 
@@ -111,7 +114,9 @@ Hard rules:
   document with the selected member id and current name on every submission.
 - Keys: `khatma.memberId`, `khatma.readingScale`, `khatma.lastReadPage` (browse
   reader), `khatma.assignedReaderPage.${khatmaId}.${memberId}` (assigned reader),
-  `khatma.themeMode` (shared with the admin entry), `khatma.du3aAck.${khatmaId}`,
+  `khatma.themeMode` (shared with the admin entry), `khatma.qari` (recitation
+  voice, this device only), `khatma.verseOverlap` (per-voice overlap in ms, a
+  JSON map of tuned voices only), `khatma.du3aAck.${khatmaId}`,
   `khatma.pendingFinishes` (the offline finish queue, owned by
   `src/app/operations/finishQueue.ts` rather than by `browserPersistence`).
 - `MemberHero` shows the member name app-wide (greeting variant on lists,
@@ -153,11 +158,71 @@ Hard rules:
   with partial khatmas; the line below names the next shield and the whole
   khatmas left. Earned shields glint periodically (reduced motion: none).
 - Settings order: appearance (light/dark toggle, the ONLY toggle location
-  together with admin Settings) → reading size → avatar → app install →
-  feedback. The install card invokes Chromium's retained native install prompt
+  together with admin Settings) → reading size → recitation voice → avatar →
+  app install → feedback. The install card invokes Chromium's retained native install prompt
   when available; otherwise it detects iOS/Android and Safari, Chrome, Samsung
   Internet, Firefox, or Edge to show matching home-screen steps. It is hidden
   while the app runs in standalone mode.
+- Recitation runs on one engine (`recitationEngine.ts`) provided above every
+  member route by `RecitationProvider`, which also hoists the voice preference
+  and renders the only failure UI: one dialog saying recitation is not
+  available on this device or connection. Offline, a host error, a
+  non-audio response, no playback within 7s on every host, or a 12s mid-play
+  stall all end there — never a crash, never a technical message — because
+  some members' bundles reach only certain apps while `navigator.onLine` stays
+  true. Closing it leaves the ayah paused if anything had played, else idle.
+- The engine reaches `audio.play()` synchronously from the tap (iOS unlock)
+  and reuses two lazily created channels. Ayat are joined with a short tail
+  overlap: the voice's overlap (default 200ms, tunable 0–600ms in Settings,
+  where 0 turns it off) before an ayah ends, the next one
+  starts on the other channel with a 40ms fade-in while the outgoing tail fades
+  out — only the quiet tail overlaps, never two ayat's words. When the next
+  item is not known in time it falls back to waiting for `ended`. Pausing,
+  skipping, or stopping cuts a fading tail. Fades ramp `element.volume`; on iOS,
+  where volume is read-only, channels route through one Web Audio context
+  (`crossOrigin="anonymous"`, which both hosts allow) and a mixer interruption
+  holds the ayah paused. Elsewhere `crossOrigin` is never set. The primary host
+  is tried first; once the mirror answers, it is preferred for the rest of the
+  session. The next ayah is prefetched into an in-memory blob (skipped
+  under Data Saver, `audio/*` responses only) and released after use. Nothing
+  is persisted.
+- Every Quran reader (assigned, Quran Wird, free browse) shows a floating
+  play button above the tab bar (`RecitationDock`); a du'a Wird has none. Play
+  starts at the top of the visible page and opens the bar (verse, voice,
+  previous/play-pause/next, close). Assigned and Wird readers play through the
+  rest of their page list, walked by index; the browse reader stops after the
+  last ayah of the surah it started in, even mid-page. A basmala item plays
+  before every surah start the mushaf shows a bismillah line for.
+- `useReaderRecitation` keeps reader and audio on one page: audio reaching
+  another page turns the reader there (assigned/Wird via their own `go`,
+  replacing the hash; browse replaces too and still saves the last-read page,
+  so a long listen leaves Back one step out). A page turn the audio did not
+  make is the member's: playing audio restarts at the top of that page, paused
+  audio is forgotten. Leaving the reader, or any keyed remount of it (new round,
+  redistribution, the Wird's midnight key), stops playback.
+- Previous restarts the current ayah after 2s, else steps back one item; next
+  on the last item ends the session. Both always play.
+- The recited ayah (or bismillah line, during a basmala) glows gold and the
+  glow crossfades to the next one. While the bar is open, tapping an ayah
+  restarts the recitation there (a surah's first ayah starts from its basmala);
+  a tap that ends a text selection is ignored. The reader scrolls the recited
+  ayah to the centre when it leaves the comfortable part of the viewport, but
+  not within 4s of the member scrolling by wheel, touch, or scroll keys.
+- While a reader recites and the page is visible, `RecitationProvider` holds a
+  Screen Wake Lock (requested again when the member returns), and mirrors the
+  session onto the OS media controls: verse and voice as metadata, play,
+  pause, next, previous; seek actions cleared so iOS shows verse buttons. Both
+  are best effort and silent where unsupported. Playback is foreground-first:
+  if the OS pauses it, the reader shows the same ayah paused and one tap
+  resumes.
+- The Settings recitation card lists the 15 voices as radios; tapping one saves
+  it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
+  preview plays at a time and it stops when the card closes or Settings
+  unmounts. A collapsed `إعدادات متقدمة` subsection tunes the chosen voice's
+  overlap between ayat (25ms steps, reset to the 200ms default), and its test
+  plays Al-Fatiha 1–4 with that value so three transitions can be heard; moving
+  the slider retunes a playing test at once. Readers start each session with
+  the voice's tuned value.
 - Reader chrome is the slim gradient hero; group progress opens and series
   history collapses by default on the khatma landing (local state). Inside
   group progress, pending readers have their own collapsed, count-labelled
