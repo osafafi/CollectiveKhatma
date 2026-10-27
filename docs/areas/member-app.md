@@ -20,7 +20,7 @@ Reads: store selectors. Writes: `useWriteOperation`. Never import `data`.
 Tests: `member-identity`, `member-khatma-routes`, `member-reader`,
 `member-completion`, `member-personal-settings`, `member-integration`,
 `member-offline`, `finish-queue`, `recitation-engine`,
-`member-recitation-settings`.
+`member-recitation-settings`, `member-recitation`, `recitation-playlist`.
 
 Hard rules:
 
@@ -175,6 +175,22 @@ Hard rules:
   the session. The next ayah is prefetched into an in-memory blob (skipped
   under Data Saver, `audio/*` responses only) and released after use. Nothing
   is persisted.
+- Every Quran reader (assigned, Quran Wird, free browse) shows a floating
+  play button above the tab bar (`RecitationDock`); a du'a Wird has none. Play
+  starts at the top of the visible page and opens the bar (verse, voice,
+  previous/play-pause/next, close). Assigned and Wird readers play through the
+  rest of their page list, walked by index; the browse reader stops after the
+  last ayah of the surah it started in, even mid-page. A basmala item plays
+  before every surah start the mushaf shows a bismillah line for.
+- `useReaderRecitation` keeps reader and audio on one page: audio reaching
+  another page turns the reader there (assigned/Wird via their own `go`,
+  replacing the hash; browse replaces too and still saves the last-read page,
+  so a long listen leaves Back one step out). A page turn the audio did not
+  make is the member's: playing audio restarts at the top of that page, paused
+  audio is forgotten. Leaving the reader, or any keyed remount of it (new round,
+  redistribution, the Wird's midnight key), stops playback.
+- Previous restarts the current ayah after 2s, else steps back one item; next
+  on the last item ends the session. Both always play.
 - The Settings recitation card lists the 15 voices as radios; tapping one saves
   it immediately (Alafasy until then). Each row previews Ayat al-Kursi; one
   preview plays at a time and it stops when the card closes or Settings

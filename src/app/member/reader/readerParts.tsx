@@ -1,17 +1,17 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Box, GlobalStyles, Stack, Typography } from '@mui/material';
 import { AppButton } from '@/components/primitives';
-import { getPage, getSurahs } from '@/content/quran/loader';
 import type { QuranPage, Surah } from '@/content/quran/types';
 import { ayahEndMarker, toWesternDigits } from '@/content/quran/symbols';
 import { splitSajdaPhrase } from '@/content/quran/sajda';
 import { strings } from '@/content/strings.ar';
+import type { LoadedQuranPage } from './useQuranPage';
 
 /**
- * Shared building blocks for the two mushaf readers. Each reader owns its
- * current page (browse from the URL, assigned from keyed component state); these
- * parts render the sticky chrome, the prev/next nav row, and the async page body
- * with its stale-navigation guard. Pure paging helpers live in `readerPaging.ts`.
+ * Shared building blocks for the mushaf readers. Each reader owns its current
+ * page (browse from the URL, assigned from keyed component state) and loads it
+ * with `useQuranPage`; these parts render the sticky chrome, the prev/next nav
+ * row, and the page body. Pure paging helpers live in `readerPaging.ts`.
  */
 
 /**
@@ -151,51 +151,27 @@ function ReaderMessage({ text, danger = false }: { text: string; danger?: boolea
   );
 }
 
-type LoadedPage =
-  | { page: number; status: 'ready'; blocks: ReactNode[]; firstSurah: Surah | undefined }
-  | { page: number; status: 'error' };
-
 /**
- * Load and render a single mushaf page. Loading is derived from whether the
- * settled result matches the requested page, so the effect only calls setState
- * from its async callbacks. The `active` flag plus the page match are the
- * stale-navigation guard: a newer navigation always wins.
+ * Render one loaded mushaf page: the surah tab, then its blocks. Composition
+ * happens in render (memoised on the loaded page), so later props such as the
+ * recitation highlight re-render it without reloading anything.
  */
 export function QuranPageContent({
-  page,
+  loaded,
   showSurahName = false,
 }: {
-  page: number;
+  loaded: LoadedQuranPage;
   showSurahName?: boolean;
 }) {
-  const [loaded, setLoaded] = useState<LoadedPage | null>(null);
+  const blocks = useMemo(
+    () =>
+      loaded.status === 'ready'
+        ? composePageBlocks(loaded.data, loaded.surahsById)
+        : null,
+    [loaded],
+  );
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([getPage(page), getSurahs()])
-      .then(([data, surahs]) => {
-        if (active) {
-          const surahsById = byId(surahs);
-          const firstSurahId = data.surahIds[0];
-          setLoaded({
-            page,
-            status: 'ready',
-            blocks: composePageBlocks(data, surahsById),
-            firstSurah:
-              firstSurahId === undefined ? undefined : surahsById.get(firstSurahId),
-          });
-        }
-      })
-      .catch(() => {
-        if (active) setLoaded({ page, status: 'error' });
-      });
-    return () => {
-      active = false;
-    };
-  }, [page]);
-
-  if (!loaded || loaded.page !== page)
-    return <ReaderMessage text={strings.common.loading} />;
+  if (loaded.status === 'loading') return <ReaderMessage text={strings.common.loading} />;
   if (loaded.status === 'error')
     return <ReaderMessage text={strings.quran.loadError} danger />;
   return (
@@ -234,7 +210,7 @@ export function QuranPageContent({
           </Box>
         </Typography>
       ) : null}
-      {loaded.blocks}
+      {blocks}
     </Stack>
   );
 }
@@ -245,7 +221,10 @@ export function QuranPageContent({
 // frameless (edge-to-edge with the page padding) per the redesign.
 // -----------------------------------------------------------------------------
 
-function composePageBlocks(page: QuranPage, surahs: Map<number, Surah>): ReactNode[] {
+function composePageBlocks(
+  page: QuranPage,
+  surahs: ReadonlyMap<number, Surah>,
+): ReactNode[] {
   const blocks: ReactNode[] = [];
   let run: ReactNode[] = [];
   let runSurah = -1;
@@ -402,7 +381,3 @@ function GoldStar() {
 }
 
 const goldFill = (theme: { custom: { gold: string } }) => ({ fill: theme.custom.gold });
-
-function byId(surahs: Surah[]): Map<number, Surah> {
-  return new Map(surahs.map((surah): [number, Surah] => [surah.id, surah]));
-}

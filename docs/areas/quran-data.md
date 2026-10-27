@@ -23,6 +23,12 @@ Hard rules:
   stable short ids (`qari` in code: "reciter" already names the du'a al-khatma
   reader) and builds both URLs. Ayah-1 files never include the basmala; `001001`
   is the basmala.
+- Readers load their page with `src/app/member/reader/useQuranPage.ts` and
+  hand the result to `QuranPageContent`, which composes blocks in render. The
+  recitation playlist (`src/app/member/recitation/recitationPlaylist.ts`) is
+  built from the same `QuranPage` data: a basmala item precedes ayah 1 wherever
+  `Surah.bismillahPre` is true (so never for 1 or 9), and later pages load one
+  at a time as playback reaches them.
 - The dataset is offline-first. The service worker holds `public/quran/` in a
   cache-first runtime cache and the app sweeps every page into it in the
   background, so a reader that has been opened once survives a lost

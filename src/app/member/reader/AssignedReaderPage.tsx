@@ -40,6 +40,9 @@ import {
   StickyChrome,
 } from './readerParts';
 import { clampIndex, openingIndex, prefetchNeighbors } from './readerPaging';
+import { useQuranPage } from './useQuranPage';
+import { RecitationDock } from '@/components/recitation';
+import { useReaderRecitation } from '../recitation/useReaderRecitation';
 
 /**
  * Member assigned reader (`#/khatma/{id}/read`, `#/khatma/{id}/read/{page}`) —
@@ -200,6 +203,15 @@ function AssignedReaderCore({
     startMushafPrefetch(pages);
   }, [pages]);
 
+  const loaded = useQuranPage(page);
+  const recitation = useReaderRecitation({
+    displayedPage: page,
+    loaded,
+    playPagesFrom: (from) => pages.slice(Math.max(pages.indexOf(from), 0)),
+    bound: 'list-end',
+    turnTo: (to) => go(pages.indexOf(to)),
+  });
+
   const indicator = `${strings.reader.page} ${toWesternDigits(page)}`;
   const progressIndicator = `${toWesternDigits(index + 1)} ${strings.reader.of} ${toWesternDigits(pages.length)}`;
 
@@ -214,7 +226,7 @@ function AssignedReaderCore({
           imageName={imageName}
           pageCount={pages.length}
         />
-        <QuranPageContent page={page} showSurahName />
+        <QuranPageContent loaded={loaded} showSurahName />
       </Box>
       <StickyChrome>
         <ReaderNav
@@ -228,6 +240,7 @@ function AssignedReaderCore({
       </StickyChrome>
 
       <FinishFooter finish={finish} storedDone={storedDone} />
+      <RecitationDock {...recitation.dock} />
     </Stack>
   );
 }

@@ -205,6 +205,7 @@ describe('Responsive shell contracts', () => {
         maxListWidth: 576,
         flexDirection: 'row',
         minTargetHeight: '3.5rem',
+        barBlockSize: '4.5rem',
       },
       desktop: {
         insetInlineStart: 0,

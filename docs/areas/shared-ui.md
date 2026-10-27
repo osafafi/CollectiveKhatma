@@ -63,7 +63,17 @@ Component recipes:
   bar and the desktop rail. On mobile, the bar is fixed to the dynamic
   viewport's lower edge using `top: 100dvh` plus a self-height translation; do
   not replace that with `bottom: 0`, which can drift after toolbar or keyboard
-  viewport changes in iOS 26 WebKit.
+  viewport changes in iOS 26 WebKit. The bar's list height is pinned to
+  `appNavLayout.mobile.barBlockSize` (its natural 4.5rem) so other fixed layers
+  can stack above it.
+  `RecitationDock` (`src/components/recitation/`) is the reader's floating
+  player: a round gradient play button that becomes a card bar. It uses
+  `recitationDockLayout` — the same `top: 100dvh` anchor lifted past the tab
+  bar, its border, the safe area and a 12px gap on mobile; beside the 96px rail
+  and 24px up on desktop — and renders an in-flow spacer so page content and the
+  finish button stay reachable. Verse buttons follow the page nav's book order
+  (previous on the right) with mirrored skip icons. `QariPicker` and
+  `RecitationUnavailableDialog` are its Settings and failure companions.
 
 Hard rules:
 
